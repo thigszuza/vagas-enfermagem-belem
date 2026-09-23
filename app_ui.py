@@ -11,7 +11,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# Estilização: Fundo suave, fontes em branco nos filtros e cards rosa
 st.markdown("""
 <style>
     /* Fundo da tela */
@@ -25,7 +24,7 @@ st.markdown("""
         border-right: 2px solid #FF5C8A;
     }
 
-    /* Títulos e rótulos da barra lateral em BRANCO NÍTIDO */
+    /* Títulos e rótulos da barra lateral */
     [data-testid="stSidebar"] h1, 
     [data-testid="stSidebar"] h2, 
     [data-testid="stSidebar"] h3, 
@@ -90,7 +89,7 @@ st.markdown("""
         margin-bottom: 6px;
     }
     
-    /* Caixa de mensagem discreta e carinhosa */
+    /* Caixa de mensagem discreta */
     .love-box {
         background-color: #FFF0F5;
         border-left: 3px solid #FF69B4;
@@ -118,10 +117,39 @@ st.markdown("""
     .apply-btn:hover {
         opacity: 0.92;
     }
+
+    /* Correção do Expander: fundo sólido, borda rosa forte e texto escuro nítido */
+    [data-testid="stExpander"] {
+        background-color: #FFFFFF !important;
+        border: 2px solid #FF80A0 !important;
+        border-radius: 14px !important;
+        box-shadow: 0 4px 10px rgba(255, 105, 180, 0.15) !important;
+        overflow: hidden;
+    }
+    [data-testid="stExpander"] summary {
+        background-color: #FFE6EE !important;
+        padding: 12px 16px !important;
+    }
+    [data-testid="stExpander"] summary * {
+        color: #C2185B !important;
+        font-weight: 700 !important;
+        fill: #C2185B !important;
+        font-size: 1rem !important;
+    }
+    [data-testid="stExpander"] label {
+        color: #880E4F !important;
+        font-weight: 600 !important;
+    }
+    [data-testid="stExpander"] input, 
+    [data-testid="stExpander"] textarea {
+        background-color: #FFF9FA !important;
+        color: #222222 !important;
+        border: 1px solid #FFCCD7 !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# Cabeçalho com Hello Kitty e Boas-Vindas
+# Cabeçalho com Hello Kitty
 col_img, col_title = st.columns([1, 7])
 with col_img:
     st.markdown("""
@@ -161,7 +189,7 @@ with Session(engine) as session:
 st.markdown(f"<h4 style='color: #AD1457;'>🩺 Oportunidades Encontradas: <b>{len(vagas)}</b></h4>", unsafe_allow_html=True)
 
 if not vagas:
-    st.info("Nenhuma vaga encontrada para os filtros selecionados. Experimente limpar os filtros ou adicionar uma vaga de teste abaixo!")
+    st.info("Nenhuma vaga encontrada para os filtros selecionados. Experimente limpar os filtros ou adicionar uma vaga abaixo!")
 else:
     for v in vagas:
         link = v.url_apply if v.url_apply.startswith("http") else f"https://{v.url_apply}"
@@ -188,7 +216,7 @@ else:
         </div>
         """, unsafe_allow_html=True)
 
-# Formulário para adicionar vagas manualmente
+# Caixa expansível agora bem visível e contrastada
 with st.expander("🌸 Adicionar uma nova vaga (Manual)"):
     with st.form("form_vaga_rosa"):
         titulo = st.text_input("Título da Oportunidade", value="Enfermeira Assistencial")
@@ -216,3 +244,4 @@ with st.expander("🌸 Adicionar uma nova vaga (Manual)"):
                 session.commit()
             st.success("Vaga registada com sucesso!")
             st.rerun()
+            
