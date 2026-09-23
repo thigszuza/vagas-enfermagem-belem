@@ -11,19 +11,47 @@ st.set_page_config(
     layout="wide"
 )
 
-# Estilização: Paleta rosa suave, detalhes Hello Kitty e caixa de mensagem afetiva
+# Estilização: Fundo suave, fontes em branco nos filtros e cards rosa
 st.markdown("""
 <style>
+    /* Fundo da tela */
     .stApp {
         background-color: #FFF6F8;
     }
     
+    /* Barra lateral */
     [data-testid="stSidebar"] {
-        background-color: #FFE6EE !important;
-        border-right: 2px solid #FFA6C2;
+        background-color: #FF85A2 !important;
+        border-right: 2px solid #FF5C8A;
     }
 
-    /* Cartão da vaga */
+    /* Títulos e rótulos da barra lateral em BRANCO NÍTIDO */
+    [data-testid="stSidebar"] h1, 
+    [data-testid="stSidebar"] h2, 
+    [data-testid="stSidebar"] h3, 
+    [data-testid="stSidebar"] p, 
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] span {
+        color: #FFFFFF !important;
+        font-weight: 700 !important;
+        text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Caixa interna dos seletores da barra lateral */
+    [data-testid="stSidebar"] [data-baseweb="select"] > div {
+        background-color: #9C1343 !important;
+        color: #FFFFFF !important;
+        border: 1px solid #FFB6C1 !important;
+        border-radius: 10px !important;
+    }
+
+    /* Texto dentro do selectbox */
+    [data-testid="stSidebar"] [data-baseweb="select"] * {
+        color: #FFFFFF !important;
+        font-weight: 600 !important;
+    }
+
+    /* Cartão de vaga */
     .job-card {
         background: #FFFFFF;
         border: 2px solid #FFCCD7;
@@ -93,13 +121,13 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Cabeçalho com ícone da Hello Kitty e mensagem de boas-vindas
+# Cabeçalho com Hello Kitty e Boas-Vindas
 col_img, col_title = st.columns([1, 7])
 with col_img:
     st.markdown("""
-    <div style="text-align: center; margin-top: 8px;">
-        <img src="https://images.fineartamerica.com/images/artworkimages/medium/3/hello-kitty-nurse-andrea-g.jpg" 
-             style="width: 82px; height: 82px; border-radius: 50%; border: 3px solid #FF85A2; object-fit: cover;">
+    <div style="text-align: center; margin-top: 5px;">
+        <img src="https://upload.wikimedia.org/wikipedia/en/0/05/Hello_kitty_character_portrait.png" 
+             style="width: 82px; height: auto; border-radius: 12px; filter: drop-shadow(0 4px 6px rgba(255,105,180,0.3));">
     </div>
     """, unsafe_allow_html=True)
 
@@ -130,7 +158,7 @@ with Session(engine) as session:
     
     vagas = session.exec(query.order_by(Job.created_at.desc())).all()
 
-st.markdown(f"#### 🩺 Oportunidades Encontradas: **{len(vagas)}**")
+st.markdown(f"<h4 style='color: #AD1457;'>🩺 Oportunidades Encontradas: <b>{len(vagas)}</b></h4>", unsafe_allow_html=True)
 
 if not vagas:
     st.info("Nenhuma vaga encontrada para os filtros selecionados. Experimente limpar os filtros ou adicionar uma vaga de teste abaixo!")
@@ -188,4 +216,3 @@ with st.expander("🌸 Adicionar uma nova vaga (Manual)"):
                 session.commit()
             st.success("Vaga registada com sucesso!")
             st.rerun()
-            
