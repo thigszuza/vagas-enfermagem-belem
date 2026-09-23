@@ -601,64 +601,57 @@ with tab_vagas:
           st.text_area("Texto Gerado:", carta, height=180, key=f"txt_{vaga.id}")
 
 # ================= TAB 2: MINHAS CANDIDATURAS =================
+# ================= TAB 2: MINHAS CANDIDATURAS =================
 with tab_candidaturas:
     st.markdown("### 📋 Painel de Candidaturas e Favoritas")
     with Session(engine) as session:
         todas = session.exec(select(Job)).all()
-        # Filtra com fallback caso o status ainda não esteja preenchido
         acompanhadas = [
             v for v in todas 
             if getattr(v, "status", None) in ["Favorita", "Candidatada", "Entrevista", "Aguardando"]
         ]
 
-  if not acompanhadas:
-    st.info(
-        "Nenhuma vaga marcada ainda. Clique em '❤️ Favoritar' ou '📩"
-        " Candidatada' nos cartões da aba de vagas!"
-    )
-  else:
-    for cand in acompanhadas:
-      with st.container():
-        st.markdown(
-            f"**💖 {cand.title}** no **{cand.hospital_or_company}** — Bairro:"
-            f" *{detectar_bairro(cand.hospital_or_company)}*"
+    if not acompanhadas:
+        st.info(
+            "Nenhuma vaga marcada ainda. Clique em '❤️ Favoritar' ou '📩 Candidatada' nos cartões da aba de vagas!"
         )
-        col_st1, col_st2, col_st3 = st.columns([2, 3, 2])
-        with col_st1:
-          novo_st = st.selectbox(
-              "Status:",
-              ["Favorita", "Candidatada", "Aguardando", "Entrevista"],
-              index=[
-                  "Favorita",
-                  "Candidatada",
-                  "Aguardando",
-                  "Entrevista",
-              ].index(cand.status)
-              if cand.status
-              in ["Favorita", "Candidatada", "Aguardando", "Entrevista"]
-              else 0,
-              key=f"sel_st_{cand.id}",
-          )
-          if novo_st != cand.status:
-            with Session(engine) as s:
-              o = s.get(Job, cand.id)
-              o.status = novo_st
-              s.add(o)
-              s.commit()
-            st.rerun()
-        with col_st2:
-          st.caption(
-              f"Cadastrada em: {cand.created_at.strftime('%d/%m/%Y às %H:%M')}"
-          )
-        with col_st3:
-          if st.button("Remover da Lista", key=f"rm_{cand.id}"):
-            with Session(engine) as s:
-              o = s.get(Job, cand.id)
-              o.status = "Disponível"
-              s.add(o)
-              s.commit()
-            st.rerun()
-        st.divider()
+    else:
+        for cand in acompanhadas:
+            with st.container():
+                st.markdown(
+                    f"**💖 {cand.title}** no **{cand.hospital_or_company}** — Bairro: *{detectar_bairro(cand.hospital_or_company)}*"
+                )
+                col_st1, col_st2, col_st3 = st.columns([2, 3, 2])
+                with col_st1:
+                    status_atuais = ["Favorita", "Candidatada", "Aguardando", "Entrevista"]
+                    idx_status = status_atuais.index(cand.status) if cand.status in status_atuais else 0
+                    novo_st = st.selectbox(
+                        "Status:",
+                        status_atuais,
+                        index=idx_status,
+                        key=f"sel_st_{cand.id}",
+                    )
+                    if novo_st != cand.status:
+                        with Session(engine) as s:
+                            o = s.get(Job, cand.id)
+                            o.status = novo_st
+                            s.add(o)
+                            s.commit()
+                        st.rerun()
+                with col_st2:
+                    st.caption(
+                        f"Cadastrada em: {cand.created_at.strftime('%d/%m/%Y às %H:%M')}"
+                    )
+                with col_st3:
+                    if st.button("Remover da Lista", key=f"rm_{cand.id}"):
+                        with Session(engine) as s:
+                            o = s.get(Job, cand.id)
+                            o.status = "Disponível"
+                            s.add(o)
+                            s.commit()
+                        st.rerun()
+                st.divider()
+                
 
 # ================= TAB 3: DICAS & PISO SALARIAL =================
 with tab_dicas:
