@@ -10,6 +10,10 @@ from sqlmodel import Session, create_engine, select
 sqlite_url = "sqlite:///vagas_enfermagem.db"
 engine = create_engine(sqlite_url, echo=False)
 
+# Garante que todas as tabelas (Job, UserProfile, UserSubscription) existam no banco
+from sqlmodel import SQLModel
+SQLModel.metadata.create_all(engine)
+
 st.set_page_config(
     page_title="Vagas Enfermagem Belém 💕", page_icon="🎀", layout="wide"
 )
@@ -515,4 +519,3 @@ with st.expander("🌸 Adicionar uma nova vaga (Manual)"):
         session.commit()
       st.success("Vaga registada com sucesso!")
       st.rerun()
-      
