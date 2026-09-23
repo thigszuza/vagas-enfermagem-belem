@@ -1,33 +1,46 @@
-
-from models import Job
+import os
+from email_service import enviar_boletim_email
+from models import Job, UserSubscription
 from scrapers_belem import ScraperHospitaisBelem
-from sqlmodel import Session, SQLModel, create_engine, select
+from sqlmodel import Session, create_engine, select
 
 sqlite_url = "sqlite:///vagas_enfermagem.db"
 engine = create_engine(sqlite_url, echo=False)
 
-# Garante a criação da tabela na base de dados SQLite
-SQLModel.metadata.create_all(engine)
 
+def sincronizar_e_notificar():
+  print("Iniciando varredura de vagas em Belém...")
+  scraper = ScraperHospitaisBelem()
+  vagas_encontradas = scraper.coletar_todas()
 
-def persistir_vagas():
-  coletor = ScraperHospitaisBelem()
-  vagas = coletor.coletar_todas()
+  vagas_novas = []
 
-  salvas = 0
   with Session(engine) as session:
-    for dados in vagas:
-      existe = session.exec(
-          select(Job).where(Job.url_apply == dados["url_apply"])
+    for v_data in vagas_encontradas:
+      existente = session.exec(
+          select(Job).where(Job.url_apply == v_data["url_apply"])
       ).first()
-      if not existe:
-        job = Job(**dados)
-        session.add(job)
-        salvas += 1
-    session.commit()
 
-  print(f"[SUCESSO] {salvas} novas vagas inseridas na base de dados.")
+      if not existente:
+        nova = Job(**v_data)
+        session.add(nova)
+        session.commit()
+        session.refresh(nova)
+        vagas_novas.append(nova)
+
+    # Dispara e-mail com todas as vagas novas reunidas para as pessoas inscritas
+    if vagas_novas:
+      assinantes = session.exec(
+          select(UserSubscription).where(UserSubscription.active == True)
+      ).all()
+      for sub in assinantes:
+        enviar_boletim_email(sub.email, vagas_novas)
+
+  print(
+      f"Sincronização concluída: {len(vagas_novas)} vagas inéditas processadas."
+  )
 
 
 if __name__ == "__main__":
-  persistir_vagas()
+  sincronizar_e_notificar()
+  
