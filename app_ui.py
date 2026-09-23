@@ -602,15 +602,14 @@ with tab_vagas:
 
 # ================= TAB 2: MINHAS CANDIDATURAS =================
 with tab_candidaturas:
-  st.markdown("### 📋 Painel de Candidaturas e Favoritas")
-  with Session(engine) as session:
-    acompanhadas = session.exec(
-        select(Job).where(
-            Job.status.in_(
-                ["Favorita", "Candidatada", "Entrevista", "Aguardando"]
-            )
-        )
-    ).all()
+    st.markdown("### 📋 Painel de Candidaturas e Favoritas")
+    with Session(engine) as session:
+        todas = session.exec(select(Job)).all()
+        # Filtra com fallback caso o status ainda não esteja preenchido
+        acompanhadas = [
+            v for v in todas 
+            if getattr(v, "status", None) in ["Favorita", "Candidatada", "Entrevista", "Aguardando"]
+        ]
 
   if not acompanhadas:
     st.info(
