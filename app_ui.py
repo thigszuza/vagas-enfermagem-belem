@@ -21,7 +21,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- METATAGS OPEN GRAPH NO STREAMLIT (FALLBACK PARA CRAWLERS JS) ---
+# --- METATAGS OPEN GRAPH NO STREAMLIT ---
 st.markdown("""
 <head>
     <meta property="og:type" content="website" />
@@ -281,15 +281,15 @@ popular_catalogo_base()
 # --- CSS COM ALTO CONTRASTE E CORREÇÃO VISUAL ---
 st.markdown("""
 <style>
-    /* Fundo da aplicação */
+    /* Fundo geral da aplicação */
     .stApp {
         background-color: #FFF6F8 !important;
-        color: #4A1525 !important;
+        color: #33101E !important;
     }
 
-    /* Títulos e textos com alto contraste */
+    /* Títulos e textos padrão */
     h1, h2, h3, h4, h5, h6, p, label, span {
-        color: #4A1525 !important;
+        color: #33101E !important;
     }
     
     /* Barra lateral */
@@ -298,7 +298,7 @@ st.markdown("""
         border-right: 2px solid #FF5C8A;
     }
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, 
-    [data-testid="stSidebar"] h3, [data-testid="stSidebar"] h4,
+    [data-testid="stSidebar"] h3, [data-testid="stSidebar"] h4, 
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] label, 
     [data-testid="stSidebar"] span {
         color: #FFFFFF !important;
@@ -316,28 +316,31 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
-    /* Caixas de Texto (Textarea e Inputs) com Fundo Branco Limpo */
-    div[data-baseweb="input"] > div,
-    div[data-baseweb="textarea"] > div,
-    div[data-baseweb="textarea"] {
+    /* ================================================================= */
+    /* CAIXA BRANCA DE LEITURA COM TEXTO ESCURO NÍTIDO (100% LEGÍVEL)    */
+    /* ================================================================= */
+    .doc-display-box {
         background-color: #FFFFFF !important;
         border: 2px solid #FFCCD7 !important;
-        border-radius: 12px !important;
-    }
-    div[data-baseweb="input"] input,
-    div[data-baseweb="textarea"] textarea {
-        background-color: #FFFFFF !important;
-        color: #2D151E !important;
-        font-weight: 600 !important;
+        border-radius: 14px !important;
+        padding: 18px 22px !important;
+        height: 250px !important;
+        overflow-y: auto !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
         font-size: 0.95rem !important;
-        font-family: inherit !important;
-        line-height: 1.5 !important;
+        line-height: 1.6 !important;
+        color: #111111 !important;
+        font-weight: 500 !important;
+        white-space: pre-wrap !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+        margin-bottom: 12px !important;
     }
 
-    /* Avisos e Alertas com texto legível */
+    /* Avisos e Alertas com fundo claro e texto legível */
     [data-testid="stAlert"] {
         border-radius: 12px !important;
         border: 1px solid #FFB6C1 !important;
+        background-color: #FFFFFF !important;
     }
     [data-testid="stAlert"] * {
         color: #5D1A2F !important;
@@ -352,7 +355,7 @@ st.markdown("""
         font-weight: 700 !important;
     }
 
-    /* BOTÕES DA APLICAÇÃO (incluindo Download e Forms) */
+    /* BOTÕES DA APLICAÇÃO (Download, Forms e Links) */
     .stButton > button,
     .stDownloadButton > button,
     div[data-testid="stFormSubmitButton"] > button,
@@ -362,7 +365,7 @@ st.markdown("""
         border: none !important;
         border-radius: 20px !important;
         font-weight: 700 !important;
-        padding: 10px 20px !important;
+        padding: 10px 22px !important;
         box-shadow: 0 4px 10px rgba(233, 30, 99, 0.28) !important;
         transition: all 0.3s ease;
     }
@@ -371,6 +374,7 @@ st.markdown("""
     div[data-testid="stFormSubmitButton"] > button:hover {
         background: linear-gradient(135deg, #E91E63, #C2185B) !important;
         box-shadow: 0 6px 14px rgba(233, 30, 99, 0.4) !important;
+        color: #FFFFFF !important;
     }
     .stButton > button *,
     .stDownloadButton > button *,
@@ -407,7 +411,7 @@ st.markdown("""
         text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25) !important;
     }
 
-    /* Cartões de Vagas e Conteúdo */
+    /* Cartões de Vagas */
     .job-card {
         background: #FFFFFF !important;
         border: 2px solid #FFCCD7;
@@ -751,7 +755,7 @@ with Session(engine) as session:
     user_kws = [k.strip() for k in perfil_user.skills_keywords.split(",") if k.strip()] if perfil_user and perfil_user.skills_keywords else []
     is_biomed = perfil_user.is_biomed_graduated if perfil_user else False
 
-# --- ABAS PRINCIPAIS (COM A NOVA ABA DO LINKEDIN) ---
+# --- ABAS PRINCIPAIS ---
 tab_vagas, tab_biomed, tab_linkedin, tab_rotas_emerg, tab_candidaturas = st.tabs([
     "🌸 Mural Geral de Vagas",
     "🔬 Especial Biomedicina",
@@ -861,6 +865,7 @@ with tab_biomed:
 
     st.divider()
 
+    # MODELOS DE CURRÍCULO E CARTA (COM CAIXA BRANCA E TEXTO ESCURO NÍTIDO)
     col_mod1, col_mod2 = st.columns(2)
     
     texto_curriculo = """OBJETIVO:
@@ -888,12 +893,7 @@ Biomédica | Contato WhatsApp"""
 
     with col_mod1:
         st.markdown("<h4 style='color: #880E4F !important;'>📄 Currículo Sugestivo (Biomedicina)</h4>", unsafe_allow_html=True)
-        st.text_area(
-            "Estrutura Pronta:",
-            texto_curriculo,
-            height=220,
-            key="txt_area_curriculo"
-        )
+        st.markdown(f'<div class="doc-display-box">{texto_curriculo}</div>', unsafe_allow_html=True)
         st.download_button(
             label="📥 Baixar Modelo de Currículo (.txt)",
             data=texto_curriculo,
@@ -904,12 +904,7 @@ Biomédica | Contato WhatsApp"""
 
     with col_mod2:
         st.markdown("<h4 style='color: #880E4F !important;'>✉️ Carta de Apresentação (Biomedicina)</h4>", unsafe_allow_html=True)
-        st.text_area(
-            "Modelo para Envio:",
-            texto_carta,
-            height=220,
-            key="txt_area_carta"
-        )
+        st.markdown(f'<div class="doc-display-box">{texto_carta}</div>', unsafe_allow_html=True)
         st.download_button(
             label="📥 Baixar Carta de Apresentação (.txt)",
             data=texto_carta,
@@ -977,12 +972,7 @@ Busco oportunidades em laboratórios de análises clínicas, hospitais e centros
 
     with col_lk1:
         st.markdown("<h4 style='color: #C2185B !important;'>🩺 Opção 1: Foco em Enfermagem</h4>", unsafe_allow_html=True)
-        st.text_area(
-            "Modelo Pronto (Título + Sobre):",
-            texto_linkedin_enfermagem,
-            height=260,
-            key="txt_area_lk_enf"
-        )
+        st.markdown(f'<div class="doc-display-box">{texto_linkedin_enfermagem}</div>', unsafe_allow_html=True)
         st.download_button(
             label="📥 Baixar Modelo LinkedIn Enfermagem (.txt)",
             data=texto_linkedin_enfermagem,
@@ -993,12 +983,7 @@ Busco oportunidades em laboratórios de análises clínicas, hospitais e centros
 
     with col_lk2:
         st.markdown("<h4 style='color: #00695C !important;'>🔬 Opção 2: Foco em Biomedicina</h4>", unsafe_allow_html=True)
-        st.text_area(
-            "Modelo Pronto (Título + Sobre):",
-            texto_linkedin_biomed,
-            height=260,
-            key="txt_area_lk_bio"
-        )
+        st.markdown(f'<div class="doc-display-box">{texto_linkedin_biomed}</div>', unsafe_allow_html=True)
         st.download_button(
             label="📥 Baixar Modelo LinkedIn Biomedicina (.txt)",
             data=texto_linkedin_biomed,
