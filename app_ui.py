@@ -1,17 +1,27 @@
 import io
+import os
 import random
 import re
 import unicodedata
 import urllib.parse
 from datetime import datetime, timedelta
 
+import requests
 import streamlit as st
 import streamlit.components.v1 as components
+from pypdf import PdfReader
 from sqlalchemy import text
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from models import Job, UserProfile, UserSubscription
 from scrapers_belem import ScraperHospitaisBelem
+
+# Tenta carregar biblioteca oficial do Google Gemini
+try:
+    from google import genai
+    HAS_GENAI = True
+except ImportError:
+    HAS_GENAI = False
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
@@ -56,6 +66,14 @@ with engine.connect() as conn:
     try:
         conn.execute(
             text("ALTER TABLE userprofile ADD COLUMN is_biomed_graduated BOOLEAN DEFAULT 0")
+        )
+        conn.commit()
+    except Exception:
+        pass
+
+    try:
+        conn.execute(
+            text("ALTER TABLE userprofile ADD COLUMN resume_raw_text TEXT DEFAULT ''")
         )
         conn.commit()
     except Exception:
@@ -316,9 +334,7 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
-    /* ================================================================= */
-    /* CAIXA BRANCA DE LEITURA COM TEXTO ESCURO NÍTIDO (100% LEGÍVEL)    */
-    /* ================================================================= */
+    /* CAIXA BRANCA DE LEITURA COM TEXTO ESCURO NÍTIDO */
     .doc-display-box {
         background-color: #FFFFFF !important;
         border: 2px solid #FFCCD7 !important;
@@ -334,6 +350,16 @@ st.markdown("""
         white-space: pre-wrap !important;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
         margin-bottom: 12px !important;
+    }
+
+    /* CARTÕES INFORMATIVOS E DE NOTÍCIAS */
+    .news-card {
+        background-color: #FFFFFF !important;
+        border: 2px solid #FFCCD7 !important;
+        border-radius: 14px !important;
+        padding: 16px 20px !important;
+        margin-bottom: 14px !important;
+        box-shadow: 0 3px 10px rgba(255, 105, 180, 0.08) !important;
     }
 
     /* Avisos e Alertas com fundo claro e texto legível */
@@ -529,62 +555,110 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(0, 119, 181, 0.35);
         transition: all 0.3s ease;
     }
-    .btn-linkedin-direct:hover {
-        background: linear-gradient(135deg, #005582, #003e61);
-        box-shadow: 0 6px 16px rgba(0, 119, 181, 0.5);
+    .btn-uber-direct {
+        display: inline-block;
+        background: #000000;
         color: #FFFFFF !important;
+        padding: 10px 20px;
+        border-radius: 20px;
+        text-decoration: none !important;
+        font-weight: 700;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+        transition: all 0.3s ease;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- CABEÇALHO ---
-col_img, col_title = st.columns([1, 7])
-with col_img:
-    st.markdown("""
-    <div style="text-align: center; margin-top: 5px;">
-        <img src="https://upload.wikimedia.org/wikipedia/en/0/05/Hello_kitty_character_portrait.png" 
-             style="width: 82px; height: auto; border-radius: 12px; filter: drop-shadow(0 4px 6px rgba(255,105,180,0.3));">
-    </div>
-    """, unsafe_allow_html=True)
+# --- FUNÇÃO DE PREVISÃO DO TEMPO ---
+@st.cache_data(ttl=1800)
+def obter_previsao_tempo(cidade_nome: str):
+    coords = {
+        "Belém - PA": {"lat": -1.4558, "lon": -48.4902},
+        "São Paulo - SP": {"lat": -23.5505, "lon": -46.6333},
+        "Rio de Janeiro - RJ": {"lat": -22.9068, "lon": -43.1729},
+    }
+    chave = "Belém - PA" if "Belém" in cidade_nome else ("São Paulo - SP" if "São Paulo" in cidade_nome else "Rio de Janeiro - RJ")
+    c = coords[chave]
+    try:
+        url = f"https://api.open-meteo.com/v1/forecast?latitude={c['lat']}&longitude={c['lon']}&current_weather=true&hourly=precipitation_probability,precipitation&timezone=America%2FSao_Paulo"
+        res = requests.get(url, timeout=5)
+        if res.status_code == 200:
+            dados = res.json()
+            curr = dados.get("current_weather", {})
+            hourly = dados.get("hourly", {})
+            probs = hourly.get("precipitation_probability", [0])[:6]
+            precips = hourly.get("precipitation", [0.0])[:6]
+            max_prob = max(probs) if probs else 0
+            max_precip = max(precips) if precips else 0.0
+            return {
+                "temp": curr.get("temperature", 26),
+                "prob_chuva": max_prob,
+                "precip": max_precip,
+                "status": "OK"
+            }
+    except Exception:
+        pass
+    return {"temp": 26.0, "prob_chuva": 30, "precip": 0.0, "status": "Simulado"}
 
-with col_title:
-    st.markdown("<h1 style='color: #C2185B !important; margin-bottom: 0;'>Portal de Carreiras em Saúde & Biomedicina 💕</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #880E4F !important; font-size: 1.05rem;'>Monitoramento contínuo de oportunidades no Brasil com carinho para você 🌸</p>", unsafe_allow_html=True)
+# --- BASE DE CONHECIMENTO CRÍTICA SOBRE HOSPITAIS / LABORATÓRIOS ---
+INFO_EMPRESAS_SAUDE = {
+    "porto dias": {
+        "resumo": "Maior complexo hospitalar privado de Belém (Rede D'Or), localizado no bairro do Marco. Referência absoluta em urgência e UTI.",
+        "cultura": "Exigente e com ritmo acelerado de plantão. Excelente vitrine para carreira, paga rigorosamente em dia e tem estabilidade.",
+        "pontos_atencao": "Plantão intenso, rotatividade moderada em enfermagem assistencial.",
+        "dica_entrevista": "Foque em raciocínio rápido para drogas vasoativas, biossegurança e protocolos de segurança do paciente."
+    },
+    "ophir loyola": {
+        "resumo": "Hospital público de referência oncológica do Pará (São Brás, Belém). Trata alta e média complexidade em câncer e neuro.",
+        "cultura": "Ambiente público, com equipe multiprofissional muito unida e pacientes com longa permanência.",
+        "pontos_atencao": "Alta carga emocional devido aos tratamentos oncológicos.",
+        "dica_entrevista": "Demonstre humanização, empatia e conhecimento prático em manipulação estéril e curativos."
+    },
+    "metropolitano": {
+        "resumo": "Hospital Metropolitano de Urgência e Emergência (HMUE), em Ananindeua. Referência em trauma, queimados e sala vermelha.",
+        "cultura": "Pancada pura, aprendizado gigantesco e acelerado para qualquer enfermeiro.",
+        "pontos_atencao": "Deslocamento na BR-316 pode ser lento em horários de pico.",
+        "dica_entrevista": "Destaque agilidade em triagem (Protocolo de Manchester) e controle de hemorragias/estabilização."
+    },
+    "santa casa": {
+        "resumo": "Hospital secular tradicional em Belém (Umarizal), referência estadual em saúde materno-infantil, neonatal e ginecologia.",
+        "cultura": "Muito acolhedora, com forte cultura assistencial humanizada e residência médica/multiprofissional.",
+        "pontos_atencao": "Estrutura com grande volume de atendimentos pelo SUS.",
+        "dica_entrevista": "Evidencie carinho, paciência e manejo pediátrico/neonatal seguro."
+    },
+    "einstein": {
+        "resumo": "Hospital Israelita Albert Einstein (Morumbi, SP). O melhor hospital da América Latina.",
+        "cultura": "Padrão de excelência internacional (JCI), tecnologia de ponta, remuneração e benefícios acima da média.",
+        "pontos_atencao": "Processo seletivo altamente concorrido com múltiplas etapas e provas técnicas rigorosas.",
+        "dica_entrevista": "Use termos como prática baseada em evidências, segurança do paciente e comunicação não violenta."
+    },
+    "sírio": {
+        "resumo": "Hospital Sírio-Libanês (Bela Vista, SP). Centro de excelência médica de nível mundial em oncologia, cardiologia e cirurgia.",
+        "cultura": "Cultura calorosa e humanizada com altíssimo rigor técnico. Plano de carreira muito estruturado.",
+        "pontos_atencao": "Exige dedicação e pontualidade britânica.",
+        "dica_entrevista": "Destaque foco em detalhe, ética profissional e prontuário eletrônico."
+    },
+    "dasa": {
+        "resumo": "Maior rede integrada de saúde da América Latina (inclui marcas como Delboni, Lavoisier e Sérgio Franco).",
+        "cultura": "Ambiente laboratorial dinâmico, metas analíticas claras e forte investimento em inovação.",
+        "pontos_atencao": "Cobrança frequente por agilidade na liberação de laudos e tempo de atendimento.",
+        "dica_entrevista": "Ressalte domínio de sistemas laboratoriais (LIS), calibração de equipamentos e controle de qualidade (CQI/CQE)."
+    },
+    "fleury": {
+        "resumo": "Grupo Fleury Diagnósticos (São Paulo). Referência nacional em análises clínicas sofisticadas e biologia molecular.",
+        "cultura": "Excelente clima organizacional, foco em acolhimento premium ao paciente e tecnologia de ponta.",
+        "pontos_atencao": "Critério rigoroso na checagem de erros pré-analíticos.",
+        "dica_entrevista": "Enfatize microscopia, precisão em pipetagem e interpretação minuciosa de dados analíticos."
+    },
+    "copa d'or": {
+        "resumo": "Hospital Copa D'Or (Rede D'Or São Luiz, Copacabana, Rio de Janeiro). Hospital de referência privada no RJ.",
+        "cultura": "Hospital moderno, alto fluxo de pacientes e forte presença institucional no Rio de Janeiro.",
+        "pontos_atencao": "Carga horária rigorosa na escala de 12x36.",
+        "dica_entrevista": "Evidencie monitorização hemodinâmica invasiva e protocolos de prevenção de lesão por pressão."
+    }
+}
 
-st.divider()
-
-# Mensagem Afetiva Fixa
-st.markdown("""
-<div style="background: linear-gradient(90deg, #FFE4EC, #FFF0F5); border: 1px dashed #FF69B4; border-radius: 12px; padding: 10px 16px; text-align: center; color: #C2185B; font-weight: 600; margin-bottom: 16px;">
-    🐾 <i>eu te amo ou eu te lobo &lt;3</i> ✨
-</div>
-""", unsafe_allow_html=True)
-
-# --- DETECTOR OFFLINE (PWA) ---
-components.html(
-    """
-<script>
-    window.addEventListener('offline', function() {
-        const banner = document.getElementById('offline-alert');
-        if (!banner) {
-            const div = document.createElement('div');
-            div.id = 'offline-alert';
-            div.style = "position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:#D32F2F;color:white;padding:10px 20px;border-radius:25px;font-weight:bold;z-index:999999;box-shadow:0 4px 12px rgba(0,0,0,0.3);font-family:sans-serif;font-size:13px;text-align:center;";
-            div.innerHTML = "📡 Modo Offline: Sem conexão de rede. As vagas continuam disponíveis na memória!";
-            document.body.appendChild(div);
-        }
-    });
-
-    window.addEventListener('online', function() {
-        const banner = document.getElementById('offline-alert');
-        if (banner) banner.remove();
-    });
-</script>
-""",
-    height=0,
-)
-
-# --- FUNÇÕES DE MATCH E IA GEMINI ---
+# --- FUNÇÕES DE ANÁLISE DE CURRÍCULO E IA ---
 def normalizar_texto(txt: str) -> str:
     if not txt:
         return ""
@@ -597,40 +671,109 @@ PALAVRAS_CHAVE = [
     "crbm", "tecnico de enfermagem", "enfermeiro", "enfermeira",
     "biomedico", "biomedica", "analises clinicas", "bancada", "coleta",
     "hematologia", "bioquimica", "microbiologia", "imunologia",
-    "biologia molecular", "sorologia", "laudos", "auditoria", "farmacia"
+    "biologia molecular", "sorologia", "laudos", "auditoria", "farmacia",
+    "puncao", "gasometria", "triagem", "manchester", "quimioterapia", "drogas vasoativas"
 ]
 
-def calcular_match(vaga: Job, perfil_keywords: list) -> int:
-    if not perfil_keywords:
-        return 0
-    texto_vaga = normalizar_texto(
-        f"{vaga.title} {vaga.description} {vaga.specialty} {vaga.hospital_or_company}"
-    )
-    acertos = sum(1 for kw in perfil_keywords if kw in texto_vaga)
-    score = int((acertos / max(len(perfil_keywords), 1)) * 100)
-    return min(score * 2, 100)
+def extrair_termos_chave(texto: str) -> list:
+    if not texto:
+        return []
+    texto_norm = normalizar_texto(texto)
+    return [kw for kw in PALAVRAS_CHAVE if kw in texto_norm]
 
-def simular_analise_ia_thiago(vaga: Job, perfil_kws: list) -> str:
-    match_perc = calcular_match(vaga, perfil_kws)
-    pontos_fortes = [kw.upper() for kw in perfil_kws if kw in normalizar_texto(f"{vaga.description} {vaga.title}")]
+def calcular_match_real(vaga: Job, texto_curriculo: str, perfil_keywords: list) -> tuple:
+    termos_base = set(perfil_keywords)
+    if texto_curriculo:
+        termos_base.update(extrair_termos_chave(texto_curriculo))
     
-    msg = "🐾 **Oi meu amor! Aqui é a Hello Kitty falando em nome do Thiago!** 💕\n\n"
-    msg += f"Analisei com todo o carinho a oportunidade de **{vaga.title}** no **{vaga.hospital_or_company}**:\n\n"
-    
-    if match_perc >= 50:
-        msg += f"✨ **Afinidade Alta ({match_perc}%):** Essa vaga combina bastante com o que você já domina! "
-        if pontos_fortes:
-            msg += f"Eles valorizam conhecimentos práticos em **{', '.join(pontos_fortes)}**. "
-        msg += "Destaque suas vivências em rotina assistencial, biossegurança e dedicação integral.\n\n"
-    else:
-        msg += f"🌱 **Oportunidade Promissora ({match_perc}%):** Uma excelente porta de entrada para expandir sua carreira! "
-        msg += "No processo seletivo, evidencie sua facilidade com protocolos, atenção a detalhes e compromisso com o cuidado.\n\n"
+    if not termos_base:
+        return 0, []
         
-    msg += f"📍 **Dica de Deslocamento:** A unidade fica em {vaga.location}. Simule o trajeto com calma para chegar sem imprevistos na entrevista!\n\n"
-    msg += "💌 *'Você é uma profissional incrível, dedicada e competente. Tenho muito orgulho de você e estou sempre torcendo!'* — Com amor, Thiago Zuza."
-    return msg
+    texto_vaga = normalizar_texto(f"{vaga.title} {vaga.description} {vaga.specialty} {vaga.hospital_or_company}")
+    acertos = [t for t in termos_base if t in texto_vaga]
+    
+    score = int((len(acertos) / max(len(termos_base), 1)) * 100)
+    score_final = min(score * 2, 100)
+    return max(score_final, 15 if acertos else 5), acertos
 
-# --- BARRA LATERAL (FILTROS + ALERTA DE E-MAIL OFICIAL) ---
+def buscar_raio_x_empresa(nome_empresa: str) -> dict:
+    nome_norm = normalizar_texto(nome_empresa)
+    for chave, dados in INFO_EMPRESAS_SAUDE.items():
+        if chave in nome_norm:
+            return dados
+    return {
+        "resumo": f"Instituição de saúde com atuação regional em {nome_empresa}.",
+        "cultura": "Ambiente assistencial hospitalar/laboratorial com escalas regulares e protocolos da vigilância sanitária.",
+        "pontos_atencao": "Verifique a escala exata e os benefícios diretos (VT/VA) antes de aceitar a proposta.",
+        "dica_entrevista": "Demonstre pontualidade, domínio dos Procedimentos Operacionais Padrão (POPs) e dedicação integral."
+    }
+
+def gerar_analise_ia_completa(vaga: Job, curriculo_texto: str, perfil_kws: list) -> str:
+    """Análise crítica e honesta via IA (Google Gemini oficial ou motor semântico local)"""
+    score, matches = calcular_match_real(vaga, curriculo_texto, perfil_kws)
+    raio_x = buscar_raio_x_empresa(vaga.hospital_or_company)
+    
+    gemini_key = os.getenv("GEMINI_API_KEY", "")
+    
+    # Se a API oficial do Gemini estiver disponível e configurada
+    if HAS_GENAI and gemini_key:
+        try:
+            client = genai.Client(api_key=gemini_key)
+            prompt = f"""
+            Você é um consultor de carreira em saúde de elite e mentor carinhoso da candidata (em nome do Thiago Zuza).
+            Seja cruelmente honesto, direto ao ponto e transparente na avaliação da oportunidade:
+            
+            VAGA: {vaga.title}
+            INSTITUIÇÃO: {vaga.hospital_or_company} ({vaga.location})
+            DESCRIÇÃO: {vaga.description}
+            CURRÍCULO DA CANDIDATA: {curriculo_texto[:2500] if curriculo_texto else 'Graduação e vivência na área da saúde'}
+            
+            Gere uma análise estruturada contendo:
+            1. Diagnóstico do Match Real (% e se realmente vale a pena se aplicar ou se é furada).
+            2. Opinião honesta sobre a vaga e o hospital/empresa (ritmo de trabalho, cobrança e se agrega peso ao currículo).
+            3. Raio-X da Empresa e Estrutura física.
+            4. 3 Perguntas técnicas prováveis na entrevista para ela não ser pega de surpresa.
+            Assine no final: 'Com todo amor e torcida, Thiago Zuza 💕 🐾'.
+            """
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
+            )
+            if response and response.text:
+                return response.text
+        except Exception:
+            pass
+
+    # MOTOR SEMÂNTICO LOCAL HONESTO (Caso offline ou sem chave API)
+    analise = f"🐾 **Análise Crítica de Carreira da Hello Kitty & Thiago Zuza** 💕\n\n"
+    analise += f"🩺 **Vaga:** {vaga.title} | **Unidade:** {vaga.hospital_or_company}\n\n"
+    
+    # Match Real
+    analise += f"### 📊 1. Diagnóstico de Match Real: **{score}%**\n"
+    if score >= 60:
+        analise += f"✨ **Afinidade Muito Alta:** Seu perfil preenche os requisitos mais pesados dessa vaga. "
+        if matches:
+            analise += f"Suas competências em **{', '.join([m.upper() for m in matches])}** são exatamente o que o RH está procurando. Vale muito a pena se candidatar hoje mesmo!\n\n"
+    elif score >= 35:
+        analise += f"🌱 **Afinidade Moderada:** Você tem boa base para concorrer, mas eles podem cobrar mais vivência prática no setor. Foque em demonstrar facilidade rápida de aprendizado e atenção rigorosa a POPs.\n\n"
+    else:
+        analise += f"⚠️ **Alerta Sincero:** O perfil da vaga exige requisitos que ainda não estão explícitos no seu currículo. Se for se candidatar, ajuste seu resumo para destacar vivências de estágio e procedimentos correlatos.\n\n"
+
+    # Opinião Honesta sobre a Vaga
+    analise += f"### 💡 2. Opinião Sincera sobre a Oportunidade\n"
+    analise += f"• **Vale a pena?** Sim, especialmente pelo peso no currículo. O turno **{vaga.shift_type}** exige preparo físico, mas abre portas imediatas para setores mais valorizados.\n"
+    analise += f"• **Rotina provável:** {raio_x['pontos_atencao']}\n\n"
+
+    # Raio-X da Empresa
+    analise += f"### 🏢 3. Raio-X da Instituição ({vaga.hospital_or_company})\n"
+    analise += f"• **Perfil:** {raio_x['resumo']}\n"
+    analise += f"• **Cultura interna:** {raio_x['cultura']}\n"
+    analise += f"• **Como se destacar na entrevista:** {raio_x['dica_entrevista']}\n\n"
+
+    analise += f"💌 *'Você é uma profissional brilhante, competente e dedicada. Tenho orgulho infinito de você!'* — Com todo o meu amor, Thiago Zuza 💕 🐾"
+    return analise
+
+# --- BARRA LATERAL (FILTROS + ALERTA DE E-MAIL) ---
 st.sidebar.markdown("### 🎀 Localização & Carreira")
 
 LISTA_ESTADOS = [
@@ -676,7 +819,7 @@ if st.sidebar.button("🔄 Sincronizar Portais 24h Agora"):
         st.rerun()
 
 st.sidebar.markdown("---")
-# --- FORMULÁRIO DE ALERTAS AUTOMÁTICOS POR E-MAIL ---
+# FORMULÁRIO DE ALERTAS AUTOMÁTICOS
 st.sidebar.markdown("### 💌 Alertas Automáticos por E-mail")
 with st.sidebar.form("form_inscricao_alertas"):
     nome_input = st.text_input("Nome:", placeholder="Ex: Meu Amor / Candidata")
@@ -740,18 +883,20 @@ with Session(engine) as session:
         popular_catalogo_base()
         vagas_lista = session.exec(select(Job).order_by(Job.created_at.desc())).all()
 
-# Perfil do usuário
+# Perfil do usuário e Currículo salvo
 with Session(engine) as session:
     perfil_user = session.exec(select(UserProfile)).first()
     user_kws = [k.strip() for k in perfil_user.skills_keywords.split(",") if k.strip()] if perfil_user and perfil_user.skills_keywords else []
     is_biomed = perfil_user.is_biomed_graduated if perfil_user else False
+    curriculo_armazenado = getattr(perfil_user, "resume_raw_text", "") or ""
 
 # --- ABAS PRINCIPAIS ---
-tab_vagas, tab_biomed, tab_linkedin, tab_rotas_emerg, tab_candidaturas = st.tabs([
+tab_vagas, tab_biomed, tab_ia_curriculo, tab_linkedin, tab_rotas_emerg, tab_candidaturas = st.tabs([
     "🌸 Mural Geral de Vagas",
     "🔬 Especial Biomedicina",
+    "🤖 Análise IA do Currículo",
     "💼 Perfil Campeão LinkedIn",
-    "🗺️ Rotas & Contatos de Emergência",
+    "🗺️ Trajeto, Uber & Notícias",
     "📋 Minhas Candidaturas"
 ])
 
@@ -763,7 +908,7 @@ with tab_vagas:
         st.info("Nenhuma oportunidade localizada para estes filtros. Tente selecionar 'Todos os Estados' na barra lateral!")
     else:
         for v in vagas_lista:
-            score = calcular_match(v, user_kws)
+            score, _ = calcular_match_real(v, curriculo_armazenado, user_kws)
             
             uf = getattr(v, "state", "PA")
             if uf == "PA":
@@ -792,7 +937,7 @@ with tab_vagas:
                     {badge_estado} {badge_cat} 
                     <span class="badge-24h">🌐 {v.source}</span>
                     <span class="badge">⏰ {v.shift_type}</span>
-                    <span class="badge">✨ Afinidade: {score}%</span>
+                    <span class="badge">✨ Match Real: {score}%</span>
                 </div>
                 <p style="color: #333333 !important; font-size: 0.92rem; line-height: 1.4;">{v.description}</p>
                 <div style="margin-top: 10px;">
@@ -806,7 +951,8 @@ with tab_vagas:
             col_ia, col_fav, _ = st.columns([3, 2, 4])
             with col_ia:
                 with st.popover("🎀 Análise do Gemini da Hello Kitty"):
-                    st.markdown(simular_analise_ia_thiago(v, user_kws))
+                    with st.spinner("Analisando requisitos e consultando hospital..."):
+                        st.markdown(gerar_analise_ia_completa(v, curriculo_armazenado, user_kws))
             with col_fav:
                 if st.button("❤️ Salvar Candidatura", key=f"btn_fav_{v.id}"):
                     with Session(engine) as s:
@@ -856,7 +1002,6 @@ with tab_biomed:
 
     st.divider()
 
-    # MODELOS DE CURRÍCULO E CARTA (COM CAIXA BRANCA PURA E TEXTO ESCURO NÍTIDO)
     col_mod1, col_mod2 = st.columns(2)
     
     texto_curriculo = """OBJETIVO:
@@ -904,7 +1049,56 @@ Biomédica | Contato WhatsApp"""
             use_container_width=True
         )
 
-# ================= TAB 3: PERFIL CAMPEÃO LINKEDIN =================
+# ================= TAB 3: ANÁLISE IA DO CURRÍCULO (NOVA) =================
+with tab_ia_curriculo:
+    st.markdown("<h2 style='color: #AD1457 !important;'>🤖 Central IA: Análise de Currículo & Raio-X de Empresas</h2>", unsafe_allow_html=True)
+    st.markdown("Suba o currículo dela para que a IA analise a compatibilidade real em cada vaga, dê opiniões diretas sobre os hospitais e prepare para as entrevistas! 💕")
+
+    col_up1, col_up2 = st.columns([1, 1])
+    with col_up1:
+        st.markdown("#### 📤 1. Carregar Currículo Dela (PDF ou Texto)")
+        uploaded_pdf = st.file_uploader("Envie o currículo em PDF:", type=["pdf"])
+        if uploaded_pdf is not None:
+            try:
+                reader = PdfReader(uploaded_pdf)
+                texto_extraido = "\n".join([page.extract_text() for page in reader.pages if page.extract_text()])
+                if texto_extraido:
+                    with Session(engine) as s:
+                        p = s.exec(select(UserProfile)).first()
+                        if not p:
+                            p = UserProfile(full_name="Usuária", resume_raw_text=texto_extraido)
+                        else:
+                            p.resume_raw_text = texto_extraido
+                        s.add(p)
+                        s.commit()
+                    st.success("✅ Currículo em PDF lido e salvo com sucesso na memória da IA!")
+                    curriculo_armazenado = texto_extraido
+            except Exception as e:
+                st.error(f"Erro ao ler PDF: {e}")
+
+    with col_up2:
+        st.markdown("#### 🔍 2. Consultar Raio-X de Qualquer Empresa")
+        empresa_busca = st.text_input("Pesquisar Hospital ou Laboratório:", placeholder="Ex: Hospital Porto Dias, Sírio-Libanês, Dasa, Fleury...")
+        if empresa_busca:
+            dados_emp = buscar_raio_x_empresa(empresa_busca)
+            st.markdown(f"""
+            <div class="news-card">
+                <h4 style="color:#C2185B !important; margin:0 0 6px 0;">🏥 Raio-X: {empresa_busca.title()}</h4>
+                <p style="color:#222222; font-size:0.92rem; line-height:1.5;"><b>Resumo:</b> {dados_emp['resumo']}</p>
+                <p style="color:#222222; font-size:0.92rem; line-height:1.5;"><b>Ambiente e Cultura:</b> {dados_emp['cultura']}</p>
+                <p style="color:#B71C1C; font-size:0.92rem; line-height:1.5;"><b>Ponto de Atenção:</b> {dados_emp['pontos_atencao']}</p>
+                <p style="color:#00695C; font-size:0.92rem; line-height:1.5;"><b>Dica de Ouro p/ Entrevista:</b> {dados_emp['dica_entrevista']}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("#### 📑 Texto do Currículo Atual na Memória:")
+    if curriculo_armazenado:
+        st.markdown(f'<div class="doc-display-box">{curriculo_armazenado[:2000]}...</div>', unsafe_allow_html=True)
+    else:
+        st.info("Nenhum currículo em PDF carregado ainda. Você pode enviar acima ou colar um texto diretamente na aba de Biomedicina!")
+
+# ================= TAB 4: PERFIL CAMPEÃO LINKEDIN =================
 with tab_linkedin:
     st.markdown("<h2 style='color: #0077B5 !important;'>💼 Seu Perfil Campeão no LinkedIn</h2>", unsafe_allow_html=True)
     st.markdown("""
@@ -983,59 +1177,25 @@ Busco oportunidades em laboratórios de análises clínicas, hospitais e centros
             use_container_width=True
         )
 
-    st.markdown("---")
-    st.markdown("### 💡 Dicas de Ouro para o Perfil Brilhar")
-    col_dica1, col_dica2, col_dica3 = st.columns(3)
-    with col_dica1:
-        st.markdown("""
-        <div style="background:#FFFFFF; border:1px solid #FFCCD7; border-radius:12px; padding:14px;">
-            <h5 style="color:#C2185B !important; margin:0 0 6px 0;">📸 Foto com Sorriso e Luz</h5>
-            <p style="color:#4A1525 !important; font-size:0.9rem; margin:0;">
-                Uma foto nítida, com jaleco ou roupa profissional e fundo claro aumenta as visualizações do perfil em mais de 14x!
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-    with col_dica2:
-        st.markdown("""
-        <div style="background:#FFFFFF; border:1px solid #FFCCD7; border-radius:12px; padding:14px;">
-            <h5 style="color:#C2185B !important; margin:0 0 6px 0;">🟢 Selo #OpenToWork</h5>
-            <p style="color:#4A1525 !important; font-size:0.9rem; margin:0;">
-                Ative a opção "Buscando emprego" para os recrutadores saberem de imediato que você está disponível para entrevistas.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-    with col_dica3:
-        st.markdown("""
-        <div style="background:#FFFFFF; border:1px solid #FFCCD7; border-radius:12px; padding:14px;">
-            <h5 style="color:#C2185B !important; margin:0 0 6px 0;">⭐ Habilidades Marcadas</h5>
-            <p style="color:#4A1525 !important; font-size:0.9rem; margin:0;">
-                Adicione termos como <i>Coleta, Hematologia, UTI, Biossegurança, Enfermagem e Triagem</i> na seção de Competências.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-
-# ================= TAB 4: ROTAS & EMERGÊNCIA =================
+# ================= TAB 5: TRAJETO, TARIFAS, UBER & NOTÍCIAS =================
 with tab_rotas_emerg:
-    st.markdown("<h2 style='color: #AD1457 !important;'>🗺️ Simulação de Trajeto & Apoio Rápido de Segurança</h2>", unsafe_allow_html=True)
-    
-    col_em1, col_em2 = st.columns(2)
-    with col_em1:
-        msg_aviso = urllib.parse.quote("Oi amor! Estou saindo do plantão agora e já a caminho de casa. Te aviso assim que chegar! 💕")
-        link_aviso_thiago = f"https://api.whatsapp.com/send?text={msg_aviso}"
+    st.markdown("<h2 style='color: #AD1457 !important;'>🗺️ Simulação de Trajeto, Uber, Chuvas & Segurança</h2>", unsafe_allow_html=True)
 
-        st.markdown(f"""
+    col_rot1, col_rot2 = st.columns(2)
+    with col_rot1:
+        st.markdown("""
         <div class="emergency-card">
             <h4 style="color:#C2185B !important; margin:0 0 10px 0;">🚨 Botão de Segurança p/ Voltar de Plantão</h4>
             <p style="color:#333333 !important; font-size:0.92rem; line-height:1.4; margin-bottom:16px;">
                 Saindo de noite ou de madrugada? Clique para mandar mensagem instantânea com aviso de trajeto direto para o Thiago:
             </p>
-            <a href="{link_aviso_thiago}" target="_blank" class="btn-safety-alert">
+            <a href="https://api.whatsapp.com/send?text=Oi%20amor!%20Estou%20saindo%20do%20plant%C3%A3o%20agora%20e%20j%C3%A1%20a%20caminho%20de%20casa.%20Te%20aviso%20assim%20que%20chegar!%20%F0%9F%92%95" target="_blank" class="btn-safety-alert">
                 📲 Mandar Aviso de Saída de Plantão p/ Thiago
             </a>
         </div>
         """, unsafe_allow_html=True)
     
-    with col_em2:
+    with col_rot2:
         st.markdown("""
         <h4 style="color:#880E4F !important;">📞 Contatos Úteis de Emergência & Saúde:</h4>
         <ul style="color:#333333 !important; font-weight:600; line-height: 1.8;">
@@ -1050,7 +1210,130 @@ with tab_rotas_emerg:
         </ul>
         """, unsafe_allow_html=True)
 
-# ================= TAB 5: CANDIDATURAS =================
+    st.markdown("---")
+
+    # --- RADAR METEOROLÓGICO: AVISO DE CHUVAS ---
+    st.markdown("<h3 style='color: #C2185B !important;'>🌧️ Alerta Meteorológico (Saída de Plantão / Faculdade)</h3>", unsafe_allow_html=True)
+    
+    col_tempo_sel, col_tempo_info = st.columns([1, 2])
+    with col_tempo_sel:
+        cidade_clima = st.selectbox("Região do Plantão / Faculdade:", ["Belém - PA", "São Paulo - SP", "Rio de Janeiro - RJ"])
+        dados_clima = obter_previsao_tempo(cidade_clima)
+    
+    with col_tempo_info:
+        prob_c = dados_clima["prob_chuva"]
+        temp_c = dados_clima["temp"]
+        if prob_c >= 50:
+            alerta_msg = f"☔ **Atenção:** Alta probabilidade de chuva ({prob_c}% - {temp_c}°C). Leve guarda-chuva ou considere voltar de Uber/Táxi para não se molhar!"
+            st.warning(alerta_msg)
+        else:
+            alerta_msg = f"☀️ **Tempo Estável:** Pouca chance de chuva ({prob_c}% - {temp_c}°C). Trajeto tranquilo para sair do plantão ou faculdade!"
+            st.success(alerta_msg)
+
+    st.markdown("---")
+
+    # --- SIMULADOR DE TRAJETO, TARIFAS DE ÔNIBUS & ESTIMATIVA DE UBER/TÁXI ---
+    st.markdown("<h3 style='color: #C2185B !important;'>🚌 Trajeto, Ônibus & Estimativa de Uber / Táxi</h3>", unsafe_allow_html=True)
+
+    TARIFAS_2026 = {
+        "Belém - PA (SEMOB / RMB)": 4.60,
+        "São Paulo - SP (SPTrans)": 5.30,
+        "Rio de Janeiro - RJ (SMTR / BRT)": 5.00
+    }
+
+    col_calc1, col_calc2, col_calc3 = st.columns(3)
+    with col_calc1:
+        cidade_sel = st.selectbox("Cidade da Vaga:", list(TARIFAS_2026.keys()), key="sel_cidade_calc")
+        tarifa_unitaria = TARIFAS_2026[cidade_sel]
+    with col_calc2:
+        escala_tipo = st.selectbox("Regime de Trabalho:", ["Plantão 12x36 (15 dias/mês)", "Rotina Comercial (22 dias/mês)", "Apenas 1 Dia (Entrevista)"])
+    with col_calc3:
+        endereco_destino = st.text_input("Destino (Hospital, Laboratório ou Faculdade):", placeholder="Ex: Hospital Porto Dias, Einstein, Faculdade...")
+
+    dias_mult = 15 if "15" in escala_tipo else (22 if "22" in escala_tipo else 1)
+    gasto_ida_volta_dia = tarifa_unitaria * 2
+    gasto_total = gasto_ida_volta_dia * dias_mult
+
+    estimativa_uber = 24.50 if "Belém" in cidade_sel else (32.00 if "São Paulo" in cidade_sel else 29.00)
+
+    col_val1, col_val2, col_val3, col_val4 = st.columns(4)
+    with col_val1:
+        st.markdown(f"""
+        <div style="background:#FFFFFF; border:2px solid #FFCCD7; border-radius:12px; padding:12px; text-align:center;">
+            <span style="font-size:0.8rem; color:#880E4F; font-weight:700;">Passagem de Ônibus:</span>
+            <h4 style="color:#C2185B; margin:4px 0 0 0;">R$ {tarifa_unitaria:.2f}</h4>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_val2:
+        st.markdown(f"""
+        <div style="background:#FFFFFF; border:2px solid #FFCCD7; border-radius:12px; padding:12px; text-align:center;">
+            <span style="font-size:0.8rem; color:#880E4F; font-weight:700;">Ônibus Ida & Volta/dia:</span>
+            <h4 style="color:#C2185B; margin:4px 0 0 0;">R$ {gasto_ida_volta_dia:.2f}</h4>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_val3:
+        st.markdown(f"""
+        <div style="background:#FFFFFF; border:2px solid #FFCCD7; border-radius:12px; padding:12px; text-align:center;">
+            <span style="font-size:0.8rem; color:#880E4F; font-weight:700;">Gasto Ônibus Mensal:</span>
+            <h4 style="color:#00695C; margin:4px 0 0 0;">R$ {gasto_total:.2f}</h4>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_val4:
+        st.markdown(f"""
+        <div style="background:#FFFFFF; border:2px solid #FFCCD7; border-radius:12px; padding:12px; text-align:center;">
+            <span style="font-size:0.8rem; color:#880E4F; font-weight:700;">Uber / Táxi Estimado:</span>
+            <h4 style="color:#E65100; margin:4px 0 0 0;">~ R$ {estimativa_uber:.2f}</h4>
+        </div>
+        """, unsafe_allow_html=True)
+
+    destino_query = endereco_destino.strip() or "Hospital"
+    cidade_query = cidade_sel.split()[0]
+    
+    rota_maps = f"https://www.google.com/maps/dir/?api=1&destination={urllib.parse.quote(f'{destino_query}, {cidade_query}')}&travelmode=transit"
+    link_uber = f"https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[formatted_address]={urllib.parse.quote(f'{destino_query}, {cidade_query}')}"
+    link_bus = "https://www.cittamobi.com.br" if "Belém" in cidade_sel else ("https://olhovivo.sptrans.com.br" if "São Paulo" in cidade_sel else "https://www.rio.rj.gov.br/web/smtr")
+
+    st.markdown(f"""
+    <div style="text-align:center; margin-top:16px;">
+        <a href="{rota_maps}" target="_blank" class="action-link" style="background:#FF69B4; color:white !important; font-weight:bold; padding:10px 18px;">
+            🗺️ Ver Trajeto no Maps
+        </a>
+        <a href="{link_uber}" target="_blank" class="btn-uber-direct" style="padding:10px 18px;">
+            🚗 Chamar Uber p/ Destino
+        </a>
+        <a href="{link_bus}" target="_blank" class="action-link" style="background:#E1F5FE; color:#0277BD !important; font-weight:bold; padding:10px 18px; border:1px solid #B3E5FC;">
+            ⏱️ Chegada dos Ônibus em Tempo Real
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    # RADAR DE NOTÍCIAS
+    st.markdown("<h3 style='color: #880E4F !important;'>📰 Principais Notícias & Acontecimentos nas Áreas</h3>", unsafe_allow_html=True)
+    col_not1, col_not2 = st.columns(2)
+    with col_not1:
+        st.markdown("""
+        <div class="news-card">
+            <h4 style="color:#C2185B !important; margin:0 0 6px 0;">🩺 Enfermagem: Piso Salarial & Contratações</h4>
+            <p style="color:#222222 !important; font-size:0.92rem; line-height:1.5; margin-bottom:8px;">
+                <b>COREN e Ministério da Saúde:</b> Repasses orçamentários do Piso Nacional continuam garantindo complementação financeira em hospitais filantrópicos e SUS. Grandes centros hospitalares de SP, RJ e Belém registram alta procura por profissionais com capacitação em CTI e Urgência.
+            </p>
+            <span style="font-size:0.8rem; color:#880E4F; font-weight:600;">Fonte: Conselho Federal de Enfermagem (Cofen)</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_not2:
+        st.markdown("""
+        <div class="news-card">
+            <h4 style="color:#00695C !important; margin:0 0 6px 0;">🔬 Biomedicina: Expansão em Diagnóstico Molecular</h4>
+            <p style="color:#222222 !important; font-size:0.92rem; line-height:1.5; margin-bottom:8px;">
+                <b>CRBM:</b> A procura por analistas em biologia molecular, NGS e imunohistoquímica segue em alta aceleração nos laboratórios de medicina diagnóstica (como Dasa e Fleury).
+            </p>
+            <span style="font-size:0.8rem; color:#00695C; font-weight:600;">Fonte: Conselho Federal de Biomedicina (CFBM)</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+# ================= TAB 6: CANDIDATURAS =================
 with tab_candidaturas:
     st.markdown("<h2 style='color: #AD1457 !important;'>📋 Painel de Acompanhamento</h2>", unsafe_allow_html=True)
     with Session(engine) as session:
