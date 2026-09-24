@@ -314,20 +314,13 @@ with col_img:
   )
 
 with col_title:
-  st.markdown(
-      "<h1 style='color: #C2185B; margin-bottom: 0;'>Portal de Vagas de"
-      " Enfermagem 💕</h1>",
-      unsafe_allow_html=True,
-  )
-  st.markdown(
-      "<p style='color: #880E4F; font-size: 1.05rem;'>As melhores oportunidades"
-      " de Belém e Ananindeua reunidas com amor para você 🌸</p>",
-      unsafe_allow_html=True,
-  )
+    st.markdown("<h1 style='color: #C2185B; margin-bottom: 0;'>Portal de Vagas de Enfermagem 💕</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #880E4F; font-size: 1.05rem;'>As melhores oportunidades de Belém e Ananindeua reunidas com amor para você 🌸</p>", unsafe_allow_html=True)
 
 st.divider()
 
-# --- MENSAGEM FOFA NO TOPO ---
+
+## --- MENSAGEM FOFA NO TOPO ---
 st.markdown(
     """
 <div style="
@@ -346,7 +339,7 @@ st.markdown(
 </div>
 """,
     unsafe_allow_html=True,
-)
+) 
 
 # --- BARRA LATERAL (FILTROS + BISCOITO DA SORTE) ---
 st.sidebar.markdown("### 🎀 Filtros & Pesquisa")
