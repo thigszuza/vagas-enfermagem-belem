@@ -245,7 +245,7 @@ def popular_catalogo_base():
 
 popular_catalogo_base()
 
-# --- CSS COM ALTO CONTRASTE E CORREÇÃO TOTAL DE CAIXAS ESCURAS ---
+# --- CSS COM ALTO CONTRASTE E CORREÇÃO DE SELECTBOX NA SIDEBAR E CONTEÚDO ---
 st.markdown("""
 <style>
     .stApp {
@@ -269,24 +269,55 @@ st.markdown("""
         font-weight: 700 !important;
         text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25);
     }
-    [data-testid="stSidebar"] [data-baseweb="select"] > div {
-        background-color: #9C1343 !important;
-        color: #FFFFFF !important;
-        border: 1px solid #FFB6C1 !important;
-        border-radius: 10px !important;
-    }
-    [data-testid="stSidebar"] [data-baseweb="select"] * {
-        color: #FFFFFF !important;
-        font-weight: 600 !important;
-    }
 
     /* ========================================================================= */
-    /* BLINDAGEM COMPLETA CONTRA CAIXAS PRETAS EM INPUTS, SELECTS E DATE/TIME     */
+    /* CORREÇÃO DA CAIXA DE SELEÇÃO DE ESTADO/CIDADE (TEXTO ESCURO E VISÍVEL)   */
     /* ========================================================================= */
+    [data-testid="stSidebar"] [data-baseweb="select"] > div,
+    div[data-baseweb="select"] > div {
+        background-color: #FFFFFF !important;
+        background: #FFFFFF !important;
+        border: 2px solid #FF5C8A !important;
+        border-radius: 12px !important;
+    }
+    [data-testid="stSidebar"] [data-baseweb="select"] span,
+    [data-testid="stSidebar"] [data-baseweb="select"] div,
+    div[data-baseweb="select"] span,
+    div[data-baseweb="select"] div {
+        color: #4A1525 !important;
+        -webkit-text-fill-color: #4A1525 !important;
+        font-weight: 700 !important;
+        text-shadow: none !important;
+    }
+
+    /* DROPDOWN / LISTA ABERTA DO SELECTBOX (FUNDO BRANCO E TEXTO ESCURO) */
+    ul[data-baseweb="menu"],
+    div[data-baseweb="popover"] > div {
+        background-color: #FFFFFF !important;
+        background: #FFFFFF !important;
+        border: 2px solid #FFCCD7 !important;
+        border-radius: 12px !important;
+    }
+    ul[data-baseweb="menu"] li,
+    ul[data-baseweb="menu"] li div,
+    ul[data-baseweb="menu"] li span {
+        color: #33101E !important;
+        -webkit-text-fill-color: #33101E !important;
+        background-color: #FFFFFF !important;
+        font-weight: 600 !important;
+        font-size: 0.92rem !important;
+    }
+    ul[data-baseweb="menu"] li:hover,
+    ul[data-baseweb="menu"] li[aria-selected="true"] {
+        background-color: #FFE6EE !important;
+        color: #C2185B !important;
+        -webkit-text-fill-color: #C2185B !important;
+    }
+
+    /* INPUTS GERAIS */
     div[data-baseweb="input"],
     div[data-baseweb="input"] > div,
     div[data-baseweb="base-input"],
-    div[data-baseweb="select"] > div,
     .stTextInput > div,
     .stTextInput > div > div,
     .stSelectbox > div > div,
@@ -313,26 +344,7 @@ st.markdown("""
         font-size: 0.95rem !important;
     }
 
-    /* Textos selecionados em Selectbox e Menus suspensos */
-    div[data-baseweb="select"] * {
-        color: #1A1A1A !important;
-        font-weight: 600 !important;
-    }
-
-    ul[data-baseweb="menu"] {
-        background-color: #FFFFFF !important;
-        border: 1px solid #FFCCD7 !important;
-    }
-    ul[data-baseweb="menu"] li {
-        color: #1A1A1A !important;
-        background-color: #FFFFFF !important;
-    }
-    ul[data-baseweb="menu"] li:hover {
-        background-color: #FFE6EE !important;
-        color: #C2185B !important;
-    }
-
-    /* ÁREA DE UPLOAD DE ARQUIVOS */
+    /* ÁREA DE UPLOAD */
     [data-testid="stFileUploader"],
     [data-testid="stFileUploader"] > div,
     [data-testid="stFileUploader"] section,
@@ -1166,7 +1178,6 @@ with tab_agenda:
 
     st.markdown("---")
 
-    # --- FORMULÁRIO DE NOVO AGENDAMENTO COM VALOR E REDES CREDENCIADAS ---
     col_cad1, col_cad2 = st.columns([1, 1])
     with col_cad1:
         st.markdown("#### ➕ Agendar Novo Exame ou Consulta")
@@ -1247,7 +1258,6 @@ with tab_agenda:
 
     st.markdown("---")
 
-    # --- GUIA DE REDES CREDENCIADAS & CONTATOS DIRETOS ---
     st.markdown("### 🏥 Redes Credenciadas & Contatos Diretos de Agendamento")
     st.markdown("Canais diretos para marcação rápida de exames laboratoriais, consultas e orçamentos:")
 
