@@ -21,6 +21,19 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# --- METATAGS OPEN GRAPH NO STREAMLIT (FALLBACK PARA CRAWLERS JS) ---
+st.markdown("""
+<head>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Portal de Carreiras em Saúde & Biomedicina 💕" />
+    <meta property="og:description" content="Vagas atualizadas 24h em Belém, SP e RJ preparadas com todo carinho para você! 🌸✨" />
+    <meta property="og:image" content="https://upload.wikimedia.org/wikipedia/en/0/05/Hello_kitty_character_portrait.png" />
+    <meta property="og:image:width" content="300" />
+    <meta property="og:image:height" content="300" />
+    <meta name="description" content="Oportunidades em Enfermagem e Biomedicina selecionadas com carinho 💕" />
+</head>
+""", unsafe_allow_html=True)
+
 # --- INICIALIZAÇÃO DO BANCO E AUTO-MIGRAÇÃO ---
 sqlite_url = "sqlite:///vagas_enfermagem.db"
 engine = create_engine(sqlite_url, echo=False)
@@ -48,9 +61,9 @@ with engine.connect() as conn:
     except Exception:
         pass
 
-# --- CATÁLOGO DE VAGAS 24H ---
+# --- CATÁLOGO DE VAGAS 24H (PA, SP, RJ) ---
 CATALOGO_24H = [
-    # ENFERMAGEM - BELÉM / ANANINDEUA
+    # ================= PARÁ (BELÉM & REGIÃO) =================
     {
         "title": "Enfermeira Assistencial - UTI Adulto",
         "hospital_or_company": "Hospital Porto Dias",
@@ -91,7 +104,6 @@ CATALOGO_24H = [
         "description": "Montagem e priming de linhas de diálise, monitorização de sinais vitais e fístula arteriovenosa durante sessão hemodialítica.",
         "url_apply": "https://www.linkedin.com/jobs", "source": "LinkedIn", "requires_graduation": False
     },
-    # BIOMEDICINA - BELÉM
     {
         "title": "Biomédica Analista - Hematologia e Bioquímica Clínica",
         "hospital_or_company": "Laboratório Beneficente de Belém",
@@ -116,7 +128,8 @@ CATALOGO_24H = [
         "description": "Extração de material genético, PCR em tempo real, cultura de patógenos e antibiograma automatizado.",
         "url_apply": "https://labpauloazevedo.com.br/trabalhe-conosco", "source": "Portal Direto RH", "requires_graduation": True
     },
-    # SÃO PAULO - ENFERMAGEM
+
+    # ================= SÃO PAULO =================
     {
         "title": "Enfermeira de Cuidados Avançados - Clínica Médica",
         "hospital_or_company": "Hospital Israelita Albert Einstein",
@@ -149,7 +162,6 @@ CATALOGO_24H = [
         "description": "Atendimento pediátrico humanizado, apoio à família em emergências infantis e aplicação de protocolos pediátricos internacionais.",
         "url_apply": "https://hospitalinfantilsabara.gupy.io", "source": "Catho Hospitalar", "requires_graduation": True
     },
-    # SÃO PAULO - BIOMEDICINA
     {
         "title": "Biomédica Especialista - Genética & Biologia Molecular",
         "hospital_or_company": "Grupo Fleury Diagnósticos",
@@ -174,7 +186,42 @@ CATALOGO_24H = [
         "description": "Rotina analítica de urgência hospitalar (gases sanguíneos, coagulação, enzimas cardíacas e líquor). Assinatura de laudos emergenciais.",
         "url_apply": "https://www.vagas.com.br/hc-fmusp", "source": "Vagas.com", "requires_graduation": True
     },
-    # MULTIPROFISSIONAL / SAÚDE GERAL
+
+    # ================= RIO DE JANEIRO =================
+    {
+        "title": "Enfermeira de Terapia Intensiva (CTI Adulto)",
+        "hospital_or_company": "Hospital Copa D'Or (Rede D'Or)",
+        "location": "Copacabana, Rio de Janeiro - RJ",
+        "state": "RJ", "category": "Enfermagem", "shift_type": "12x36", "specialty": "UTI",
+        "description": "Assistência de enfermagem a pacientes de alta complexidade em CTI, monitorização hemodinâmica invasiva e protocolos internacionais de segurança.",
+        "url_apply": "https://rededor.gupy.io", "source": "Gupy Saúde", "requires_graduation": True
+    },
+    {
+        "title": "Biomédica Analista - Análises Clínicas & Automação",
+        "hospital_or_company": "Laboratório Sérgio Franco (Dasa)",
+        "location": "Tijuca, Rio de Janeiro - RJ",
+        "state": "RJ", "category": "Biomedicina", "shift_type": "Diurno", "specialty": "Análises Clínicas",
+        "description": "Rotina técnica de hematologia, bioquímica e imunologia de bancada automatizada. Liberação, checagem e emissão de laudos. CRBM ativo.",
+        "url_apply": "https://dasa.gupy.io", "source": "Gupy Saúde", "requires_graduation": True
+    },
+    {
+        "title": "Técnico de Enfermagem - Centro de Oncologia",
+        "hospital_or_company": "INCA - Instituto Nacional de Câncer",
+        "location": "Centro, Rio de Janeiro - RJ",
+        "state": "RJ", "category": "Enfermagem", "shift_type": "12x36", "specialty": "Oncologia",
+        "description": "Assistência ao paciente oncológico em infusão de quimioterapia, cuidados paliativos, monitorização de sinais vitais e curativos especiais.",
+        "url_apply": "https://www.inca.gov.br", "source": "Portal Direto RH", "requires_graduation": False
+    },
+    {
+        "title": "Biomédico(a) de Plantão - Microbiologia e Biologia Molecular",
+        "hospital_or_company": "Laboratório Richet Medicina & Diagnóstico",
+        "location": "Barra da Tijuca, Rio de Janeiro - RJ",
+        "state": "RJ", "category": "Biomedicina", "shift_type": "12x36", "specialty": "Biologia Molecular",
+        "description": "Processamento de PCR em tempo real, cultura bacteriana, testes de sensibilidade a antimicrobianos e validação técnica.",
+        "url_apply": "https://richet.com.br/trabalhe-conosco", "source": "Portal Direto RH", "requires_graduation": True
+    },
+
+    # ================= MULTIPROFISSIONAL / SAÚDE GERAL =================
     {
         "title": "Farmacêutica Hospitalar - Dispensação e Dose Unitária",
         "hospital_or_company": "Hospital Guadalupe",
@@ -231,7 +278,7 @@ def popular_catalogo_base():
 
 popular_catalogo_base()
 
-# --- CSS COM ALTO CONTRASTE E CORREÇÃO DE TEXTOS/TÍTULOS/ABAS ---
+# --- CSS COM ALTO CONTRASTE E CORREÇÃO VISUAL ---
 st.markdown("""
 <style>
     /* Fundo da aplicação */
@@ -269,9 +316,10 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
-    /* Caixas de Texto (Textarea e Inputs) */
+    /* Caixas de Texto (Textarea e Inputs) com Fundo Branco Limpo */
     div[data-baseweb="input"] > div,
-    div[data-baseweb="textarea"] > div {
+    div[data-baseweb="textarea"] > div,
+    div[data-baseweb="textarea"] {
         background-color: #FFFFFF !important;
         border: 2px solid #FFCCD7 !important;
         border-radius: 12px !important;
@@ -279,9 +327,11 @@ st.markdown("""
     div[data-baseweb="input"] input,
     div[data-baseweb="textarea"] textarea {
         background-color: #FFFFFF !important;
-        color: #333333 !important;
+        color: #2D151E !important;
         font-weight: 600 !important;
         font-size: 0.95rem !important;
+        font-family: inherit !important;
+        line-height: 1.5 !important;
     }
 
     /* Avisos e Alertas com texto legível */
@@ -302,8 +352,9 @@ st.markdown("""
         font-weight: 700 !important;
     }
 
-    /* BOTÕES DA APLICAÇÃO */
+    /* BOTÕES DA APLICAÇÃO (incluindo Download e Forms) */
     .stButton > button,
+    .stDownloadButton > button,
     div[data-testid="stFormSubmitButton"] > button,
     div[data-testid="stPopover"] > button {
         background: linear-gradient(135deg, #FF69B4, #E91E63) !important;
@@ -311,10 +362,18 @@ st.markdown("""
         border: none !important;
         border-radius: 20px !important;
         font-weight: 700 !important;
-        padding: 8px 18px !important;
-        box-shadow: 0 3px 8px rgba(233, 30, 99, 0.28) !important;
+        padding: 10px 20px !important;
+        box-shadow: 0 4px 10px rgba(233, 30, 99, 0.28) !important;
+        transition: all 0.3s ease;
+    }
+    .stButton > button:hover,
+    .stDownloadButton > button:hover,
+    div[data-testid="stFormSubmitButton"] > button:hover {
+        background: linear-gradient(135deg, #E91E63, #C2185B) !important;
+        box-shadow: 0 6px 14px rgba(233, 30, 99, 0.4) !important;
     }
     .stButton > button *,
+    .stDownloadButton > button *,
     div[data-testid="stFormSubmitButton"] > button *,
     div[data-testid="stPopover"] > button * {
         color: #FFFFFF !important;
@@ -348,7 +407,7 @@ st.markdown("""
         text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25) !important;
     }
 
-    /* Cartões de Vagas */
+    /* Cartões de Vagas e Conteúdo */
     .job-card {
         background: #FFFFFF !important;
         border: 2px solid #FFCCD7;
@@ -375,6 +434,15 @@ st.markdown("""
     .badge-sp {
         background-color: #E1F5FE;
         color: #0277BD !important;
+        padding: 4px 10px;
+        border-radius: 14px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-right: 6px;
+    }
+    .badge-rj {
+        background-color: #FFF9C4;
+        color: #E65100 !important;
         padding: 4px 10px;
         border-radius: 14px;
         font-size: 0.8rem;
@@ -421,6 +489,15 @@ st.markdown("""
         margin-bottom: 15px;
         box-shadow: 0 4px 12px rgba(255, 101, 132, 0.08);
     }
+    .linkedin-card {
+        background: #FFFFFF;
+        border: 2px solid #D6E4FF;
+        border-left: 6px solid #0077B5;
+        padding: 18px;
+        border-radius: 14px;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 12px rgba(0, 119, 181, 0.08);
+    }
     .btn-safety-alert {
         display: inline-block;
         background: linear-gradient(135deg, #FF6584, #FF476F);
@@ -435,6 +512,22 @@ st.markdown("""
     .btn-safety-alert:hover {
         background: linear-gradient(135deg, #FF476F, #E02856);
         box-shadow: 0 6px 16px rgba(255, 71, 111, 0.45);
+        color: #FFFFFF !important;
+    }
+    .btn-linkedin-direct {
+        display: inline-block;
+        background: linear-gradient(135deg, #0077B5, #005582);
+        color: #FFFFFF !important;
+        padding: 12px 26px;
+        border-radius: 25px;
+        text-decoration: none !important;
+        font-weight: 700;
+        box-shadow: 0 4px 12px rgba(0, 119, 181, 0.35);
+        transition: all 0.3s ease;
+    }
+    .btn-linkedin-direct:hover {
+        background: linear-gradient(135deg, #005582, #003e61);
+        box-shadow: 0 6px 16px rgba(0, 119, 181, 0.5);
         color: #FFFFFF !important;
     }
 </style>
@@ -452,7 +545,7 @@ with col_img:
 
 with col_title:
     st.markdown("<h1 style='color: #C2185B !important; margin-bottom: 0;'>Portal de Carreiras em Saúde & Biomedicina 💕</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #880E4F !important; font-size: 1.05rem;'>Monitoramento contínuo de oportunidades em Belém e São Paulo com carinho para você 🌸</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #880E4F !important; font-size: 1.05rem;'>Monitoramento contínuo de oportunidades no Brasil com carinho para você 🌸</p>", unsafe_allow_html=True)
 
 st.divider()
 
@@ -487,11 +580,11 @@ components.html(
     height=0,
 )
 
-# Toast surpresa ao abrir
+# Toast carinhoso ao iniciar
 frases_toasts = [
     "eu te amo ou eu te lobo <3",
     "Você vai longe, meu bem! Orgulho imenso do seu esforço 💕",
-    "Belém ou São Paulo: seu talento cabe no mundo inteiro! ✨",
+    "Belém, SP ou RJ: seu talento cabe no mundo inteiro! ✨",
     "eu te lobo infinito <3 🐾",
 ]
 st.toast(f"💌 {random.choice(frases_toasts)}", icon="🎀")
@@ -542,21 +635,29 @@ def simular_analise_ia_thiago(vaga: Job, perfil_kws: list) -> str:
     msg += "💌 *'Você é uma profissional incrível, dedicada e competente. Tenho muito orgulho de você e estou sempre torcendo!'* — Com amor, Thiago Zuza."
     return msg
 
-# --- BARRA LATERAL ---
+# --- BARRA LATERAL (FILTROS + ALERTA DE E-MAIL OFICIAL) ---
 st.sidebar.markdown("### 🎀 Localização & Carreira")
-filtro_estado = st.sidebar.radio(
-    "Estado / Região:",
-    ["Todos", "PA (Belém e Região)", "SP (São Paulo Capital)"]
-)
+
+LISTA_ESTADOS = [
+    "Todos os Estados",
+    "PA - Pará (Belém e Região)",
+    "SP - São Paulo",
+    "RJ - Rio de Janeiro",
+    "AC - Acre", "AL - Alagoas", "AM - Amazonas", "AP - Amapá",
+    "BA - Bahia", "CE - Ceará", "DF - Distrito Federal", "ES - Espírito Santo",
+    "GO - Goiás", "MA - Maranhão", "MG - Minas Gerais", "MS - Mato Grosso do Sul",
+    "MT - Mato Grosso", "PB - Paraíba", "PE - Pernambuco", "PI - Piauí",
+    "PR - Paraná", "RN - Rio Grande do Norte", "RO - Rondônia", "RR - Roraima",
+    "RS - Rio Grande do Sul", "SC - Santa Catarina", "SE - Sergipe", "TO - Tocantins"
+]
+
+filtro_estado = st.sidebar.selectbox("📍 Filtrar por Estado / Região:", LISTA_ESTADOS)
+
 filtro_categoria = st.sidebar.radio(
     "Área de Atuação:",
     ["Todas", "Enfermagem", "Biomedicina", "Saúde Geral"]
 )
-busca_termo = st.sidebar.text_input("🔍 Busca por palavra", placeholder="Ex: Sírio, Einstein, UTI, Bioquímica, Coleta...")
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("##### 🥠 Biscoito do Dia")
-st.sidebar.info("A dedicação que você coloca em cuidar das pessoas faz a diferença em qualquer equipe hospitalar ou laboratorial! 💕")
+busca_termo = st.sidebar.text_input("🔍 Busca por palavra", placeholder="Ex: Sírio, Copa D'Or, Porto Dias, UTI, Coleta...")
 
 # BOTÃO DE SINCRONIZAÇÃO DUPLO
 if st.sidebar.button("🔄 Sincronizar Portais 24h Agora"):
@@ -579,13 +680,52 @@ if st.sidebar.button("🔄 Sincronizar Portais 24h Agora"):
         st.sidebar.success(f"Sincronização concluída! {total_novas} novas vagas inseridas.")
         st.rerun()
 
-# --- CONSULTA DAS VAGAS ---
+st.sidebar.markdown("---")
+# --- FORMULÁRIO DE ALERTAS AUTOMÁTICOS POR E-MAIL ---
+st.sidebar.markdown("### 💌 Alertas Automáticos por E-mail")
+with st.sidebar.form("form_inscricao_alertas"):
+    nome_input = st.text_input("Nome:", placeholder="Ex: Meu Amor / Candidata")
+    email_input = st.text_input("E-mail para Receber Alertas:", placeholder="exemplo@gmail.com")
+    ativo_check = st.checkbox("Receber alertas a cada 4 horas", value=True)
+    salvar_inscricao = st.form_submit_button("🔔 Salvar Preferência de Alerta")
+
+    if salvar_inscricao:
+        email_limpo = email_input.strip().lower()
+        padrao_email = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+
+        if not email_limpo or not re.match(padrao_email, email_limpo):
+            st.sidebar.error("⚠️ Insira um formato de e-mail válido (ex: nome@dominio.com).")
+        else:
+            with Session(engine) as session:
+                sub = session.exec(
+                    select(UserSubscription).where(UserSubscription.email == email_limpo)
+                ).first()
+                if not sub:
+                    sub = UserSubscription(
+                        name=nome_input.strip() or "Candidato(a)",
+                        email=email_limpo,
+                        active=ativo_check
+                    )
+                    session.add(sub)
+                else:
+                    if nome_input.strip():
+                        sub.name = nome_input.strip()
+                    sub.active = ativo_check
+                    session.add(sub)
+                session.commit()
+            st.sidebar.success("✅ Alerta cadastrado! O robô enviará as novidades.")
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("##### 🥠 Biscoito do Dia")
+st.sidebar.info("A dedicação que você coloca em cuidar das pessoas faz a diferença em qualquer equipe hospitalar ou laboratorial! 💕")
+
+# --- CONSULTA DAS VAGAS NO BANCO ---
 with Session(engine) as session:
     q = select(Job)
-    if filtro_estado == "PA (Belém e Região)":
-        q = q.where(Job.state == "PA")
-    elif filtro_estado == "SP (São Paulo Capital)":
-        q = q.where(Job.state == "SP")
+    
+    if filtro_estado != "Todos os Estados":
+        uf_codigo = filtro_estado[:2]
+        q = q.where(Job.state == uf_codigo)
         
     if filtro_categoria != "Todas":
         q = q.where(Job.category == filtro_categoria)
@@ -601,7 +741,7 @@ with Session(engine) as session:
         
     vagas_lista = session.exec(q.order_by(Job.created_at.desc())).all()
 
-    if not vagas_lista and filtro_estado == "Todos" and filtro_categoria == "Todas" and not busca_termo:
+    if not vagas_lista and filtro_estado == "Todos os Estados" and filtro_categoria == "Todas" and not busca_termo:
         popular_catalogo_base()
         vagas_lista = session.exec(select(Job).order_by(Job.created_at.desc())).all()
 
@@ -611,10 +751,11 @@ with Session(engine) as session:
     user_kws = [k.strip() for k in perfil_user.skills_keywords.split(",") if k.strip()] if perfil_user and perfil_user.skills_keywords else []
     is_biomed = perfil_user.is_biomed_graduated if perfil_user else False
 
-# --- ABAS PRINCIPAIS ---
-tab_vagas, tab_biomed, tab_rotas_emerg, tab_candidaturas = st.tabs([
+# --- ABAS PRINCIPAIS (COM A NOVA ABA DO LINKEDIN) ---
+tab_vagas, tab_biomed, tab_linkedin, tab_rotas_emerg, tab_candidaturas = st.tabs([
     "🌸 Mural Geral de Vagas",
     "🔬 Especial Biomedicina",
+    "💼 Perfil Campeão LinkedIn",
     "🗺️ Rotas & Contatos de Emergência",
     "📋 Minhas Candidaturas"
 ])
@@ -624,11 +765,21 @@ with tab_vagas:
     st.markdown(f"<h3 style='color: #AD1457 !important;'>🩺 Oportunidades no Feed 24h: <b>{len(vagas_lista)}</b></h3>", unsafe_allow_html=True)
     
     if not vagas_lista:
-        st.info("Nenhuma oportunidade localizada para estes filtros. Tente selecionar 'Todos' na barra lateral!")
+        st.info("Nenhuma oportunidade localizada para estes filtros. Tente selecionar 'Todos os Estados' na barra lateral!")
     else:
         for v in vagas_lista:
             score = calcular_match(v, user_kws)
-            badge_estado = '<span class="badge-sp">🏙️ São Paulo</span>' if getattr(v, "state", "PA") == "SP" else '<span class="badge">🌴 Belém - PA</span>'
+            
+            uf = getattr(v, "state", "PA")
+            if uf == "PA":
+                badge_estado = '<span class="badge">🌴 Belém - PA</span>'
+            elif uf == "SP":
+                badge_estado = '<span class="badge-sp">🏙️ São Paulo - SP</span>'
+            elif uf == "RJ":
+                badge_estado = '<span class="badge-rj">🌊 Rio de Janeiro - RJ</span>'
+            else:
+                badge_estado = f'<span class="badge">📍 {uf}</span>'
+
             badge_cat = '<span class="badge-bio">🔬 Biomedicina</span>' if getattr(v, "category", "Enfermagem") == "Biomedicina" else '<span class="badge">🩺 Enfermagem</span>'
             
             link_vaga = v.url_apply if v.url_apply.startswith("http") else f"https://{v.url_apply}"
@@ -677,24 +828,31 @@ with tab_biomed:
     st.info("Espaço dedicado a Análises Clínicas, Biologia Molecular, Imunologia e Diagnósticos Laboratoriais.")
 
     st.markdown("<h4 style='color: #880E4F !important;'>🎓 Verificação Profissional</h4>", unsafe_allow_html=True)
-    tem_formacao = st.radio(
-        "Em Biomedicina, é necessária a sua formação completa, você já concluiu a graduação?",
-        ["Sim, possuo graduação completa e registro no CRBM", "Não, estou cursando / formação em andamento"],
-        index=0 if is_biomed else 1
-    )
+    
+    with st.form("form_verificacao_biomed"):
+        tem_formacao = st.radio(
+            "Em Biomedicina, é necessária a sua formação completa, você já concluiu a graduação?",
+            ["Sim, possuo graduação completa e registro no CRBM", "Não, estou cursando / formação em andamento"],
+            index=0 if is_biomed else 1
+        )
+        btn_salvar_status = st.form_submit_button("Confirmar Status de Formação")
 
-    if st.button("Confirmar Status de Formação"):
-        with Session(engine) as s:
-            p = s.exec(select(UserProfile)).first()
-            grad_status = "Sim" in tem_formacao
-            if not p:
-                p = UserProfile(is_biomed_graduated=grad_status)
-            else:
-                p.is_biomed_graduated = grad_status
-            s.add(p)
-            s.commit()
-        st.success("Status de formação atualizado com sucesso!")
-        st.rerun()
+        if btn_salvar_status:
+            with Session(engine) as s:
+                p = s.exec(select(UserProfile)).first()
+                grad_status = "Sim" in tem_formacao
+                if not p:
+                    p = UserProfile(
+                        full_name="Usuária",
+                        is_biomed_graduated=grad_status,
+                        skills_keywords="uti,coleta,analises clinicas,bancada,biomedicina"
+                    )
+                else:
+                    p.is_biomed_graduated = grad_status
+                s.add(p)
+                s.commit()
+            st.success("Status de formação atualizado com sucesso!")
+            st.rerun()
 
     if "Não" in tem_formacao:
         st.warning("⚠️ Atenção: Vagas para Biomédica Responsável Técnica, emissão e assinatura de laudos exigem diploma e registro ativo no CRBM. Enquanto não concluir, priorize oportunidades como Técnica de Laboratório, Auxiliar de Coleta ou Estágio em Análises Clínicas!")
@@ -704,11 +862,9 @@ with tab_biomed:
     st.divider()
 
     col_mod1, col_mod2 = st.columns(2)
-    with col_mod1:
-        st.markdown("<h4 style='color: #880E4F !important;'>📄 Currículo Sugestivo (Biomedicina)</h4>", unsafe_allow_html=True)
-        st.text_area(
-            "Estrutura Pronta:",
-            """OBJETIVO: Biomédica - Análises Clínicas / Diagnóstico Laboratorial
+    
+    texto_curriculo = """OBJETIVO:
+Biomédica - Análises Clínicas / Diagnóstico Laboratorial
 
 RESUMO DE QUALIFICAÇÕES:
 • Experiência e proficiência em rotinas de bancada (Hematologia, Bioquímica, Imunologia e Microbiologia).
@@ -717,15 +873,9 @@ RESUMO DE QUALIFICAÇÕES:
 • Atenção rigorosa aos procedimentos operacionais padrão (POPs) e biossegurança.
 
 FORMAÇÃO:
-• Bacharelado em Biomedicina.""",
-            height=220
-        )
+• Bacharelado em Biomedicina."""
 
-    with col_mod2:
-        st.markdown("<h4 style='color: #880E4F !important;'>✉️ Carta de Apresentação (Biomedicina)</h4>", unsafe_allow_html=True)
-        st.text_area(
-            "Modelo para Envio:",
-            """Prezada Coordenação de Laboratório e RH,
+    texto_carta = """Prezada Coordenação de Laboratório e RH,
 
 Apresento minha candidatura à oportunidade na área de Análises Clínicas.
 
@@ -734,11 +884,161 @@ Possuo sólido domínio dos fluxos laboratoriais pré-analíticos, analíticos e
 Estou à inteira disposição para entrevista técnica e demonstração de competências de bancada.
 
 Atenciosamente,
-Biomédica | Contato WhatsApp""",
-            height=220
+Biomédica | Contato WhatsApp"""
+
+    with col_mod1:
+        st.markdown("<h4 style='color: #880E4F !important;'>📄 Currículo Sugestivo (Biomedicina)</h4>", unsafe_allow_html=True)
+        st.text_area(
+            "Estrutura Pronta:",
+            texto_curriculo,
+            height=220,
+            key="txt_area_curriculo"
+        )
+        st.download_button(
+            label="📥 Baixar Modelo de Currículo (.txt)",
+            data=texto_curriculo,
+            file_name="Curriculo_Biomedicina_Modelo.txt",
+            mime="text/plain",
+            use_container_width=True
         )
 
-# ================= TAB 3: ROTAS & EMERGÊNCIA =================
+    with col_mod2:
+        st.markdown("<h4 style='color: #880E4F !important;'>✉️ Carta de Apresentação (Biomedicina)</h4>", unsafe_allow_html=True)
+        st.text_area(
+            "Modelo para Envio:",
+            texto_carta,
+            height=220,
+            key="txt_area_carta"
+        )
+        st.download_button(
+            label="📥 Baixar Carta de Apresentação (.txt)",
+            data=texto_carta,
+            file_name="Carta_Apresentacao_Biomedicina.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
+
+# ================= TAB 3: PERFIL CAMPEÃO LINKEDIN =================
+with tab_linkedin:
+    st.markdown("<h2 style='color: #0077B5 !important;'>💼 Seu Perfil Campeão no LinkedIn</h2>", unsafe_allow_html=True)
+    st.markdown("""
+    Recrutadores dos melhores hospitais e redes de diagnóstico (Dasa, Fleury, Albert Einstein, Rede D'Or) procuram profissionais diariamente no LinkedIn. 
+    Aqui estão modelos prontos e otimizados com as palavras-chave que eles mais pesquisam! 💕
+    """)
+
+    st.markdown("""
+    <div class="linkedin-card">
+        <h4 style="color:#0077B5 !important; margin:0 0 10px 0;">🌐 Acesso Rápido ao LinkedIn</h4>
+        <p style="color:#333333 !important; font-size:0.95rem; margin-bottom:14px;">
+            Clique no botão abaixo para criar sua conta ou acessar seu perfil direto no LinkedIn sem complicação:
+        </p>
+        <a href="https://www.linkedin.com/signup" target="_blank" class="btn-linkedin-direct">
+            🚀 Abrir / Criar Perfil no LinkedIn
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("### 📝 Textos Prontos para Copiar ou Baixar")
+
+    col_lk1, col_lk2 = st.columns(2)
+
+    texto_linkedin_enfermagem = """=== TÍTULO PROFISSIONAL (Headline do LinkedIn) ===
+Enfermeira | Cuidado Assistencial Humanizado | Urgência & Emergência | Terapia Intensiva (UTI) | COREN Ativo
+
+=== SOBRE MIM (Resumo Profissional) ===
+Profissional de Enfermagem com dedicação integral à assistência humanizada, segurança do paciente e rigor na aplicação de protocolos clínicos. 
+
+Minhas principais competências e áreas de atuação incluem:
+• Atendimento assistencial direto a pacientes em diferentes níveis de complexidade.
+• Administração segura de medicamentos, cálculo de dosagens e sondagens.
+• Controle rigoroso de sinais vitais e atuação preventiva em biossegurança.
+• Trabalho colaborativo em equipes multidisciplinares com foco na empatia e ética.
+
+Estou em busca de novas oportunidades hospitalares e clínicas onde possa contribuir com excelência técnica e carinho no cuidado ao paciente.
+
+📍 Disponibilidade para plantões e escalas.
+✉️ Aberta a conexões e oportunidades no setor de Saúde."""
+
+    texto_linkedin_biomed = """=== TÍTULO PROFISSIONAL (Headline do LinkedIn) ===
+Biomédica | Análises Clínicas & Diagnóstico Laboratorial | Hematologia & Bioquímica | Biologia Molecular | CRBM Ativo
+
+=== SOBRE MIM (Resumo Profissional) ===
+Biomédica com sólida formação prática voltada para a rotina diagnóstica laboratorial, controle de qualidade analítico e biossegurança.
+
+Minhas principais competências e áreas de atuação incluem:
+• Atuação nas fases pré-analítica, analítica e pós-analítica de amostras biológicas.
+• Operação e calibração de analisadores automatizados em Hematologia, Bioquímica e Imunologia.
+• Interpretação de dados, microscopia e emissão responsável de laudos.
+• Aplicação contínua de boas práticas laboratoriais (BPL) e controle de qualidade (CQI/CQE).
+
+Busco oportunidades em laboratórios de análises clínicas, hospitais e centros de diagnóstico para somar à equipe com precisão, agilidade e rigor científico.
+
+📍 Disponível para novos desafios e oportunidades na área diagnóstica."""
+
+    with col_lk1:
+        st.markdown("<h4 style='color: #C2185B !important;'>🩺 Opção 1: Foco em Enfermagem</h4>", unsafe_allow_html=True)
+        st.text_area(
+            "Modelo Pronto (Título + Sobre):",
+            texto_linkedin_enfermagem,
+            height=260,
+            key="txt_area_lk_enf"
+        )
+        st.download_button(
+            label="📥 Baixar Modelo LinkedIn Enfermagem (.txt)",
+            data=texto_linkedin_enfermagem,
+            file_name="Perfil_LinkedIn_Enfermagem.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
+
+    with col_lk2:
+        st.markdown("<h4 style='color: #00695C !important;'>🔬 Opção 2: Foco em Biomedicina</h4>", unsafe_allow_html=True)
+        st.text_area(
+            "Modelo Pronto (Título + Sobre):",
+            texto_linkedin_biomed,
+            height=260,
+            key="txt_area_lk_bio"
+        )
+        st.download_button(
+            label="📥 Baixar Modelo LinkedIn Biomedicina (.txt)",
+            data=texto_linkedin_biomed,
+            file_name="Perfil_LinkedIn_Biomedicina.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
+
+    st.markdown("---")
+    st.markdown("### 💡 Dicas de Ouro para o Perfil Brilhar")
+    col_dica1, col_dica2, col_dica3 = st.columns(3)
+    with col_dica1:
+        st.markdown("""
+        <div style="background:#FFFFFF; border:1px solid #FFCCD7; border-radius:12px; padding:14px;">
+            <h5 style="color:#C2185B !important; margin:0 0 6px 0;">📸 Foto com Sorriso e Luz</h5>
+            <p style="color:#4A1525 !important; font-size:0.9rem; margin:0;">
+                Uma foto nítida, com jaleco ou roupa profissional e fundo claro aumenta as visualizações do perfil em mais de 14x!
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_dica2:
+        st.markdown("""
+        <div style="background:#FFFFFF; border:1px solid #FFCCD7; border-radius:12px; padding:14px;">
+            <h5 style="color:#C2185B !important; margin:0 0 6px 0;">🟢 Selo #OpenToWork</h5>
+            <p style="color:#4A1525 !important; font-size:0.9rem; margin:0;">
+                Ative a opção "Buscando emprego" para os recrutadores saberem de imediato que você está disponível para entrevistas.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_dica3:
+        st.markdown("""
+        <div style="background:#FFFFFF; border:1px solid #FFCCD7; border-radius:12px; padding:14px;">
+            <h5 style="color:#C2185B !important; margin:0 0 6px 0;">⭐ Habilidades Marcadas</h5>
+            <p style="color:#4A1525 !important; font-size:0.9rem; margin:0;">
+                Adicione termos como <i>Coleta, Hematologia, UTI, Biossegurança, Enfermagem e Triagem</i> na seção de Competências.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+# ================= TAB 4: ROTAS & EMERGÊNCIA =================
 with tab_rotas_emerg:
     st.markdown("<h2 style='color: #AD1457 !important;'>🗺️ Simulação de Trajeto & Apoio Rápido de Segurança</h2>", unsafe_allow_html=True)
     
@@ -767,12 +1067,14 @@ with tab_rotas_emerg:
             <li>🚓 <b>Polícia Militar:</b> 190</li>
             <li>🩺 <b>COREN-PA (Belém):</b> (91) 3262-6052</li>
             <li>🩺 <b>COREN-SP (Capital):</b> (11) 3225-6300</li>
-            <li>🔬 <b>CRBM-4 (Norte):</b> (91) 3212-3850</li>
+            <li>🩺 <b>COREN-RJ (Capital):</b> (21) 3232-3232</li>
+            <li>🔬 <b>CRBM-4 (Norte / PA):</b> (91) 3212-3850</li>
             <li>🔬 <b>CRBM-1 (São Paulo):</b> (11) 3347-5555</li>
+            <li>🔬 <b>CRBM-2 (Rio de Janeiro / ES):</b> (21) 2568-1215</li>
         </ul>
         """, unsafe_allow_html=True)
 
-# ================= TAB 4: CANDIDATURAS =================
+# ================= TAB 5: CANDIDATURAS =================
 with tab_candidaturas:
     st.markdown("<h2 style='color: #AD1457 !important;'>📋 Painel de Acompanhamento</h2>", unsafe_allow_html=True)
     with Session(engine) as session:
