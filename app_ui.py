@@ -380,7 +380,7 @@ st.markdown("""
         margin-bottom: 12px !important;
     }
 
-    .news-card, .appointment-card, .network-card, .sus-card {
+    .news-card, .appointment-card, .network-card, .sus-card, .ninjas-card {
         background-color: #FFFFFF !important;
         border: 2px solid #FFCCD7 !important;
         border-radius: 14px !important;
@@ -395,8 +395,18 @@ st.markdown("""
         border-left: 6px solid #E91E63 !important;
         border-radius: 14px !important;
         padding: 16px 18px !important;
-        margin-bottom: 18px !important;
+        margin-bottom: 14px !important;
         box-shadow: 0 4px 12px rgba(233, 30, 99, 0.08) !important;
+    }
+
+    .ninjas-box {
+        background: #FFFFFF !important;
+        border: 2px solid #FFCCD7 !important;
+        border-left: 6px solid #FF9800 !important;
+        border-radius: 14px !important;
+        padding: 18px 20px !important;
+        margin-bottom: 16px !important;
+        box-shadow: 0 4px 12px rgba(255, 152, 0, 0.08) !important;
     }
 
     .wellness-card {
@@ -449,7 +459,7 @@ st.markdown("""
         border: none !important;
         border-radius: 20px !important;
         font-weight: 700 !important;
-        padding: 10px 22px !important;
+        padding: 8px 18px !important;
         box-shadow: 0 4px 10px rgba(233, 30, 99, 0.28) !important;
         transition: all 0.3s ease;
     }
@@ -544,10 +554,9 @@ st.markdown("""
         font-weight: 700;
         margin-right: 6px;
     }
-    .badge-24h {
-        background: #FFF3E0;
+    .badge-ninja {
+        background-color: #FFF3E0;
         color: #E65100 !important;
-        border: 1px solid #FFE0B2;
         padding: 4px 10px;
         border-radius: 14px;
         font-size: 0.8rem;
@@ -589,6 +598,21 @@ st.markdown("""
     .btn-safety-alert:hover {
         background: linear-gradient(135deg, #FF476F, #E02856);
         box-shadow: 0 6px 16px rgba(255, 71, 111, 0.45);
+        color: #FFFFFF !important;
+    }
+    .btn-ninja-proposta {
+        display: inline-block;
+        background: linear-gradient(135deg, #FF9800, #F57C00);
+        color: #FFFFFF !important;
+        padding: 9px 18px;
+        border-radius: 18px;
+        text-decoration: none !important;
+        font-weight: 700;
+        font-size: 0.85rem;
+        box-shadow: 0 3px 8px rgba(245, 124, 0, 0.25);
+    }
+    .btn-ninja-proposta:hover {
+        background: linear-gradient(135deg, #F57C00, #E65100);
         color: #FFFFFF !important;
     }
     .btn-contact-direct {
@@ -738,6 +762,55 @@ INFO_EMPRESAS_SAUDE = {
     }
 }
 
+# --- BANCO DE DEMANDAS DE PESSOAS BUSCANDO SERVIÇOS (ESTILO GETNINJAS) ---
+DEMANDAS_PARTICULARES = [
+    {
+        "solicitante": "Dona Maria C. (Família)",
+        "servico": "Plantão Noturno Particular (Acompanhamento Hospitalar / Domiciliar)",
+        "local": "Nazaré, Belém - PA",
+        "valor": "R$ 180,00 - R$ 250,00 / plantão",
+        "detalhe": "Paciente idosa com pós-operatório recente, necessitando de auxílio para mobilização, controle rigoroso de sinais vitais e medicação oral e EV nos horários corretos.",
+        "tel_ficticio": "5591988880001",
+        "categoria": "Enfermagem"
+    },
+    {
+        "solicitante": "Carlos Eduardo S.",
+        "servico": "Curativo Complexo & Tratamento de Feridas (Home Care)",
+        "local": "Marco, Belém - PA",
+        "valor": "R$ 120,00 - R$ 160,00 / procedimento",
+        "detalhe": "Paciente com lesão por pressão estágio II, requer técnica estéril, desbridamento suave se necessário e aplicação de cobertura especial conforme prescrição médica.",
+        "tel_ficticio": "5591988880002",
+        "categoria": "Enfermagem"
+    },
+    {
+        "solicitante": "Clínica Integrada Bem Viver",
+        "servico": "Coleta Domiciliar de Exames de Sangue (Diurnos)",
+        "local": "Pinheiros / Morumbi, São Paulo - SP",
+        "valor": "R$ 70,00 a R$ 100,00 por paciente",
+        "detalhe": "Punção venosa a vácuo para rotina de idosos em domicílio, centrifugação rápida e entrega das amostras no posto de apoio laboratorial.",
+        "tel_ficticio": "5511988880003",
+        "categoria": "Biomedicina"
+    },
+    {
+        "solicitante": "Patrícia M. (Mãe)",
+        "servico": "Aplicação de Medicação Injetável & Acesso Venoso Pediátrico",
+        "local": "Tijuca, Rio de Janeiro - RJ",
+        "valor": "R$ 90,00 - R$ 140,00",
+        "detalhe": "Criança de 6 anos precisando de punção cuidadosa e humanizada para término de ciclo de antibiótico prescrito pelo pediatra.",
+        "tel_ficticio": "5521988880004",
+        "categoria": "Enfermagem"
+    },
+    {
+        "solicitante": "Laboratório Parceiro Diagnósticos",
+        "servico": "Plantão Extra de Bancada Analítica (Hematologia & Bioquímica)",
+        "local": "São Brás, Belém - PA",
+        "valor": "R$ 220,00 / turno",
+        "detalhe": "Reforço aos finais de semana para rodar analisadores automatizados e leitura de lâminas com microscopia direta.",
+        "tel_ficticio": "5591988880005",
+        "categoria": "Biomedicina"
+    }
+]
+
 def normalizar_texto(txt: str) -> str:
     if not txt:
         return ""
@@ -869,7 +942,6 @@ filtro_categoria = st.sidebar.radio(
     ["Todas", "Enfermagem", "Biomedicina", "Saúde Geral"]
 )
 
-# Inicializa estado de filtro rápido de empresa se não existir
 if "filtro_empresa_rapido" not in st.session_state:
     st.session_state.filtro_empresa_rapido = ""
 
@@ -985,8 +1057,14 @@ tab_vagas, tab_biomed, tab_agenda, tab_necessidades, tab_ia_curriculo, tab_linke
 
 # ================= TAB 1: MURAL DE VAGAS =================
 with tab_vagas:
-    # --- QUADRO RÁPIDO DE EMPRESAS CONTRATANDO (ENFERMAGEM E BIOMEDICINA) ---
-    empresas_contagem = {}
+    # --- 1. QUADRO BLINDADO DE EMPRESAS CONTRATANDO ---
+    empresas_catalogo = [
+        "Hospital Porto Dias", "Hospital Sírio-Libanês", "Hospital Israelita Albert Einstein",
+        "Hospital Copa D'Or (Rede D'Or)", "Grupo Fleury Diagnósticos", "Laboratório Sérgio Franco (Dasa)",
+        "Hospital Ophir Loyola", "Hospital Santa Casa de Misericórdia do Pará"
+    ]
+    
+    empresas_contagem = {emp: 0 for emp in empresas_catalogo}
     for j in todas_vagas_ativas:
         emp = j.hospital_or_company
         if emp:
@@ -994,32 +1072,93 @@ with tab_vagas:
 
     st.markdown("""
     <div class="companies-box">
-        <h4 style="color:#C2185B !important; margin:0 0 6px 0;">🏥 Empresas Anunciando Vagas em Saúde Agora</h4>
-        <p style="color:#4A1525; font-size:0.9rem; margin:0 0 10px 0;">
-            Clique no botão de qualquer hospital ou laboratório abaixo para filtrar diretamente as vagas dele:
+        <h4 style="color:#C2185B !important; margin:0 0 4px 0;">🏥 Empresas Anunciando Vagas em Saúde Agora</h4>
+        <p style="color:#4A1525; font-size:0.88rem; margin:0 0 8px 0;">
+            Selecione uma instituição para filtrar as oportunidades instantaneamente:
         </p>
     </div>
     """, unsafe_allow_html=True)
 
+    cols_grid = st.columns(4)
     top_empresas = sorted(empresas_contagem.items(), key=lambda x: x[1], reverse=True)[:8]
-    if top_empresas:
-        cols_emp = st.columns(len(top_empresas))
-        for idx, (emp_nome, qtd) in enumerate(top_empresas):
-            with cols_emp[idx]:
-                label_btn = f"{emp_nome[:14]}.. ({qtd})" if len(emp_nome) > 16 else f"{emp_nome} ({qtd})"
-                if st.button(label_btn, key=f"btn_filter_emp_{idx}"):
-                    st.session.filtro_empresa_rapido = emp_nome
-                    st.rerun()
+    
+    for i, (emp_nome, qtd) in enumerate(top_empresas):
+        col_idx = i % 4
+        with cols_grid[col_idx]:
+            nome_curto = emp_nome.split(" - ")[0].split("(")[0].strip()
+            label_btn = f"🏥 {nome_curto} ({qtd})" if qtd > 0 else f"🏥 {nome_curto}"
+            if st.button(label_btn, key=f"btn_emp_grid_{i}", use_container_width=True):
+                st.session_state.filtro_empresa_rapido = emp_nome
+                st.rerun()
 
     if st.session_state.filtro_empresa_rapido:
         col_limp, _ = st.columns([2, 5])
         with col_limp:
-            if st.button(f"❌ Limpar Filtro ({st.session_state.filtro_empresa_rapido})"):
+            if st.button(f"❌ Limpar Filtro ({st.session_state.filtro_empresa_rapido})", use_container_width=True):
                 st.session_state.filtro_empresa_rapido = ""
                 st.rerun()
 
+    # --- 2. QUADRO DE DEMANDAS DE PESSOAS BUSCANDO SERVIÇOS (ESTILO GETNINJAS) ---
+    st.markdown("""
+    <div class="ninjas-box">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h4 style="color:#E65100 !important; margin:0 0 4px 0;">🤝 Pacientes & Famílias Buscando Profissionais Particulares (Estilo GetNinjas)</h4>
+            <span class="badge-ninja">Oportunidades Autônomas & Home Care</span>
+        </div>
+        <p style="color:#4A1525; font-size:0.88rem; margin:0 0 10px 0;">
+            Pessoas precisando de assistência imediata. Clique para abrir proposta de apresentação pronta e ética:
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col_nj1, col_nj2 = st.columns(2)
+    for idx_d, d in enumerate(DEMANDAS_PARTICULARES[:4]):
+        col_target = col_nj1 if idx_d % 2 == 0 else col_nj2
+        with col_target:
+            texto_apresentacao = (
+                f"Olá, {d['solicitante']}! Tudo bem?\n\n"
+                f"Vi a sua solicitação para '{d['servico']}' em {d['local']}.\n"
+                f"Sou profissional da área da Saúde com registro ativo e sólida experiência assistencial com total segurança e humanização. "
+                f"Estou com disponibilidade para lhe atender com excelência.\n\n"
+                f"Podemos alinhar os detalhes e o horário?"
+            )
+            link_zap_proposta = f"https://api.whatsapp.com/send?text={urllib.parse.quote(texto_apresentacao)}"
+
+            st.markdown(f"""
+            <div class="ninjas-card" style="border-left: 5px solid #FF9800; padding:14px 16px;">
+                <b style="color:#C2185B; font-size:1.02rem;">{d['servico']}</b><br>
+                <span style="font-size:0.86rem; color:#444;">👤 <b>Solicitante:</b> {d['solicitante']} &nbsp;|&nbsp; 📍 {d['local']}</span><br>
+                <span style="font-size:0.85rem; color:#E65100; font-weight:700;">💰 Remuneração Estimada: {d['valor']}</span>
+                <p style="font-size:0.88rem; color:#333; margin:6px 0 10px 0; line-height:1.4;">{d['detalhe']}</p>
+                <a href="{link_zap_proposta}" target="_blank" class="btn-ninja-proposta">
+                    💬 Enviar Apresentação Pronta (WhatsApp)
+                </a>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # --- 3. GUIA PARA ENCONTRAREM ELA EM PORTAIS DE PRESTAÇÃO DE SERVIÇO ---
+    st.markdown("""
+    <div style="background:#FFFFFF; border:1px dashed #FF85A2; border-radius:14px; padding:14px 18px; margin: 10px 0 20px 0;">
+        <h5 style="color:#C2185B !important; margin:0 0 6px 0;">🌐 Para Pacientes e Empresas Encontrarem Ela em Tempo Real:</h5>
+        <p style="color:#33101E; font-size:0.88rem; margin:0 0 10px 0;">
+            Cadastre o perfil dela gratuitamente nos principais portais para receber pedidos de atendimento diretamente no celular:
+        </p>
+        <div>
+            <a href="https://www.getninjas.com.br/sou-pro" target="_blank" class="action-link" style="background:#FFF3E0; color:#E65100 !important; font-weight:bold;">
+                🥷 GetNinjas Profissional (Saúde & Enfermagem)
+            </a>
+            <a href="https://www.cronoshare.com.br" target="_blank" class="action-link" style="background:#E1F5FE; color:#0277BD !important; font-weight:bold;">
+                ⏱️ Cronoshare (Enfermeiros & Cuidadores Domiciliares)
+            </a>
+            <a href="https://www.workana.com" target="_blank" class="action-link" style="background:#E8F5E9; color:#2E7D32 !important; font-weight:bold;">
+                💼 Workana Saúde & Análises
+            </a>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
     st.markdown("---")
-    st.markdown(f"<h3 style='color: #AD1457 !important;'>🩺 Oportunidades no Feed 24h: <b>{len(vagas_lista)}</b></h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='color: #AD1457 !important;'>🩺 Oportunidades no Feed Hospitalar 24h: <b>{len(vagas_lista)}</b></h3>", unsafe_allow_html=True)
     
     if not vagas_lista:
         st.info("Nenhuma oportunidade localizada para estes filtros. Tente selecionar 'Todos os Estados' ou limpar o filtro de empresa acima!")
@@ -1227,7 +1366,6 @@ with tab_agenda:
 
     st.markdown("---")
 
-    # --- FORMULÁRIO DE NOVO AGENDAMENTO ---
     col_cad1, col_cad2 = st.columns([1, 1])
     with col_cad1:
         st.markdown("#### ➕ Agendar Novo Exame ou Consulta")
