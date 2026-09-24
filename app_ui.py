@@ -4,6 +4,7 @@ import random
 import re
 import unicodedata
 import urllib.parse
+import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 
 import requests
@@ -296,21 +297,18 @@ def popular_catalogo_base():
 
 popular_catalogo_base()
 
-# --- CSS COM ALTO CONTRASTE E CORREÇÃO RIGOROSA DAS CAIXAS DE INPUT E UPLOAD ---
+# --- CSS COM ALTO CONTRASTE E CORREÇÃO VISUAL ---
 st.markdown("""
 <style>
-    /* Fundo geral da aplicação */
     .stApp {
         background-color: #FFF6F8 !important;
         color: #33101E !important;
     }
 
-    /* Títulos e textos padrão */
     h1, h2, h3, h4, h5, h6, p, label, span {
         color: #33101E !important;
     }
     
-    /* Barra lateral */
     [data-testid="stSidebar"] {
         background-color: #FF85A2 !important;
         border-right: 2px solid #FF5C8A;
@@ -334,9 +332,6 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
-    /* ========================================================================= */
-    /* FORÇAR FUNDO BRANCO E TEXTO ESCURO EM INPUTS, TEXTAREAS E FILE UPLOADER   */
-    /* ========================================================================= */
     div[data-baseweb="input"],
     div[data-baseweb="input"] > div,
     div[data-baseweb="base-input"],
@@ -357,12 +352,7 @@ st.markdown("""
         font-weight: 600 !important;
         font-size: 0.95rem !important;
     }
-    .stTextInput input::placeholder {
-        color: #888888 !important;
-        -webkit-text-fill-color: #888888 !important;
-    }
 
-    /* ÁREA DE UPLOAD DE ARQUIVOS (FILE UPLOADER BRANCO COM BORDA ROSA) */
     [data-testid="stFileUploader"],
     [data-testid="stFileUploader"] > div,
     [data-testid="stFileUploader"] section,
@@ -390,7 +380,6 @@ st.markdown("""
         color: #C2185B !important;
     }
 
-    /* CAIXA BRANCA DE LEITURA COM TEXTO ESCURO NÍTIDO */
     .doc-display-box {
         background-color: #FFFFFF !important;
         border: 2px solid #FFCCD7 !important;
@@ -408,7 +397,6 @@ st.markdown("""
         margin-bottom: 12px !important;
     }
 
-    /* CARTÕES INFORMATIVOS E DE NOTÍCIAS */
     .news-card {
         background-color: #FFFFFF !important;
         border: 2px solid #FFCCD7 !important;
@@ -418,7 +406,6 @@ st.markdown("""
         box-shadow: 0 3px 10px rgba(255, 105, 180, 0.08) !important;
     }
 
-    /* Avisos e Alertas com fundo claro e texto legível */
     [data-testid="stAlert"] {
         border-radius: 12px !important;
         border: 1px solid #FFB6C1 !important;
@@ -429,7 +416,6 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
-    /* Radio buttons legíveis */
     [data-testid="stRadio"] label,
     [data-testid="stRadio"] p,
     [data-testid="stRadio"] span {
@@ -437,7 +423,6 @@ st.markdown("""
         font-weight: 700 !important;
     }
 
-    /* BOTÕES DA APLICAÇÃO (Download, Forms e Links) */
     .stButton > button,
     .stDownloadButton > button,
     div[data-testid="stFormSubmitButton"] > button,
@@ -466,7 +451,6 @@ st.markdown("""
         font-weight: 700 !important;
     }
 
-    /* ABAS (TABS) */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px !important;
         background-color: transparent !important;
@@ -493,7 +477,6 @@ st.markdown("""
         text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25) !important;
     }
 
-    /* Cartões de Vagas */
     .job-card {
         background: #FFFFFF !important;
         border: 2px solid #FFCCD7;
@@ -655,6 +638,41 @@ def obter_previsao_tempo(cidade_nome: str):
     except Exception:
         pass
     return {"temp": 26.0, "prob_chuva": 30, "precip": 0.0, "status": "Simulado"}
+
+# --- LEITOR DINÂMICO DE NOTÍCIAS 24H (COFEN & CFBM) ---
+@st.cache_data(ttl=3600)
+def obter_noticias_reais_saude():
+    noticias_enf = []
+    noticias_bio = []
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+
+    # 1. Feed Oficial do Cofen (Enfermagem)
+    try:
+        r_enf = requests.get("https://www.cofen.gov.br/feed/", headers=headers, timeout=6)
+        if r_enf.status_code == 200:
+            root = ET.fromstring(r_enf.content)
+            for item in root.findall(".//item")[:3]:
+                t = item.find("title").text if item.find("title") is not None else "Atualização Cofen"
+                l = item.find("link").text if item.find("link") is not None else "https://www.cofen.gov.br"
+                d = item.find("pubDate").text[:16] if item.find("pubDate") is not None else ""
+                noticias_enf.append({"titulo": t, "link": l, "data": d})
+    except Exception:
+        pass
+
+    # 2. Feed Oficial do CFBM (Biomedicina)
+    try:
+        r_bio = requests.get("https://cfbm.gov.br/feed/", headers=headers, timeout=6)
+        if r_bio.status_code == 200:
+            root = ET.fromstring(r_bio.content)
+            for item in root.findall(".//item")[:3]:
+                t = item.find("title").text if item.find("title") is not None else "Atualização CFBM"
+                l = item.find("link").text if item.find("link") is not None else "https://cfbm.gov.br"
+                d = item.find("pubDate").text[:16] if item.find("pubDate") is not None else ""
+                noticias_bio.append({"titulo": t, "link": l, "data": d})
+    except Exception:
+        pass
+
+    return noticias_enf, noticias_bio
 
 # --- BASE DE CONHECIMENTO CRÍTICA SOBRE HOSPITAIS / LABORATÓRIOS ---
 INFO_EMPRESAS_SAUDE = {
@@ -944,9 +962,9 @@ with Session(engine) as session:
 tab_vagas, tab_biomed, tab_ia_curriculo, tab_linkedin, tab_rotas_emerg, tab_candidaturas = st.tabs([
     "🌸 Mural Geral de Vagas",
     "🔬 Especial Biomedicina",
-    "🤖 Análise IA do Currículo",
+    "🤖 Central IA: Análise de Currículo",
     "💼 Perfil Campeão LinkedIn",
-    "🗺️ Trajeto, Uber & Notícias",
+    "🗺️ Trajeto, Uber & Notícias 24h",
     "📋 Minhas Candidaturas"
 ])
 
@@ -1227,9 +1245,9 @@ Busco oportunidades em laboratórios de análises clínicas, hospitais e centros
             use_container_width=True
         )
 
-# ================= TAB 5: TRAJETO, TARIFAS, UBER & NOTÍCIAS =================
+# ================= TAB 5: TRAJETO, TARIFAS, UBER & NOTÍCIAS 24H =================
 with tab_rotas_emerg:
-    st.markdown("<h2 style='color: #AD1457 !important;'>🗺️ Simulação de Trajeto, Uber, Chuvas & Segurança</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #AD1457 !important;'>🗺️ Simulação de Trajeto, Uber, Chuvas & Notícias Oficiais</h2>", unsafe_allow_html=True)
 
     col_rot1, col_rot2 = st.columns(2)
     with col_rot1:
@@ -1358,30 +1376,52 @@ with tab_rotas_emerg:
     """, unsafe_allow_html=True)
 
     st.markdown("---")
-    # RADAR DE NOTÍCIAS
-    st.markdown("<h3 style='color: #880E4F !important;'>📰 Principais Notícias & Acontecimentos nas Áreas</h3>", unsafe_allow_html=True)
+
+    # --- RADAR DE NOTÍCIAS 24H (CONECTADO AOS CONSELHOS EM TEMPO REAL) ---
+    st.markdown("<h3 style='color: #880E4F !important;'>📰 Notícias & Acontecimentos Oficiais 24h (Cofen & CFBM)</h3>", unsafe_allow_html=True)
+    
+    noticias_enf, noticias_bio = obter_noticias_reais_saude()
+
     col_not1, col_not2 = st.columns(2)
     with col_not1:
-        st.markdown("""
-        <div class="news-card">
-            <h4 style="color:#C2185B !important; margin:0 0 6px 0;">🩺 Enfermagem: Piso Salarial & Contratações</h4>
-            <p style="color:#222222 !important; font-size:0.92rem; line-height:1.5; margin-bottom:8px;">
-                <b>COREN e Ministério da Saúde:</b> Repasses orçamentários do Piso Nacional continuam garantindo complementação financeira em hospitais filantrópicos e SUS. Grandes centros hospitalares de SP, RJ e Belém registram alta procura por profissionais com capacitação em CTI e Urgência.
-            </p>
-            <span style="font-size:0.8rem; color:#880E4F; font-weight:600;">Fonte: Conselho Federal de Enfermagem (Cofen)</span>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("<h4 style='color:#C2185B !important;'>🩺 Enfermagem (Feed Oficial Cofen)</h4>", unsafe_allow_html=True)
+        if noticias_enf:
+            for n in noticias_enf:
+                st.markdown(f"""
+                <div class="news-card">
+                    <h5 style="color:#C2185B !important; margin:0 0 6px 0;">{n['titulo']}</h5>
+                    <small style="color:#880E4F; font-weight:600;">{n['data']}</small><br>
+                    <a href="{n['link']}" target="_blank" style="color:#E91E63; font-weight:bold; font-size:0.85rem; text-decoration:none;">Ler notícia na íntegra no Cofen 🔗</a>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div class="news-card">
+                <h5 style="color:#C2185B !important; margin:0 0 6px 0;">Piso Salarial e Novas Contratações Hospitalares</h5>
+                <p style="color:#222; font-size:0.9rem;">Repasses e editais de hospitais filantrópicos e privados em andamento pelo Brasil.</p>
+                <a href="https://www.cofen.gov.br" target="_blank" style="color:#E91E63; font-weight:bold;">Aceder ao Portal Cofen 🔗</a>
+            </div>
+            """, unsafe_allow_html=True)
 
     with col_not2:
-        st.markdown("""
-        <div class="news-card">
-            <h4 style="color:#00695C !important; margin:0 0 6px 0;">🔬 Biomedicina: Expansão em Diagnóstico Molecular</h4>
-            <p style="color:#222222 !important; font-size:0.92rem; line-height:1.5; margin-bottom:8px;">
-                <b>CRBM:</b> A procura por analistas em biologia molecular, NGS e imunohistoquímica segue em alta aceleração nos laboratórios de medicina diagnóstica (como Dasa e Fleury).
-            </p>
-            <span style="font-size:0.8rem; color:#00695C; font-weight:600;">Fonte: Conselho Federal de Biomedicina (CFBM)</span>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("<h4 style='color:#00695C !important;'>🔬 Biomedicina (Feed Oficial CFBM)</h4>", unsafe_allow_html=True)
+        if noticias_bio:
+            for n in noticias_bio:
+                st.markdown(f"""
+                <div class="news-card">
+                    <h5 style="color:#00695C !important; margin:0 0 6px 0;">{n['titulo']}</h5>
+                    <small style="color:#004D40; font-weight:600;">{n['data']}</small><br>
+                    <a href="{n['link']}" target="_blank" style="color:#00695C; font-weight:bold; font-size:0.85rem; text-decoration:none;">Ler notícia na íntegra no CFBM 🔗</a>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div class="news-card">
+                <h5 style="color:#00695C !important; margin:0 0 6px 0;">Diagnóstico Molecular e Habilitações Clínicas</h5>
+                <p style="color:#222; font-size:0.9rem;">Resoluções atualizadas para actuação em análises clínicas laboratoriais e genética.</p>
+                <a href="https://cfbm.gov.br" target="_blank" style="color:#00695C; font-weight:bold;">Aceder ao Portal CFBM 🔗</a>
+            </div>
+            """, unsafe_allow_html=True)
 
 # ================= TAB 6: CANDIDATURAS =================
 with tab_candidaturas:
