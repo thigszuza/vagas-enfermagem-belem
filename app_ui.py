@@ -14,6 +14,14 @@ from sqlmodel import Session, SQLModel, create_engine, select
 from models import Job, UserProfile, UserSubscription
 from scrapers_belem import ScraperHospitaisBelem
 
+# --- CONFIGURAÇÃO DA PÁGINA ---
+st.set_page_config(
+    page_title="Portal de Carreiras em Saúde & Biomedicina 💕",
+    page_icon="🎀",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
 # --- INICIALIZAÇÃO DO BANCO E AUTO-MIGRAÇÃO ---
 sqlite_url = "sqlite:///vagas_enfermagem.db"
 engine = create_engine(sqlite_url, echo=False)
@@ -41,7 +49,7 @@ with engine.connect() as conn:
     except Exception:
         pass
 
-# --- CATÁLOGO BASE DE VAGAS 24H (PA & SP - TODAS AS ÁREAS) ---
+# --- CATÁLOGO BASE 24H (GARANTIA CONTRA VAGAS A ZERO) ---
 CATALOGO_24H = [
     # ENFERMAGEM - BELÉM / ANANINDEUA
     {
@@ -167,7 +175,7 @@ CATALOGO_24H = [
         "description": "Rotina analítica de urgência hospitalar (gases sanguíneos, coagulação, enzimas cardíacas e líquor). Assinatura de laudos emergenciais.",
         "url_apply": "https://www.vagas.com.br/hc-fmusp", "source": "Vagas.com", "requires_graduation": True
     },
-    # ÁREAS MULTIPROFISSIONAIS / SAÚDE GERAL
+    # MULTIPROFISSIONAL / SAÚDE GERAL
     {
         "title": "Farmacêutica Hospitalar - Dispensação e Dose Unitária",
         "hospital_or_company": "Hospital Guadalupe",
@@ -186,17 +194,16 @@ CATALOGO_24H = [
     }
 ]
 
-def auto_alimentar_banco_24h():
+def garantir_alimentacao_banco():
     with Session(engine) as session:
         try:
-            existentes = session.exec(select(Job)).all()
-            urls_cadastradas = {j.url_apply for j in existentes if getattr(j, "url_apply", None)}
+            urls_existentes = {j.url_apply for j in session.exec(select(Job)).all() if getattr(j, "url_apply", None)}
         except Exception:
-            urls_cadastradas = set()
-        
+            urls_existentes = set()
+
         for item in CATALOGO_24H:
             url = item.get("url_apply")
-            if url and url not in urls_cadastradas:
+            if url and url not in urls_existentes:
                 try:
                     tempo_min = random.randint(5, 180)
                     job = Job(
@@ -216,133 +223,20 @@ def auto_alimentar_banco_24h():
                     )
                     session.add(job)
                     session.commit()
-                    urls_cadastradas.add(url)
+                    urls_existentes.add(url)
                 except Exception:
                     session.rollback()
 
-auto_alimentar_banco_24h()
+garantir_alimentacao_banco()
 
-# --- CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(
-    page_title="Portal de Carreiras em Saúde & Biomedicina 💕",
-    page_icon="🎀",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-
-# --- SISTEMA DE PERSISTÊNCIA OFFLINE NO DISPOSITIVO (PWA) ---
-components.html(
-    """
-<script>
-    window.addEventListener('offline', function() {
-        const banner = document.getElementById('offline-alert');
-        if (!banner) {
-            const div = document.createElement('div');
-            div.id = 'offline-alert';
-            div.style = "position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:#D32F2F;color:white;padding:10px 20px;border-radius:25px;font-weight:bold;z-index:999999;box-shadow:0 4px 12px rgba(0,0,0,0.3);font-family:sans-serif;font-size:13px;text-align:center;";
-            div.innerHTML = "📡 Modo Offline: Você está sem conexão 3G/Wi-Fi. As oportunidades carregadas continuam disponíveis!";
-            document.body.appendChild(div);
-        }
-    });
-
-    window.addEventListener('online', function() {
-        const banner = document.getElementById('offline-alert');
-        if (banner) banner.remove();
-    });
-
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-            navigator.serviceWorker.register('/sw.js').catch(function(err) {
-                console.log('PWA ServiceWorker ativo.');
-            });
-        });
-    }
-</script>
-""",
-    height=0,
-)
-
-# Toast carinhoso
-frases_toasts = [
-    "eu te amo ou eu te lobo <3",
-    "Você vai longe, meu bem! Orgulho imenso do seu esforço 💕",
-    "Belém ou São Paulo: seu talento cabe no mundo inteiro! ✨",
-    "eu te lobo infinito <3 🐾",
-]
-st.toast(f"💌 {random.choice(frases_toasts)}", icon="🎀")
-
-# --- FUNÇÕES DE PROCESSAMENTO E IA GEMINI ---
-def normalizar_texto(txt: str) -> str:
-    if not txt:
-        return ""
-    nfkd = unicodedata.normalize("NFKD", txt)
-    return "".join([c for c in nfkd if not unicodedata.combining(c)]).lower()
-
-def extrair_texto_pdf(arquivo_bytes) -> str:
-    try:
-        reader = PdfReader(io.BytesIO(arquivo_bytes))
-        texto = ""
-        for pagina in reader.pages:
-            ext = pagina.extract_text()
-            if ext:
-                texto += ext + " "
-        return texto
-    except Exception:
-        return ""
-
-PALAVRAS_CHAVE = [
-    "uti", "centro cirurgico", "urgencia", "emergencia", "pediatria",
-    "neonatal", "hemodialise", "oncologia", "pronto socorro", "coren",
-    "crbm", "tecnico de enfermagem", "enfermeiro", "enfermeira",
-    "biomedico", "biomedica", "analises clinicas", "bancada", "coleta",
-    "hematologia", "bioquimica", "microbiologia", "imunologia",
-    "biologia molecular", "sorologia", "laudos", "auditoria", "farmacia"
-]
-
-def extrair_keywords(texto: str) -> list:
-    t_norm = normalizar_texto(texto)
-    encontradas = set()
-    for kw in PALAVRAS_CHAVE:
-        if re.search(r"\b" + re.escape(kw) + r"\b", t_norm):
-            encontradas.add(kw)
-    return list(encontradas)
-
-def calcular_match(vaga: Job, perfil_keywords: list) -> int:
-    if not perfil_keywords:
-        return 0
-    texto_vaga = normalizar_texto(
-        f"{vaga.title} {vaga.description} {vaga.specialty} {vaga.hospital_or_company}"
-    )
-    acertos = sum(1 for kw in perfil_keywords if kw in texto_vaga)
-    score = int((acertos / max(len(perfil_keywords), 1)) * 100)
-    return min(score * 2, 100)
-
-def simular_analise_ia_thiago(vaga: Job, perfil_kws: list) -> str:
-    match_perc = calcular_match(vaga, perfil_kws)
-    pontos_fortes = [kw.upper() for kw in perfil_kws if kw in normalizar_texto(f"{vaga.description} {vaga.title}")]
-    
-    msg = "🐾 **Oi meu amor! Aqui é a Hello Kitty falando em nome do Thiago!** 💕\n\n"
-    msg += f"Analisei com todo o carinho a oportunidade de **{vaga.title}** no **{vaga.hospital_or_company}**:\n\n"
-    
-    if match_perc >= 50:
-        msg += f"✨ **Afinidade Alta ({match_perc}%):** Essa vaga combina bastante com o que você já domina! "
-        if pontos_fortes:
-            msg += f"Eles valorizam conhecimentos práticos em **{', '.join(pontos_fortes)}**. "
-        msg += "Destaque suas vivências em rotina assistencial, biossegurança e dedicação integral.\n\n"
-    else:
-        msg += f"🌱 **Oportunidade Promissora ({match_perc}%):** Uma excelente porta de entrada para expandir sua carreira! "
-        msg += "No processo seletivo, evidencie sua facilidade com protocolos, atenção a detalhes e compromisso com o cuidado.\n\n"
-        
-    msg += f"📍 **Dica de Deslocamento:** A unidade fica em {vaga.location}. Simule o trajeto com calma para chegar sem imprevistos na entrevista!\n\n"
-    msg += "💌 *'Você é uma profissional incrível, dedicada e competente. Tenho muito orgulho de você e estou sempre torcendo!'* — Com amor, Thiago Zuza."
-    return msg
-
-# --- ESTILIZAÇÃO CSS COMPLETA COM CONTRASTE RIGOROSO NAS ABAS ---
+# --- CSS DEFINITIVO: ABAS E BOTÕES SEMPRE VISÍVEIS ---
 st.markdown("""
 <style>
     .stApp {
         background-color: #FFF6F8;
     }
+    
+    /* Barra lateral */
     [data-testid="stSidebar"] {
         background-color: #FF85A2 !important;
         border-right: 2px solid #FF5C8A;
@@ -364,6 +258,8 @@ st.markdown("""
         color: #FFFFFF !important;
         font-weight: 600 !important;
     }
+
+    /* Campos de Entrada */
     div[data-baseweb="input"] > div,
     div[data-baseweb="textarea"] > div {
         background-color: #FFFFFF !important;
@@ -376,34 +272,59 @@ st.markdown("""
         font-weight: 600 !important;
         background-color: transparent !important;
     }
+
+    /* TODOS OS BOTÕES DA APLICAÇÃO (Visíveis e com Alto Contraste) */
     .stButton > button,
-    div[data-testid="stFormSubmitButton"] > button {
-        background: linear-gradient(135deg, #FF7597, #E91E63) !important;
+    div[data-testid="stFormSubmitButton"] > button,
+    button[data-testid="stBaseButton-secondary"],
+    button[data-testid="stBaseButton-primary"],
+    div[data-testid="stPopover"] > button {
+        background: linear-gradient(135deg, #FF69B4, #E91E63) !important;
         color: #FFFFFF !important;
         border: none !important;
         border-radius: 20px !important;
         font-weight: 700 !important;
         padding: 8px 18px !important;
-        box-shadow: 0 3px 8px rgba(233, 30, 99, 0.25) !important;
+        box-shadow: 0 3px 8px rgba(233, 30, 99, 0.28) !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+    .stButton > button:hover,
+    div[data-testid="stFormSubmitButton"] > button:hover,
+    div[data-testid="stPopover"] > button:hover {
+        background: linear-gradient(135deg, #FF527B, #C2185B) !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 5px 12px rgba(233, 30, 99, 0.4) !important;
+    }
+    .stButton > button *,
+    div[data-testid="stFormSubmitButton"] > button *,
+    div[data-testid="stPopover"] > button * {
+        color: #FFFFFF !important;
+        font-weight: 700 !important;
     }
 
-    /* Regras de Contraste Absoluto para as Abas */
+    /* REGRAS BLINDADAS PARA AS ABAS (TABS) NÃO DESAPARECEREM */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
+        gap: 8px !important;
         background-color: transparent !important;
     }
+    
+    /* Aba Inativa: Fundo Rosa Suave e Texto Vinho Escuro Nítido */
     .stTabs [data-baseweb="tab"] {
         background-color: #FFE6EE !important;
+        border: 2px solid #FFCCD7 !important;
         border-radius: 12px 12px 0px 0px !important;
         padding: 10px 18px !important;
-        border: 1px solid #FFCCD7 !important;
         border-bottom: none !important;
+        opacity: 1 !important;
     }
     .stTabs [data-baseweb="tab"] * {
         color: #880E4F !important;
-        font-weight: 700 !important;
+        font-weight: 800 !important;
         font-size: 0.95rem !important;
+        opacity: 1 !important;
     }
+    
+    /* Aba Ativa (Selecionada) */
     .stTabs [aria-selected="true"] {
         background: linear-gradient(135deg, #FF69B4, #E91E63) !important;
         border-color: #E91E63 !important;
@@ -413,7 +334,12 @@ st.markdown("""
         font-weight: 800 !important;
         text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25) !important;
     }
+    .stTabs [data-baseweb="tab-highlight"] {
+        background-color: #C2185B !important;
+        height: 3px !important;
+    }
 
+    /* Cartões de Vagas */
     .job-card {
         background: #FFFFFF;
         border: 2px solid #FFCCD7;
@@ -510,6 +436,113 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# --- SISTEMA DE PERSISTÊNCIA OFFLINE NO DISPOSITIVO (PWA) ---
+components.html(
+    """
+<script>
+    window.addEventListener('offline', function() {
+        const banner = document.getElementById('offline-alert');
+        if (!banner) {
+            const div = document.createElement('div');
+            div.id = 'offline-alert';
+            div.style = "position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:#D32F2F;color:white;padding:10px 20px;border-radius:25px;font-weight:bold;z-index:999999;box-shadow:0 4px 12px rgba(0,0,0,0.3);font-family:sans-serif;font-size:13px;text-align:center;";
+            div.innerHTML = "📡 Modo Offline: Você está sem conexão 3G/Wi-Fi. As oportunidades carregadas continuam disponíveis!";
+            document.body.appendChild(div);
+        }
+    });
+
+    window.addEventListener('online', function() {
+        const banner = document.getElementById('offline-alert');
+        if (banner) banner.remove();
+    });
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/sw.js').catch(function(err) {
+                console.log('PWA ServiceWorker ativo.');
+            });
+        });
+    }
+</script>
+""",
+    height=0,
+)
+
+# Toast surpresa ao abrir
+frases_toasts = [
+    "eu te amo ou eu te lobo <3",
+    "Você vai longe, meu bem! Orgulho imenso do seu esforço 💕",
+    "Belém ou São Paulo: seu talento cabe no mundo inteiro! ✨",
+    "eu te lobo infinito <3 🐾",
+]
+st.toast(f"💌 {random.choice(frases_toasts)}", icon="🎀")
+
+# --- FUNÇÕES DE MATCH E IA GEMINI ---
+def normalizar_texto(txt: str) -> str:
+    if not txt:
+        return ""
+    nfkd = unicodedata.normalize("NFKD", txt)
+    return "".join([c for c in nfkd if not unicodedata.combining(c)]).lower()
+
+def extrair_texto_pdf(arquivo_bytes) -> str:
+    try:
+        reader = PdfReader(io.BytesIO(arquivo_bytes))
+        texto = ""
+        for pagina in reader.pages:
+            ext = pagina.extract_text()
+            if ext:
+                texto += ext + " "
+        return texto
+    except Exception:
+        return ""
+
+PALAVRAS_CHAVE = [
+    "uti", "centro cirurgico", "urgencia", "emergencia", "pediatria",
+    "neonatal", "hemodialise", "oncologia", "pronto socorro", "coren",
+    "crbm", "tecnico de enfermagem", "enfermeiro", "enfermeira",
+    "biomedico", "biomedica", "analises clinicas", "bancada", "coleta",
+    "hematologia", "bioquimica", "microbiologia", "imunologia",
+    "biologia molecular", "sorologia", "laudos", "auditoria", "farmacia"
+]
+
+def extrair_keywords(texto: str) -> list:
+    t_norm = normalizar_texto(texto)
+    encontradas = set()
+    for kw in PALAVRAS_CHAVE:
+        if re.search(r"\b" + re.escape(kw) + r"\b", t_norm):
+            encontradas.add(kw)
+    return list(encontradas)
+
+def calcular_match(vaga: Job, perfil_keywords: list) -> int:
+    if not perfil_keywords:
+        return 0
+    texto_vaga = normalizar_texto(
+        f"{vaga.title} {vaga.description} {vaga.specialty} {vaga.hospital_or_company}"
+    )
+    acertos = sum(1 for kw in perfil_keywords if kw in texto_vaga)
+    score = int((acertos / max(len(perfil_keywords), 1)) * 100)
+    return min(score * 2, 100)
+
+def simular_analise_ia_thiago(vaga: Job, perfil_kws: list) -> str:
+    match_perc = calcular_match(vaga, perfil_kws)
+    pontos_fortes = [kw.upper() for kw in perfil_kws if kw in normalizar_texto(f"{vaga.description} {vaga.title}")]
+    
+    msg = "🐾 **Oi meu amor! Aqui é a Hello Kitty falando em nome do Thiago!** 💕\n\n"
+    msg += f"Analisei com todo o carinho a oportunidade de **{vaga.title}** no **{vaga.hospital_or_company}**:\n\n"
+    
+    if match_perc >= 50:
+        msg += f"✨ **Afinidade Alta ({match_perc}%):** Essa vaga combina bastante com o que você já domina! "
+        if pontos_fortes:
+            msg += f"Eles valorizam conhecimentos práticos em **{', '.join(pontos_fortes)}**. "
+        msg += "Destaque suas vivências em rotina assistencial, biossegurança e dedicação integral.\n\n"
+    else:
+        msg += f"🌱 **Oportunidade Promissora ({match_perc}%):** Uma excelente porta de entrada para expandir sua carreira! "
+        msg += "No processo seletivo, evidencie sua facilidade com protocolos, atenção a detalhes e compromisso com o cuidado.\n\n"
+        
+    msg += f"📍 **Dica de Deslocamento:** A unidade fica em {vaga.location}. Simule o trajeto com calma para chegar sem imprevistos na entrevista!\n\n"
+    msg += "💌 *'Você é uma profissional incrível, dedicada e competente. Tenho muito orgulho de você e estou sempre torcendo!'* — Com amor, Thiago Zuza."
+    return msg
+
 # --- BARRA LATERAL ---
 st.sidebar.markdown("### 🎀 Localização & Carreira")
 filtro_estado = st.sidebar.radio(
@@ -535,7 +568,7 @@ if st.sidebar.button("🔄 Sincronizar Portais 24h Agora"):
                 if not session.exec(select(Job).where(Job.url_apply == v["url_apply"])).first():
                     session.add(Job(**v))
             session.commit()
-        auto_alimentar_banco_24h()
+        garantir_alimentacao_banco()
         st.sidebar.success("Base 24h atualizada!")
         st.rerun()
 
@@ -561,7 +594,11 @@ with Session(engine) as session:
         
     vagas_lista = session.exec(q.order_by(Job.created_at.desc())).all()
 
-# Recupera perfil salvo
+    if not vagas_lista and filtro_estado == "Todos" and filtro_categoria == "Todas" and not busca_termo:
+        garantir_alimentacao_banco()
+        vagas_lista = session.exec(select(Job).order_by(Job.created_at.desc())).all()
+
+# Recupera perfil do utilizador
 with Session(engine) as session:
     perfil_user = session.exec(select(UserProfile)).first()
     user_kws = [k.strip() for k in perfil_user.skills_keywords.split(",") if k.strip()] if perfil_user and perfil_user.skills_keywords else []
