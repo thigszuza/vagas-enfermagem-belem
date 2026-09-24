@@ -270,6 +270,7 @@ st.markdown(
         margin-left: 6px;
     }
 
+    /* Expander e Conteúdo Interno */
     [data-testid="stExpander"] {
         background-color: #FFFFFF !important;
         border: 2px solid #FF80A0 !important;
@@ -286,16 +287,20 @@ st.markdown(
         color: #C2185B !important;
         font-weight: 700 !important;
     }
-    button[data-baseweb="tab"] {
-        font-weight: 700 !important;
-        color: #AD1457 !important;
+    /* Força texto escuro e legível no interior do expander */
+    [data-testid="stExpander"] [data-testid="stExpanderDetails"],
+    [data-testid="stExpander"] [data-testid="stExpanderDetails"] * {
+        color: #4A1525 !important;
+        font-weight: 500 !important;
     }
-</style>
-""",
-    unsafe_allow_html=True,
-)
+    [data-testid="stExpander"] [data-testid="stExpanderDetails"] strong,
+    [data-testid="stExpander"] [data-testid="stExpanderDetails"] b {
+        color: #9C1343 !important;
+        font-weight: 700 !important;
+    }
 
-# --- CABEÇALHO ---
+
+#--- CABEÇALHO ---
 col_img, col_title = st.columns([1, 7])
 with col_img:
   st.markdown(
@@ -651,7 +656,7 @@ with tab_candidaturas:
                             s.commit()
                         st.rerun()
                 st.divider()
-                
+
 
 # ================= TAB 3: DICAS & PISO SALARIAL =================
 with tab_dicas:
