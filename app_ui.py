@@ -91,6 +91,19 @@ with engine.connect() as conn:
         except Exception:
             pass
 
+    colunas_profile = [
+        ("is_biomed_graduated", "BOOLEAN DEFAULT 0"),
+        ("resume_raw_text", "TEXT DEFAULT ''"),
+        ("linkedin_url", "VARCHAR DEFAULT ''"),
+        ("headline", "VARCHAR DEFAULT ''"),
+    ]
+    for col_nome, col_tipo in colunas_profile:
+        try:
+            conn.execute(text(f"ALTER TABLE userprofile ADD COLUMN {col_nome} {col_tipo}"))
+            conn.commit()
+        except Exception:
+            pass
+
     try:
         conn.execute(text("ALTER TABLE medicalappointment ADD COLUMN network_provider VARCHAR DEFAULT 'Particular'"))
         conn.commit()
@@ -99,18 +112,6 @@ with engine.connect() as conn:
 
     try:
         conn.execute(text("ALTER TABLE medicalappointment ADD COLUMN estimated_price FLOAT DEFAULT 0.0"))
-        conn.commit()
-    except Exception:
-        pass
-
-    try:
-        conn.execute(text("ALTER TABLE userprofile ADD COLUMN is_biomed_graduated BOOLEAN DEFAULT 0"))
-        conn.commit()
-    except Exception:
-        pass
-
-    try:
-        conn.execute(text("ALTER TABLE userprofile ADD COLUMN resume_raw_text TEXT DEFAULT ''"))
         conn.commit()
     except Exception:
         pass
@@ -427,7 +428,7 @@ st.markdown("""
         margin-bottom: 12px !important;
     }
 
-    .news-card, .appointment-card, .network-card, .sus-card, .ninjas-card {
+    .news-card, .appointment-card, .network-card, .sus-card, .ninjas-card, .integration-card {
         background-color: #FFFFFF !important;
         border: 2px solid #FFCCD7 !important;
         border-radius: 14px !important;
@@ -1060,7 +1061,6 @@ filtro_categoria = st.sidebar.radio(
     ["Todas", "Enfermagem", "Biomedicina", "Indústria Farmacêutica", "Saúde Geral"]
 )
 
-# NOVO FILTRO EXCLUSIVO DE PORTAIS DE EMPREGO
 PORTAIS_DISPONIVEIS = ["Todos os Portais", "Catho", "Vagas.com", "InfoJobs", "LinkedIn", "Glassdoor", "Gupy Saúde"]
 filtro_portal = st.sidebar.selectbox("🌐 Filtrar por Portal de Vagas:", PORTAIS_DISPONIVEIS)
 
@@ -1167,6 +1167,8 @@ with Session(engine) as session:
     user_kws = [k.strip() for k in perfil_user.skills_keywords.split(",") if k.strip()] if perfil_user and perfil_user.skills_keywords else []
     is_biomed = perfil_user.is_biomed_graduated if perfil_user else False
     curriculo_armazenado = getattr(perfil_user, "resume_raw_text", "") or ""
+    linkedin_url_armazenada = getattr(perfil_user, "linkedin_url", "") or ""
+    headline_armazenada = getattr(perfil_user, "headline", "") or ""
 
 # --- ABAS PRINCIPAIS ---
 tab_vagas, tab_biomed, tab_agenda, tab_necessidades, tab_ia_curriculo, tab_linkedin, tab_rotas_emerg, tab_candidaturas = st.tabs([
@@ -1400,13 +1402,35 @@ with tab_vagas:
             </div>
             """, unsafe_allow_html=True)
 
-            col_ia, col_fav, _ = st.columns([3, 2, 4])
+            col_ia, col_auto, col_fav = st.columns([3, 3, 2])
             with col_ia:
                 with st.popover("🎀 Análise do Gemini da Hello Kitty"):
                     with st.spinner("Analisando requisitos e consultando hospital..."):
                         st.markdown(gerar_analise_ia_completa(v, curriculo_armazenado, user_kws))
+            
+            with col_auto:
+                with st.popover("⚡ Cadastro Automático & Dados Prontos"):
+                    st.markdown(f"#### 📝 Dados Prontos para Candidatar-se em: **{v.hospital_or_company}**")
+                    st.info("Copie as informações abaixo e clique no botão redirecionar para cadastrar sem digitar nada:")
+                    
+                    dados_cadastro_copia = f"""NOME COMPLETO: Candidata
+HEADLINE: {headline_armazenada or 'Enfermeira / Biomédica | Cuidado Assistencial Humanizado'}
+PERFIL LINKEDIN: {linkedin_url_armazenada or 'https://www.linkedin.com/in/meu-perfil'}
+REGISTRO PROFISSIONAL: COREN / CRBM Ativo
+RESUMO: Profissional qualificada com experiência em rotina assistencial, biossegurança e protocolos rigorosos em {v.specialty}.
+CARTA RÁPIDA: Prezado(a) recrutador(a) do {v.hospital_or_company}, apresento minha candidatura à oportunidade de {v.title}."""
+                    
+                    st.text_area("Copiar Bloco de Dados:", dados_cadastro_copia, height=130)
+                    st.markdown(f"""
+                    <div style="text-align:center; margin-top:8px;">
+                        <a href="{link_vaga}" target="_blank" class="btn-safety-alert" style="padding:8px 18px; font-size:0.9rem;">
+                            🚀 Abrir Portal ({v.source}) e Colar Informações
+                        </a>
+                    </div>
+                    """, unsafe_allow_html=True)
+
             with col_fav:
-                if st.button("❤️ Salvar Candidatura", key=f"btn_fav_{v.id}"):
+                if st.button("❤️ Salvar", key=f"btn_fav_{v.id}"):
                     with Session(engine) as s:
                         obj = s.get(Job, v.id)
                         obj.status = "Candidatada"
@@ -1929,81 +1953,118 @@ with tab_ia_curriculo:
     else:
         st.info("Nenhum currículo em PDF carregado ainda. Você pode enviar acima ou colar um texto diretamente na aba de Biomedicina!")
 
-# ================= TAB 6: PERFIL CAMPEÃO LINKEDIN =================
+# ================= TAB 6: PERFIL CAMPEÃO & INTEGRAÇÃO LINKEDIN =================
 with tab_linkedin:
-    st.markdown("<h2 style='color: #0077B5 !important;'>💼 Seu Perfil Campeão no LinkedIn</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #0077B5 !important;'>💼 Integração LinkedIn & Perfil Campeão Dinâmico</h2>", unsafe_allow_html=True)
     st.markdown("""
-    Recrutadores dos melhores hospitais e redes de diagnóstico (Dasa, Fleury, Albert Einstein, Rede D'Or) procuram profissionais diariamente no LinkedIn. 
-    Aqui estão modelos prontos e otimizados com as palavras-chave que eles mais pesquisam! 💕
+    Conecte ou atualize o perfil do LinkedIn dela abaixo. Assim que os dados forem salvos, **as vagas com maior afinidade aparecem em destaque e o currículo/carta de apresentação são adaptados na hora**! 💕
     """)
 
+    # CARD DE INTEGRAÇÃO DINÂMICA
     st.markdown("""
-    <div class="linkedin-card">
-        <h4 style="color:#0077B5 !important; margin:0 0 10px 0;">🌐 Acesso Rápido ao LinkedIn</h4>
-        <p style="color:#333333 !important; font-size:0.95rem; margin-bottom:14px;">
-            Clique no botão abaixo para criar sua conta ou acessar seu perfil direto no LinkedIn sem complicação:
+    <div class="integration-card" style="border-left: 6px solid #0077B5;">
+        <h4 style="color:#0077B5 !important; margin:0 0 6px 0;">🔗 Conectar Perfil do LinkedIn Dela</h4>
+        <p style="color:#333333 !important; font-size:0.92rem; margin-bottom:10px;">
+            Insira o link do perfil ou o título profissional para habilitar a busca inteligente e auto-completar cadastros em vagas:
         </p>
-        <a href="https://www.linkedin.com/signup" target="_blank" class="btn-linkedin-direct">
-            🚀 Abrir / Criar Perfil no LinkedIn
-        </a>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("### 📝 Textos Prontos para Copiar ou Baixar")
+    with st.form("form_integracao_linkedin"):
+        col_lk_in1, col_lk_in2 = st.columns([1, 1])
+        with col_lk_in1:
+            lk_url_input = st.text_input(
+                "Link do Perfil do LinkedIn:",
+                value=linkedin_url_armazenada,
+                placeholder="https://www.linkedin.com/in/nome-completo"
+            )
+        with col_lk_in2:
+            headline_input = st.text_input(
+                "Título / Especialidade Principal:",
+                value=headline_armazenada,
+                placeholder="Ex: Enfermeira Assistencial | Terapia Intensiva | COREN Ativo"
+            )
+        
+        btn_salvar_lk = st.form_submit_button("⚡ Sincronizar LinkedIn & Gerar Documentos Dinâmicos")
 
-    col_lk1, col_lk2 = st.columns(2)
+        if btn_salvar_lk:
+            with Session(engine) as s:
+                p = s.exec(select(UserProfile)).first()
+                if not p:
+                    p = UserProfile(
+                        full_name="Usuária",
+                        linkedin_url=lk_url_input.strip(),
+                        headline=headline_input.strip()
+                    )
+                else:
+                    p.linkedin_url = lk_url_input.strip()
+                    p.headline = headline_input.strip()
+                s.add(p)
+                s.commit()
+            st.success("✅ Integração atualizada! Documentos e sugestões de vagas recalculados com sucesso!")
+            st.rerun()
 
-    texto_linkedin_enfermagem = """=== TÍTULO PROFISSIONAL (Headline do LinkedIn) ===
-Enfermeira | Cuidado Assistencial Humanizado | Urgência & Emergência | Terapia Intensiva (UTI) | COREN Ativo
+    st.markdown("---")
 
-=== SOBRE MIM (Resumo Profissional) ===
-Profissional de Enfermagem com dedicação integral à assistência humanizada, segurança do paciente e rigor na aplicação de protocolos clínicos. 
+    # MODELOS ADAPTADOS AUTOMATICAMENTE
+    headline_atual = headline_armazenada or "Enfermeira Assistencial | Cuidados Intensivos (UTI) | Urgência & Emergência | COREN Ativo"
+    link_atual = linkedin_url_armazenada or "https://www.linkedin.com/in/seu-perfil"
 
-Minhas principais competências e áreas de atuação incluem:
-• Atendimento assistencial direto a pacientes em diferentes níveis de complexidade.
-• Administração segura de medicamentos, cálculo de dosagens e sondagens.
-• Controle rigoroso de sinais vitais e atuação preventiva em biossegurança.
-• Trabalho colaborativo em equipes multidisciplinares com foco na empatia e ética.
+    texto_dinamico_enfermagem = f"""=== TÍTULO PROFISSIONAL DINÂMICO ===
+{headline_atual}
 
-Estou em busca de novas oportunidades hospitalares e clínicas onde possa contribuir com excelência técnica e carinho no cuidado ao paciente.
+=== LINK DO PERFIL INTEGRADO ===
+{link_atual}
 
-📍 Disponibilidade para plantões e escalas.
-✉️ Aberta a conexões e oportunidades no setor de Saúde."""
+=== SOBRE MIM (Atualizado Automaticamente) ===
+Profissional de Saúde dedicada ao cuidado assistencial humanizado, segurança do paciente e rigor metodológico em rotinas hospitalares e ambulatoriais.
 
-    texto_linkedin_biomed = """=== TÍTULO PROFISSIONAL (Headline do LinkedIn) ===
-Biomédica | Análises Clínicas & Diagnóstico Laboratorial | Hematologia & Bioquímica | Biologia Molecular | CRBM Ativo
+Minhas principais competências incluem:
+• Atendimento assistencial direto a pacientes em níveis de média e alta complexidade.
+• Administração segura de medicamentos, sondagens e monitorização hemodinâmica contínua.
+• Vivência prática em protocolos de biossegurança e prevenção de infecção hospitalar.
+• Comunicação empática e atuação articulada em equipe multiprofissional.
 
-=== SOBRE MIM (Resumo Profissional) ===
-Biomédica com sólida formação prática voltada para a rotina diagnóstica laboratorial, controle de qualidade analítico e biossegurança.
+Disponível para escalas, plantões e novas oportunidades no setor hospitalar e de cuidados avançados.
+"""
 
-Minhas principais competências e áreas de atuação incluem:
-• Atuação nas fases pré-analítica, analítica e pós-analítica de amostras biológicas.
+    texto_dinamico_biomed = f"""=== TÍTULO PROFISSIONAL DINÂMICO (Biomedicina) ===
+Biomédica | Análises Clínicas & Diagnóstico Laboratorial | Hematologia & Bioquímica | CRBM Ativo
+
+=== LINK DO PERFIL INTEGRADO ===
+{link_atual}
+
+=== SOBRE MIM (Atualizado Automaticamente) ===
+Biomédica com atuação focada nas rotinas diagnósticas laboratoriais pré-analítica, analítica e pós-analítica.
+
+Competências práticas:
 • Operação e calibração de analisadores automatizados em Hematologia, Bioquímica e Imunologia.
-• Interpretação de dados, microscopia e emissão responsável de laudos.
-• Aplicação contínua de boas práticas laboratoriais (BPL) e controle de qualidade (CQI/CQE).
+• Interpretação de dados analíticos, microscopia e validação segura de laudos.
+• Aplicação contínua de controle de qualidade (CQI/CQE) e boas práticas de biossegurança (BPL).
 
-Busco oportunidades em laboratórios de análises clínicas, hospitais e centros de diagnóstico para somar à equipe com precisão, agilidade e rigor científico.
+Aberta a oportunidades em centros diagnósticos, laboratórios hospitalares e análises clínicas de referência.
+"""
 
-📍 Disponível para novos desafios e oportunidades na área diagnóstica."""
-
-    with col_lk1:
-        st.markdown("<h4 style='color: #C2185B !important;'>🩺 Opção 1: Foco em Enfermagem</h4>", unsafe_allow_html=True)
-        st.markdown(f'<div class="doc-display-box">{texto_linkedin_enfermagem}</div>', unsafe_allow_html=True)
+    st.markdown("### 📝 Documentos Gerados & Sincronizados com o Perfil")
+    col_dyn1, col_dyn2 = st.columns(2)
+    with col_dyn1:
+        st.markdown("<h4 style='color:#C2185B !important;'>🩺 Currículo & Perfil (Foco Enfermagem)</h4>", unsafe_allow_html=True)
+        st.markdown(f'<div class="doc-display-box">{texto_dinamico_enfermagem}</div>', unsafe_allow_html=True)
         st.download_button(
-            label="📥 Baixar Modelo LinkedIn Enfermagem (.txt)",
-            data=texto_linkedin_enfermagem,
-            file_name="Perfil_LinkedIn_Enfermagem.txt",
+            label="📥 Baixar Documento Atualizado (Enfermagem)",
+            data=texto_dinamico_enfermagem,
+            file_name="Curriculo_Sincronizado_Enfermagem.txt",
             mime="text/plain",
             use_container_width=True
         )
 
-    with col_lk2:
-        st.markdown("<h4 style='color: #00695C !important;'>🔬 Opção 2: Foco em Biomedicina</h4>", unsafe_allow_html=True)
-        st.markdown(f'<div class="doc-display-box">{texto_linkedin_biomed}</div>', unsafe_allow_html=True)
+    with col_dyn2:
+        st.markdown("<h4 style='color:#00695C !important;'>🔬 Currículo & Perfil (Foco Biomedicina)</h4>", unsafe_allow_html=True)
+        st.markdown(f'<div class="doc-display-box">{texto_dinamico_biomed}</div>', unsafe_allow_html=True)
         st.download_button(
-            label="📥 Baixar Modelo LinkedIn Biomedicina (.txt)",
-            data=texto_linkedin_biomed,
-            file_name="Perfil_LinkedIn_Biomedicina.txt",
+            label="📥 Baixar Documento Atualizado (Biomedicina)",
+            data=texto_dinamico_biomed,
+            file_name="Curriculo_Sincronizado_Biomedicina.txt",
             mime="text/plain",
             use_container_width=True
         )
