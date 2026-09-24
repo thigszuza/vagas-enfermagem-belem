@@ -53,6 +53,8 @@ class MedicalAppointment(SQLModel, table=True):
     title: str
     appointment_type: str
     location: str
+    network_provider: str = "Particular"
+    estimated_price: float = 0.0
     scheduled_date: str
     scheduled_time: str
     notes: str = ""
@@ -63,10 +65,10 @@ class MonthlyNeed(SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
     id: int | None = Field(default=None, primary_key=True)
     item_name: str
-    category: str  # "Medicamento Contínuo", "Suplemento / Vitamina", "Mercado & Essenciais", "Cuidados Pessoais"
+    category: str
     quantity: int = 1
     estimated_cost: float = 0.0
-    month_reference: str  # "YYYY-MM"
+    month_reference: str
     is_purchased: bool = False
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -90,24 +92,31 @@ with engine.connect() as conn:
             pass
 
     try:
-        conn.execute(
-            text("ALTER TABLE userprofile ADD COLUMN is_biomed_graduated BOOLEAN DEFAULT 0")
-        )
+        conn.execute(text("ALTER TABLE medicalappointment ADD COLUMN network_provider VARCHAR DEFAULT 'Particular'"))
         conn.commit()
     except Exception:
         pass
 
     try:
-        conn.execute(
-            text("ALTER TABLE userprofile ADD COLUMN resume_raw_text TEXT DEFAULT ''")
-        )
+        conn.execute(text("ALTER TABLE medicalappointment ADD COLUMN estimated_price FLOAT DEFAULT 0.0"))
+        conn.commit()
+    except Exception:
+        pass
+
+    try:
+        conn.execute(text("ALTER TABLE userprofile ADD COLUMN is_biomed_graduated BOOLEAN DEFAULT 0"))
+        conn.commit()
+    except Exception:
+        pass
+
+    try:
+        conn.execute(text("ALTER TABLE userprofile ADD COLUMN resume_raw_text TEXT DEFAULT ''"))
         conn.commit()
     except Exception:
         pass
 
 # --- CATÁLOGO DE VAGAS 24H (PA, SP, RJ) ---
 CATALOGO_24H = [
-    # ================= PARÁ (BELÉM & REGIÃO) =================
     {
         "title": "Enfermeira Assistencial - UTI Adulto",
         "hospital_or_company": "Hospital Porto Dias",
@@ -141,14 +150,6 @@ CATALOGO_24H = [
         "url_apply": "http://santacasa.pa.gov.br/trabalhe-conosco", "source": "Portal Direto RH", "requires_graduation": True
     },
     {
-        "title": "Técnico(a) de Enfermagem - Hemodiálise & Nefrologia",
-        "hospital_or_company": "Clínica de Doenças Renais de Belém",
-        "location": "Nazaré, Belém - PA",
-        "state": "PA", "category": "Enfermagem", "shift_type": "Diurno", "specialty": "Nefrologia",
-        "description": "Montagem e priming de linhas de diálise, monitorização de sinais vitais e fístula arteriovenosa durante sessão hemodialítica.",
-        "url_apply": "https://www.linkedin.com/jobs", "source": "LinkedIn", "requires_graduation": False
-    },
-    {
         "title": "Biomédica Analista - Hematologia e Bioquímica Clínica",
         "hospital_or_company": "Laboratório Beneficente de Belém",
         "location": "Nazaré, Belém - PA",
@@ -164,16 +165,6 @@ CATALOGO_24H = [
         "description": "Punção venosa à vácuo, coleta pediátrica, centrifugação e envio de amostras biológicas. Aberto a graduandos ou recém-formados.",
         "url_apply": "https://ruthbrazao.com.br/trabalhe-conosco", "source": "InfoJobs", "requires_graduation": False
     },
-    {
-        "title": "Biomédico(a) - Biologia Molecular & Microbiologia",
-        "hospital_or_company": "Laboratório Paulo C. Azevedo",
-        "location": "Umarizal, Belém - PA",
-        "state": "PA", "category": "Biomedicina", "shift_type": "Diurno", "specialty": "Biologia Molecular",
-        "description": "Extração de material genético, PCR em tempo real, cultura de patógenos e antibiograma automatizado.",
-        "url_apply": "https://labpauloazevedo.com.br/trabalhe-conosco", "source": "Portal Direto RH", "requires_graduation": True
-    },
-
-    # ================= SÃO PAULO =================
     {
         "title": "Enfermeira de Cuidados Avançados - Clínica Médica",
         "hospital_or_company": "Hospital Israelita Albert Einstein",
@@ -191,22 +182,6 @@ CATALOGO_24H = [
         "url_apply": "https://hospitalsiriolibanes.gupy.io", "source": "Gupy Saúde", "requires_graduation": False
     },
     {
-        "title": "Enfermeira - Oncologia Clínica e Quimioterapia",
-        "hospital_or_company": "A.C.Camargo Cancer Center",
-        "location": "Liberdade, São Paulo - SP",
-        "state": "SP", "category": "Enfermagem", "shift_type": "Diurno", "specialty": "Oncologia",
-        "description": "Administração segura de quimioterápicos, manejo de efeitos adversos, curativos de cateteres venosos centrais (Port-a-Cath / PICC).",
-        "url_apply": "https://accamargo.gupy.io", "source": "Gupy Saúde", "requires_graduation": True
-    },
-    {
-        "title": "Enfermeiro(a) Navegador - Pronto-Socorro Infantil",
-        "hospital_or_company": "Hospital Infantil Sabará",
-        "location": "Higienópolis, São Paulo - SP",
-        "state": "SP", "category": "Enfermagem", "shift_type": "12x36", "specialty": "Pediatria",
-        "description": "Atendimento pediátrico humanizado, apoio à família em emergências infantis e aplicação de protocolos pediátricos internacionais.",
-        "url_apply": "https://hospitalinfantilsabara.gupy.io", "source": "Catho Hospitalar", "requires_graduation": True
-    },
-    {
         "title": "Biomédica Especialista - Genética & Biologia Molecular",
         "hospital_or_company": "Grupo Fleury Diagnósticos",
         "location": "Jabaquara, São Paulo - SP",
@@ -214,24 +189,6 @@ CATALOGO_24H = [
         "description": "Sequenciamento de Nova Geração (NGS), RT-PCR para painéis infecciosos e oncológicos e validação clínica de relatórios moleculares.",
         "url_apply": "https://fleury.gupy.io", "source": "Gupy Saúde", "requires_graduation": True
     },
-    {
-        "title": "Analista de Imunologia e Sorologia Clínica",
-        "hospital_or_company": "Dasa Diagnósticos da América",
-        "location": "Barueri / São Paulo - SP",
-        "state": "SP", "category": "Biomedicina", "shift_type": "12x36", "specialty": "Imunologia",
-        "description": "Controle operacional de plataformas de quimioluminescência e imunofluorimetria, calibragem de ensaios e controle estatístico de bancada.",
-        "url_apply": "https://dasa.gupy.io", "source": "Gupy Saúde", "requires_graduation": True
-    },
-    {
-        "title": "Biomédico(a) de Plantão - Análises Clínicas Hospitalares",
-        "hospital_or_company": "Hospital das Clínicas da FMUSP",
-        "location": "Cerqueira César, São Paulo - SP",
-        "state": "SP", "category": "Biomedicina", "shift_type": "12x36", "specialty": "Análises Clínicas",
-        "description": "Rotina analítica de urgência hospitalar (gases sanguíneos, coagulação, enzimas cardíacas e líquor). Assinatura de laudos emergenciais.",
-        "url_apply": "https://www.vagas.com.br/hc-fmusp", "source": "Vagas.com", "requires_graduation": True
-    },
-
-    # ================= RIO DE JANEIRO =================
     {
         "title": "Enfermeira de Terapia Intensiva (CTI Adulto)",
         "hospital_or_company": "Hospital Copa D'Or (Rede D'Or)",
@@ -247,40 +204,6 @@ CATALOGO_24H = [
         "state": "RJ", "category": "Biomedicina", "shift_type": "Diurno", "specialty": "Análises Clínicas",
         "description": "Rotina técnica de hematologia, bioquímica e imunologia de bancada automatizada. Liberação, checagem e emissão de laudos. CRBM ativo.",
         "url_apply": "https://dasa.gupy.io", "source": "Gupy Saúde", "requires_graduation": True
-    },
-    {
-        "title": "Técnico de Enfermagem - Centro de Oncologia",
-        "hospital_or_company": "INCA - Instituto Nacional de Câncer",
-        "location": "Centro, Rio de Janeiro - RJ",
-        "state": "RJ", "category": "Enfermagem", "shift_type": "12x36", "specialty": "Oncologia",
-        "description": "Assistência ao paciente oncológico em infusão de quimioterapia, cuidados paliativos, monitorização de sinais vitais e curativos especiais.",
-        "url_apply": "https://www.inca.gov.br", "source": "Portal Direto RH", "requires_graduation": False
-    },
-    {
-        "title": "Biomédico(a) de Plantão - Microbiologia e Biologia Molecular",
-        "hospital_or_company": "Laboratório Richet Medicina & Diagnóstico",
-        "location": "Barra da Tijuca, Rio de Janeiro - RJ",
-        "state": "RJ", "category": "Biomedicina", "shift_type": "12x36", "specialty": "Biologia Molecular",
-        "description": "Processamento de PCR em tempo real, cultura bacteriana, testes de sensibilidade a antimicrobianos e validação técnica.",
-        "url_apply": "https://richet.com.br/trabalhe-conosco", "source": "Portal Direto RH", "requires_graduation": True
-    },
-
-    # ================= MULTIPROFISSIONAL / SAÚDE GERAL =================
-    {
-        "title": "Farmacêutica Hospitalar - Dispensação e Dose Unitária",
-        "hospital_or_company": "Hospital Guadalupe",
-        "location": "São Brás, Belém - PA",
-        "state": "PA", "category": "Saúde Geral", "shift_type": "Diurno", "specialty": "Farmácia",
-        "description": "Fracionamento de medicamentos, validação de prescrições hospitalares, farmacovigilância e controle de psicotrópicos.",
-        "url_apply": "https://hospitalguadalupe.com.br", "source": "Portal Direto RH", "requires_graduation": True
-    },
-    {
-        "title": "Recepcionista Hospitalar - Atendimento e Triagem",
-        "hospital_or_company": "Hospital São Camilo",
-        "location": "Pompeia, São Paulo - SP",
-        "state": "SP", "category": "Saúde Geral", "shift_type": "12x36", "specialty": "Atendimento Hospitalar",
-        "description": "Abertura de fichas de atendimento emergencial, autorização junto a convênios médicos e acolhimento presencial na recepção central.",
-        "url_apply": "https://saocamilo.gupy.io", "source": "InfoJobs", "requires_graduation": False
     }
 ]
 
@@ -322,7 +245,7 @@ def popular_catalogo_base():
 
 popular_catalogo_base()
 
-# --- CSS COM ALTO CONTRASTE E CORREÇÃO VISUAL ---
+# --- CSS COM ALTO CONTRASTE E CORREÇÃO TOTAL DE CAIXAS ESCURAS ---
 st.markdown("""
 <style>
     .stApp {
@@ -357,19 +280,31 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
+    /* ========================================================================= */
+    /* BLINDAGEM COMPLETA CONTRA CAIXAS PRETAS EM INPUTS, SELECTS E DATE/TIME     */
+    /* ========================================================================= */
     div[data-baseweb="input"],
     div[data-baseweb="input"] > div,
     div[data-baseweb="base-input"],
+    div[data-baseweb="select"] > div,
     .stTextInput > div,
-    .stTextInput > div > div {
+    .stTextInput > div > div,
+    .stSelectbox > div > div,
+    .stDateInput > div > div,
+    .stTimeInput > div > div,
+    .stNumberInput > div > div {
         background-color: #FFFFFF !important;
         background: #FFFFFF !important;
         border: 2px solid #FFCCD7 !important;
         border-radius: 12px !important;
+        color: #1A1A1A !important;
     }
 
     .stTextInput input,
-    div[data-baseweb="input"] input {
+    div[data-baseweb="input"] input,
+    .stDateInput input,
+    .stTimeInput input,
+    .stNumberInput input {
         background-color: #FFFFFF !important;
         background: #FFFFFF !important;
         color: #1A1A1A !important;
@@ -378,6 +313,26 @@ st.markdown("""
         font-size: 0.95rem !important;
     }
 
+    /* Textos selecionados em Selectbox e Menus suspensos */
+    div[data-baseweb="select"] * {
+        color: #1A1A1A !important;
+        font-weight: 600 !important;
+    }
+
+    ul[data-baseweb="menu"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #FFCCD7 !important;
+    }
+    ul[data-baseweb="menu"] li {
+        color: #1A1A1A !important;
+        background-color: #FFFFFF !important;
+    }
+    ul[data-baseweb="menu"] li:hover {
+        background-color: #FFE6EE !important;
+        color: #C2185B !important;
+    }
+
+    /* ÁREA DE UPLOAD DE ARQUIVOS */
     [data-testid="stFileUploader"],
     [data-testid="stFileUploader"] > div,
     [data-testid="stFileUploader"] section,
@@ -419,7 +374,7 @@ st.markdown("""
         margin-bottom: 12px !important;
     }
 
-    .news-card {
+    .news-card, .appointment-card, .network-card {
         background-color: #FFFFFF !important;
         border: 2px solid #FFCCD7 !important;
         border-radius: 14px !important;
@@ -436,15 +391,6 @@ st.markdown("""
         padding: 20px !important;
         margin-bottom: 20px !important;
         box-shadow: 0 4px 14px rgba(255, 105, 180, 0.1) !important;
-    }
-
-    .appointment-card {
-        background: #FFFFFF !important;
-        border: 2px solid #FFCCD7 !important;
-        border-radius: 14px !important;
-        padding: 16px !important;
-        margin-bottom: 12px !important;
-        box-shadow: 0 3px 8px rgba(255, 105, 180, 0.07) !important;
     }
 
     .reminder-hk-card {
@@ -638,27 +584,16 @@ st.markdown("""
         box-shadow: 0 6px 16px rgba(255, 71, 111, 0.45);
         color: #FFFFFF !important;
     }
-    .btn-linkedin-direct {
+    .btn-contact-direct {
         display: inline-block;
-        background: linear-gradient(135deg, #0077B5, #005582);
-        color: #FFFFFF !important;
-        padding: 12px 26px;
-        border-radius: 25px;
+        background: #E8F5E9;
+        color: #2E7D32 !important;
+        border: 1px solid #C8E6C9;
+        padding: 8px 16px;
+        border-radius: 18px;
         text-decoration: none !important;
         font-weight: 700;
-        box-shadow: 0 4px 12px rgba(0, 119, 181, 0.35);
-        transition: all 0.3s ease;
-    }
-    .btn-uber-direct {
-        display: inline-block;
-        background: #000000;
-        color: #FFFFFF !important;
-        padding: 10px 20px;
-        border-radius: 20px;
-        text-decoration: none !important;
-        font-weight: 700;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-        transition: all 0.3s ease;
+        font-size: 0.85rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -699,7 +634,7 @@ def obter_previsao_tempo(cidade_nome: str):
 def obter_noticias_reais_saude():
     noticias_enf = []
     noticias_bio = []
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    headers = {"User-Agent": "Mozilla/5.0"}
 
     try:
         r_enf = requests.get("https://www.cofen.gov.br/feed/", headers=headers, timeout=6)
@@ -918,7 +853,6 @@ filtro_categoria = st.sidebar.radio(
 )
 busca_termo = st.sidebar.text_input("🔍 Busca por palavra", placeholder="Ex: Sírio, Copa D'Or, Porto Dias, UTI, Coleta...")
 
-# BOTÃO DE SINCRONIZAÇÃO DUPLO
 if st.sidebar.button("🔄 Sincronizar Portais 24h Agora"):
     with st.spinner("Atualizando feed dos portais e conectando banco..."):
         adicionadas_web = 0
@@ -940,7 +874,6 @@ if st.sidebar.button("🔄 Sincronizar Portais 24h Agora"):
         st.rerun()
 
 st.sidebar.markdown("---")
-# FORMULÁRIO DE ALERTAS AUTOMÁTICOS
 st.sidebar.markdown("### 💌 Alertas Automáticos por E-mail")
 with st.sidebar.form("form_inscricao_alertas"):
     nome_input = st.text_input("Nome:", placeholder="Ex: Meu Amor / Candidata")
@@ -1015,7 +948,7 @@ with Session(engine) as session:
 tab_vagas, tab_biomed, tab_agenda, tab_necessidades, tab_ia_curriculo, tab_linkedin, tab_rotas_emerg, tab_candidaturas = st.tabs([
     "🌸 Mural Geral de Vagas",
     "🔬 Especial Biomedicina",
-    "📅 Agenda Médica & Compromissos",
+    "📅 Agenda Médica & Redes",
     "💊 Necessidades & Custos Mensais",
     "🤖 Central IA: Análise de Currículo",
     "💼 Perfil Campeão LinkedIn",
@@ -1172,10 +1105,10 @@ Biomédica | Contato WhatsApp"""
             use_container_width=True
         )
 
-# ================= TAB 3: AGENDA MÉDICA & COMPROMISSOS 24H =================
+# ================= TAB 3: AGENDA MÉDICA, VALORES & REDES CREDENCIADAS =================
 with tab_agenda:
-    st.markdown("<h2 style='color: #AD1457 !important;'>📅 Agenda Médica & Compromissos de Saúde 24h</h2>", unsafe_allow_html=True)
-    st.markdown("Acompanhamento contínuo dos exames a realizar, exames já feitos e consultas médicas com notificações diretas. 💕")
+    st.markdown("<h2 style='color: #AD1457 !important;'>📅 Agenda Médica, Valores & Redes Credenciadas</h2>", unsafe_allow_html=True)
+    st.markdown("Agendamento completo com valores estimados, redes de atendimento e contatos diretos para marcação de exames. 💕")
 
     hoje_str = date.today().strftime("%Y-%m-%d")
     hoje_formatada = date.today().strftime("%d/%m/%Y")
@@ -1194,18 +1127,19 @@ with tab_agenda:
         itens_zap = []
         for comp in compromissos_hoje:
             status_icone = "✅ [Realizado]" if comp.is_completed else "⏰ [Pendente]"
+            preco_txt = f" | R$ {comp.estimated_price:.2f}" if comp.estimated_price > 0 else ""
             st.markdown(f"""
             <div class="appointment-card" style="border-left: 6px solid {'#4CAF50' if comp.is_completed else '#FF6584'};">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <h4 style="margin:0; color:#C2185B;">{comp.appointment_type}: {comp.title}</h4>
                     <span style="font-weight:700; color:{'#2E7D32' if comp.is_completed else '#C2185B'};">{status_icone} às {comp.scheduled_time}</span>
                 </div>
-                <p style="margin:6px 0; color:#333;">📍 <b>Local:</b> {comp.location}</p>
-                {f'<p style="margin:4px 0; color:#666; font-size:0.9rem;">📝 <i>Obs: {comp.notes}</i></p>' if comp.notes else ''}
+                <p style="margin:6px 0; color:#333;">📍 <b>Local / Rede:</b> {comp.location} ({comp.network_provider}){preco_txt}</p>
+                {f'<p style="margin:4px 0; color:#666; font-size:0.9rem;">📝 <i>Preparo / Obs: {comp.notes}</i></p>' if comp.notes else ''}
             </div>
             """, unsafe_allow_html=True)
 
-            itens_zap.append(f"• {comp.scheduled_time} - {comp.title} ({comp.location}) [{'Realizado' if comp.is_completed else 'Pendente'}]")
+            itens_zap.append(f"• {comp.scheduled_time} - {comp.title} em {comp.location} ({comp.network_provider}) [{'Realizado' if comp.is_completed else 'Pendente'}]")
 
             col_chk, _ = st.columns([2, 5])
             with col_chk:
@@ -1232,6 +1166,7 @@ with tab_agenda:
 
     st.markdown("---")
 
+    # --- FORMULÁRIO DE NOVO AGENDAMENTO COM VALOR E REDES CREDENCIADAS ---
     col_cad1, col_cad2 = st.columns([1, 1])
     with col_cad1:
         st.markdown("#### ➕ Agendar Novo Exame ou Consulta")
@@ -1241,12 +1176,27 @@ with tab_agenda:
                 ["Exame a Realizar", "Exame Feito / Resultado", "Consulta Médica", "Retorno / Procedimento", "Compromisso Geral"]
             )
             novo_titulo = st.text_input("Nome do Exame ou Consulta:", placeholder="Ex: Hemograma Completo, Ultrassom, Consulta Gineco...")
-            novo_local = st.text_input("Local / Laboratório / Hospital:", placeholder="Ex: Lavoisier, Fleury, Hospital Porto Dias, UBS...")
-            nova_data = st.date_input("Data do Compromisso:", value=date.today())
-            nova_hora = st.time_input("Horário:", value=datetime.now().time())
+            
+            col_loc, col_rede = st.columns(2)
+            with col_loc:
+                novo_local = st.text_input("Unidade / Hospital:", placeholder="Ex: Unidade Nazaré, Delboni...")
+            with col_rede:
+                nova_rede = st.selectbox(
+                    "Rede / Convênio:",
+                    ["Lavoisier / Dasa", "Grupo Fleury", "Hospital Porto Dias", "Santa Casa", "Ophir Loyola", "SUS / UBS", "Particular", "Outro"]
+                )
+
+            col_val_ex, col_dt, col_hr = st.columns(3)
+            with col_val_ex:
+                novo_valor = st.number_input("Valor Estimado (R$):", min_value=0.0, value=0.0, step=10.0, format="%.2f")
+            with col_dt:
+                nova_data = st.date_input("Data:", value=date.today())
+            with col_hr:
+                nova_hora = st.time_input("Horário:", value=datetime.now().time())
+
             novas_obs = st.text_input("Instruções / Preparo:", placeholder="Ex: Jejum de 8h, levar pedido médico, retirar na recepção...")
             
-            btn_salvar_comp = st.form_submit_button("💾 Salvar na Agenda")
+            btn_salvar_comp = st.form_submit_button("💾 Salvar na Agenda Médica")
 
             if btn_salvar_comp:
                 if not novo_titulo.strip():
@@ -1257,6 +1207,8 @@ with tab_agenda:
                             title=novo_titulo.strip(),
                             appointment_type=novo_tipo,
                             location=novo_local.strip() or "A definir",
+                            network_provider=nova_rede,
+                            estimated_price=novo_valor,
                             scheduled_date=nova_data.strftime("%Y-%m-%d"),
                             scheduled_time=nova_hora.strftime("%H:%M"),
                             notes=novas_obs.strip(),
@@ -1264,7 +1216,7 @@ with tab_agenda:
                         )
                         s.add(novo_item)
                         s.commit()
-                    st.success("Compromisso salvo na agenda médica com sucesso!")
+                    st.success("Compromisso salvo na agenda com sucesso!")
                     st.rerun()
 
     with col_cad2:
@@ -1273,10 +1225,11 @@ with tab_agenda:
             for item in todos_compromissos:
                 dataFormat = datetime.strptime(item.scheduled_date, "%Y-%m-%d").strftime("%d/%m/%Y")
                 cor_borda = "#4CAF50" if item.is_completed else ("#FF9800" if item.scheduled_date == hoje_str else "#FFB6C1")
+                val_badge = f" | <b>R$ {item.estimated_price:.2f}</b>" if item.estimated_price > 0 else ""
                 st.markdown(f"""
                 <div class="appointment-card" style="border-left: 5px solid {cor_borda}; padding:10px 14px;">
                     <b style="color:#C2185B;">{item.appointment_type}: {item.title}</b><br>
-                    <span style="font-size:0.85rem; color:#444;">📅 {dataFormat} às {item.scheduled_time} &nbsp;|&nbsp; 📍 {item.location}</span><br>
+                    <span style="font-size:0.85rem; color:#444;">📅 {dataFormat} às {item.scheduled_time} &nbsp;|&nbsp; 📍 {item.location} ({item.network_provider}){val_badge}</span><br>
                     <span style="font-size:0.8rem; font-weight:700; color:{'#2E7D32' if item.is_completed else '#C2185B'};">Status: {'Concluído / Feito' if item.is_completed else 'A realizar'}</span>
                 </div>
                 """, unsafe_allow_html=True)
@@ -1292,12 +1245,57 @@ with tab_agenda:
         else:
             st.info("Nenhum registro encontrado na agenda médica.")
 
-# ================= TAB 4: NECESSIDADES & CUSTOS MENSAIS (NOVA) =================
+    st.markdown("---")
+
+    # --- GUIA DE REDES CREDENCIADAS & CONTATOS DIRETOS ---
+    st.markdown("### 🏥 Redes Credenciadas & Contatos Diretos de Agendamento")
+    st.markdown("Canais diretos para marcação rápida de exames laboratoriais, consultas e orçamentos:")
+
+    col_net1, col_net2, col_net3 = st.columns(3)
+    with col_net1:
+        st.markdown("""
+        <div class="network-card">
+            <h4 style="color:#C2185B !important; margin:0 0 6px 0;">🔬 Dasa / Lavoisier / Sérgio Franco</h4>
+            <p style="font-size:0.88rem; color:#333; margin:0 0 10px 0;">
+                Atendimento laboratorial, análises clínicas completas e exames por imagem.
+            </p>
+            <a href="https://api.whatsapp.com/send?phone=551130474488&text=Olá,%20gostaria%20de%20agendar%20um%20exame" target="_blank" class="btn-contact-direct">
+                💬 Agendar via WhatsApp
+            </a>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_net2:
+        st.markdown("""
+        <div class="network-card">
+            <h4 style="color:#00695C !important; margin:0 0 6px 0;">🔬 Grupo Fleury Diagnósticos</h4>
+            <p style="font-size:0.88rem; color:#333; margin:0 0 10px 0;">
+                Referência em biologia molecular, genética e exames laboratoriais de alta precisão.
+            </p>
+            <a href="https://api.whatsapp.com/send?phone=551131790822&text=Olá,%20gostaria%20de%20informações%20sobre%20exames" target="_blank" class="btn-contact-direct">
+                💬 Agendar via WhatsApp
+            </a>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_net3:
+        st.markdown("""
+        <div class="network-card">
+            <h4 style="color:#880E4F !important; margin:0 0 6px 0;">🏥 Hospital Porto Dias (Belém)</h4>
+            <p style="font-size:0.88rem; color:#333; margin:0 0 10px 0;">
+                Centro de diagnóstico hospitalar, ressonância, tomografia e exames cardiológicos.
+            </p>
+            <a href="https://api.whatsapp.com/send?phone=559130843000&text=Olá,%20gostaria%20de%20agendar%20exame%20no%20Porto%20Dias" target="_blank" class="btn-contact-direct">
+                💬 Central de Exames PA
+            </a>
+        </div>
+        """, unsafe_allow_html=True)
+
+# ================= TAB 4: NECESSIDADES & CUSTOS MENSAIS =================
 with tab_necessidades:
     st.markdown("<h2 style='color: #AD1457 !important;'>💊 Necessidades & Custos Mensais Tabelados</h2>", unsafe_allow_html=True)
     st.markdown("Controle prático em tabela estilo Excel de remédios, vitaminas e gastos essenciais com histórico mensal e notificação direta. 💕")
 
-    # LEMBRETE CARINHOSO DA HELLO KITTY
     st.markdown("""
     <div class="reminder-hk-card">
         <img src="https://upload.wikimedia.org/wikipedia/en/0/05/Hello_kitty_character_portrait.png" style="width:70px; height:auto; border-radius:10px;">
@@ -1312,7 +1310,6 @@ with tab_necessidades:
 
     mes_atual_padrao = date.today().strftime("%Y-%m")
 
-    # CONSULTA DOS DADOS DO BANCO
     with Session(engine) as session:
         meses_disponiveis = session.exec(select(MonthlyNeed.month_reference).distinct()).all()
         if not meses_disponiveis or mes_atual_padrao not in meses_disponiveis:
@@ -1328,7 +1325,6 @@ with tab_necessidades:
             select(MonthlyNeed).where(MonthlyNeed.month_reference == mes_selecionado).order_by(MonthlyNeed.category, MonthlyNeed.item_name)
         ).all()
 
-    # MÉTRICAS TOTAIS DO MÊS
     total_geral = sum(item.estimated_cost * item.quantity for item in itens_mes)
     total_pendente = sum(item.estimated_cost * item.quantity for item in itens_mes if not item.is_purchased)
     total_comprado = sum(item.estimated_cost * item.quantity for item in itens_mes if item.is_purchased)
@@ -1358,7 +1354,6 @@ with tab_necessidades:
 
     st.markdown("---")
 
-    # TABELA ESTILO EXCEL (PANDAS DATAFRAME)
     if itens_mes:
         st.markdown("### 📊 Tabela de Custos & Medicamentos (Estilo Planilha)")
         dados_tabela = []
@@ -1376,7 +1371,6 @@ with tab_necessidades:
         df_display = pd.DataFrame(dados_tabela)
         st.dataframe(df_display, use_container_width=True, hide_index=True)
 
-        # MENSAGEM FORMATADA PARA NOTIFICAR O THIAGO NO WHATSAPP
         resumo_itens_txt = []
         for i in itens_mes:
             subtotal = i.estimated_cost * i.quantity
@@ -1403,7 +1397,6 @@ with tab_necessidades:
 
     st.markdown("---")
 
-    # FORMULÁRIO PARA ADICIONAR NOVO ITEM / REMÉDIO
     col_nec1, col_nec2 = st.columns([1, 1])
     with col_nec1:
         st.markdown("#### ➕ Adicionar Item / Remédio / Custo")
@@ -1603,7 +1596,6 @@ with tab_rotas_emerg:
 
     SEU_WHATSAPP = "5511913129697"
 
-    # PAINEL DE BEM-ESTAR & MOOD
     st.markdown(f"""
     <div class="wellness-card">
         <h3 style="color:#C2185B !important; margin:0 0 10px 0;">🌸 Como você está agora, meu amor? (Check-in de Saúde & Humor)</h3>
