@@ -49,7 +49,7 @@ with engine.connect() as conn:
     except Exception:
         pass
 
-# --- CATÁLOGO BASE 24H (GARANTIA CONTRA VAGAS A ZERO) ---
+# --- CATÁLOGO DE VAGAS 24H ---
 CATALOGO_24H = [
     # ENFERMAGEM - BELÉM / ANANINDEUA
     {
@@ -194,16 +194,17 @@ CATALOGO_24H = [
     }
 ]
 
-def garantir_alimentacao_banco():
+def popular_catalogo_base():
     with Session(engine) as session:
         try:
-            urls_existentes = {j.url_apply for j in session.exec(select(Job)).all() if getattr(j, "url_apply", None)}
+            urls = {j.url_apply for j in session.exec(select(Job)).all() if getattr(j, "url_apply", None)}
         except Exception:
-            urls_existentes = set()
+            urls = set()
 
+        inseridos = 0
         for item in CATALOGO_24H:
             url = item.get("url_apply")
-            if url and url not in urls_existentes:
+            if url and url not in urls:
                 try:
                     tempo_min = random.randint(5, 180)
                     job = Job(
@@ -223,17 +224,26 @@ def garantir_alimentacao_banco():
                     )
                     session.add(job)
                     session.commit()
-                    urls_existentes.add(url)
+                    urls.add(url)
+                    inseridos += 1
                 except Exception:
                     session.rollback()
+        return inseridos
 
-garantir_alimentacao_banco()
+popular_catalogo_base()
 
-# --- CSS DEFINITIVO: ABAS E BOTÕES SEMPRE VISÍVEIS ---
+# --- CSS COM ALTO CONTRASTE E CORREÇÃO DE TEXTOS/TÍTULOS/ABAS ---
 st.markdown("""
 <style>
+    /* Fundo da aplicação */
     .stApp {
-        background-color: #FFF6F8;
+        background-color: #FFF6F8 !important;
+        color: #4A1525 !important;
+    }
+
+    /* Forçar todos os títulos e textos a terem cor escura e visível */
+    h1, h2, h3, h4, h5, h6, p, label, span {
+        color: #4A1525 !important;
     }
     
     /* Barra lateral */
@@ -242,8 +252,9 @@ st.markdown("""
         border-right: 2px solid #FF5C8A;
     }
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, 
-    [data-testid="stSidebar"] h3, [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] label, [data-testid="stSidebar"] span {
+    [data-testid="stSidebar"] h3, [data-testid="stSidebar"] h4,
+    [data-testid="stSidebar"] p, [data-testid="stSidebar"] label, 
+    [data-testid="stSidebar"] span {
         color: #FFFFFF !important;
         font-weight: 700 !important;
         text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25);
@@ -259,7 +270,7 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
-    /* Campos de Entrada */
+    /* Caixas de Texto (Textarea e Inputs) */
     div[data-baseweb="input"] > div,
     div[data-baseweb="textarea"] > div {
         background-color: #FFFFFF !important;
@@ -268,16 +279,33 @@ st.markdown("""
     }
     div[data-baseweb="input"] input,
     div[data-baseweb="textarea"] textarea {
-        color: #4A1525 !important;
+        background-color: #FFFFFF !important;
+        color: #333333 !important;
         font-weight: 600 !important;
-        background-color: transparent !important;
+        font-size: 0.95rem !important;
     }
 
-    /* TODOS OS BOTÕES DA APLICAÇÃO (Visíveis e com Alto Contraste) */
+    /* Avisos e Alertas (Warnings e Infos) com texto sempre escuro e legível */
+    [data-testid="stAlert"] {
+        border-radius: 12px !important;
+        border: 1px solid #FFB6C1 !important;
+    }
+    [data-testid="stAlert"] * {
+        color: #5D1A2F !important;
+        font-weight: 600 !important;
+    }
+
+    /* Radio buttons legíveis */
+    [data-testid="stRadio"] label,
+    [data-testid="stRadio"] p,
+    [data-testid="stRadio"] span {
+        color: #4A1525 !important;
+        font-weight: 700 !important;
+    }
+
+    /* BOTÕES DA APLICAÇÃO */
     .stButton > button,
     div[data-testid="stFormSubmitButton"] > button,
-    button[data-testid="stBaseButton-secondary"],
-    button[data-testid="stBaseButton-primary"],
     div[data-testid="stPopover"] > button {
         background: linear-gradient(135deg, #FF69B4, #E91E63) !important;
         color: #FFFFFF !important;
@@ -286,14 +314,6 @@ st.markdown("""
         font-weight: 700 !important;
         padding: 8px 18px !important;
         box-shadow: 0 3px 8px rgba(233, 30, 99, 0.28) !important;
-        transition: all 0.2s ease-in-out !important;
-    }
-    .stButton > button:hover,
-    div[data-testid="stFormSubmitButton"] > button:hover,
-    div[data-testid="stPopover"] > button:hover {
-        background: linear-gradient(135deg, #FF527B, #C2185B) !important;
-        transform: translateY(-1px) !important;
-        box-shadow: 0 5px 12px rgba(233, 30, 99, 0.4) !important;
     }
     .stButton > button *,
     div[data-testid="stFormSubmitButton"] > button *,
@@ -302,29 +322,23 @@ st.markdown("""
         font-weight: 700 !important;
     }
 
-    /* REGRAS BLINDADAS PARA AS ABAS (TABS) NÃO DESAPARECEREM */
+    /* ABAS (TABS) - ALTO CONTRASTE */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px !important;
         background-color: transparent !important;
     }
-    
-    /* Aba Inativa: Fundo Rosa Suave e Texto Vinho Escuro Nítido */
     .stTabs [data-baseweb="tab"] {
         background-color: #FFE6EE !important;
         border: 2px solid #FFCCD7 !important;
         border-radius: 12px 12px 0px 0px !important;
         padding: 10px 18px !important;
         border-bottom: none !important;
-        opacity: 1 !important;
     }
     .stTabs [data-baseweb="tab"] * {
         color: #880E4F !important;
         font-weight: 800 !important;
         font-size: 0.95rem !important;
-        opacity: 1 !important;
     }
-    
-    /* Aba Ativa (Selecionada) */
     .stTabs [aria-selected="true"] {
         background: linear-gradient(135deg, #FF69B4, #E91E63) !important;
         border-color: #E91E63 !important;
@@ -334,14 +348,10 @@ st.markdown("""
         font-weight: 800 !important;
         text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25) !important;
     }
-    .stTabs [data-baseweb="tab-highlight"] {
-        background-color: #C2185B !important;
-        height: 3px !important;
-    }
 
     /* Cartões de Vagas */
     .job-card {
-        background: #FFFFFF;
+        background: #FFFFFF !important;
         border: 2px solid #FFCCD7;
         border-radius: 18px;
         padding: 22px;
@@ -349,14 +359,14 @@ st.markdown("""
         box-shadow: 0 4px 14px rgba(255, 182, 193, 0.28);
     }
     .job-title {
-        color: #C2185B;
+        color: #C2185B !important;
         font-size: 1.25rem;
         font-weight: 700;
     }
     .badge {
         display: inline-block;
         background-color: #FFE0E9;
-        color: #AD1457;
+        color: #AD1457 !important;
         padding: 4px 10px;
         border-radius: 14px;
         font-size: 0.8rem;
@@ -365,7 +375,7 @@ st.markdown("""
     }
     .badge-sp {
         background-color: #E1F5FE;
-        color: #0277BD;
+        color: #0277BD !important;
         padding: 4px 10px;
         border-radius: 14px;
         font-size: 0.8rem;
@@ -374,7 +384,7 @@ st.markdown("""
     }
     .badge-bio {
         background-color: #E0F2F1;
-        color: #00695C;
+        color: #00695C !important;
         padding: 4px 10px;
         border-radius: 14px;
         font-size: 0.8rem;
@@ -383,7 +393,7 @@ st.markdown("""
     }
     .badge-24h {
         background: #FFF3E0;
-        color: #E65100;
+        color: #E65100 !important;
         border: 1px solid #FFE0B2;
         padding: 4px 10px;
         border-radius: 14px;
@@ -424,8 +434,8 @@ with col_img:
     """, unsafe_allow_html=True)
 
 with col_title:
-    st.markdown("<h1 style='color: #C2185B; margin-bottom: 0;'>Portal de Carreiras em Saúde & Biomedicina 💕</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #880E4F; font-size: 1.05rem;'>Monitoramento contínuo de oportunidades em Belém e São Paulo com carinho para você 🌸</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='color: #C2185B !important; margin-bottom: 0;'>Portal de Carreiras em Saúde & Biomedicina 💕</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #880E4F !important; font-size: 1.05rem;'>Monitoramento contínuo de oportunidades em Belém e São Paulo com carinho para você 🌸</p>", unsafe_allow_html=True)
 
 st.divider()
 
@@ -436,7 +446,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# --- SISTEMA DE PERSISTÊNCIA OFFLINE NO DISPOSITIVO (PWA) ---
+# --- DETECTOR OFFLINE (PWA) ---
 components.html(
     """
 <script>
@@ -446,7 +456,7 @@ components.html(
             const div = document.createElement('div');
             div.id = 'offline-alert';
             div.style = "position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:#D32F2F;color:white;padding:10px 20px;border-radius:25px;font-weight:bold;z-index:999999;box-shadow:0 4px 12px rgba(0,0,0,0.3);font-family:sans-serif;font-size:13px;text-align:center;";
-            div.innerHTML = "📡 Modo Offline: Você está sem conexão 3G/Wi-Fi. As oportunidades carregadas continuam disponíveis!";
+            div.innerHTML = "📡 Modo Offline: Sem conexão de rede. As vagas continuam disponíveis na memória!";
             document.body.appendChild(div);
         }
     });
@@ -455,14 +465,6 @@ components.html(
         const banner = document.getElementById('offline-alert');
         if (banner) banner.remove();
     });
-
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-            navigator.serviceWorker.register('/sw.js').catch(function(err) {
-                console.log('PWA ServiceWorker ativo.');
-            });
-        });
-    }
 </script>
 """,
     height=0,
@@ -484,18 +486,6 @@ def normalizar_texto(txt: str) -> str:
     nfkd = unicodedata.normalize("NFKD", txt)
     return "".join([c for c in nfkd if not unicodedata.combining(c)]).lower()
 
-def extrair_texto_pdf(arquivo_bytes) -> str:
-    try:
-        reader = PdfReader(io.BytesIO(arquivo_bytes))
-        texto = ""
-        for pagina in reader.pages:
-            ext = pagina.extract_text()
-            if ext:
-                texto += ext + " "
-        return texto
-    except Exception:
-        return ""
-
 PALAVRAS_CHAVE = [
     "uti", "centro cirurgico", "urgencia", "emergencia", "pediatria",
     "neonatal", "hemodialise", "oncologia", "pronto socorro", "coren",
@@ -504,14 +494,6 @@ PALAVRAS_CHAVE = [
     "hematologia", "bioquimica", "microbiologia", "imunologia",
     "biologia molecular", "sorologia", "laudos", "auditoria", "farmacia"
 ]
-
-def extrair_keywords(texto: str) -> list:
-    t_norm = normalizar_texto(texto)
-    encontradas = set()
-    for kw in PALAVRAS_CHAVE:
-        if re.search(r"\b" + re.escape(kw) + r"\b", t_norm):
-            encontradas.add(kw)
-    return list(encontradas)
 
 def calcular_match(vaga: Job, perfil_keywords: list) -> int:
     if not perfil_keywords:
@@ -559,17 +541,25 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("##### 🥠 Biscoito do Dia")
 st.sidebar.info("A dedicação que você coloca em cuidar das pessoas faz a diferença em qualquer equipe hospitalar ou laboratorial! 💕")
 
+# BOTÃO DE SINCRONIZAÇÃO DUPLO (Robô Web + Recarga Base)
 if st.sidebar.button("🔄 Sincronizar Portais 24h Agora"):
-    with st.spinner("Atualizando feed dos portais hospitalares..."):
-        scraper = ScraperHospitaisBelem()
-        novas = scraper.coletar_todas()
-        with Session(engine) as session:
-            for v in novas:
-                if not session.exec(select(Job).where(Job.url_apply == v["url_apply"])).first():
-                    session.add(Job(**v))
-            session.commit()
-        garantir_alimentacao_banco()
-        st.sidebar.success("Base 24h atualizada!")
+    with st.spinner("Atualizando feed dos portais e conectando banco..."):
+        adicionadas_web = 0
+        try:
+            scraper = ScraperHospitaisBelem()
+            novas = scraper.coletar_todas()
+            with Session(engine) as session:
+                for v in novas:
+                    if not session.exec(select(Job).where(Job.url_apply == v["url_apply"])).first():
+                        session.add(Job(**v))
+                        adicionadas_web += 1
+                session.commit()
+        except Exception:
+            pass
+        
+        adicionadas_base = popular_catalogo_base()
+        total_novas = adicionadas_web + adicionadas_base
+        st.sidebar.success(f"Sincronização concluída! {total_novas} novas vagas inseridas.")
         st.rerun()
 
 # --- CONSULTA DAS VAGAS ---
@@ -595,10 +585,10 @@ with Session(engine) as session:
     vagas_lista = session.exec(q.order_by(Job.created_at.desc())).all()
 
     if not vagas_lista and filtro_estado == "Todos" and filtro_categoria == "Todas" and not busca_termo:
-        garantir_alimentacao_banco()
+        popular_catalogo_base()
         vagas_lista = session.exec(select(Job).order_by(Job.created_at.desc())).all()
 
-# Recupera perfil do utilizador
+# Perfil do usuário
 with Session(engine) as session:
     perfil_user = session.exec(select(UserProfile)).first()
     user_kws = [k.strip() for k in perfil_user.skills_keywords.split(",") if k.strip()] if perfil_user and perfil_user.skills_keywords else []
@@ -614,7 +604,7 @@ tab_vagas, tab_biomed, tab_rotas_emerg, tab_candidaturas = st.tabs([
 
 # ================= TAB 1: MURAL DE VAGAS =================
 with tab_vagas:
-    st.markdown(f"<h4 style='color: #AD1457;'>🩺 Oportunidades no Feed 24h: <b>{len(vagas_lista)}</b></h4>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='color: #AD1457 !important;'>🩺 Oportunidades no Feed 24h: <b>{len(vagas_lista)}</b></h3>", unsafe_allow_html=True)
     
     if not vagas_lista:
         st.info("Nenhuma oportunidade localizada para estes filtros. Tente selecionar 'Todos' na barra lateral!")
@@ -632,7 +622,7 @@ with tab_vagas:
             st.markdown(f"""
             <div class="job-card">
                 <div class="job-title">💖 {v.title}</div>
-                <div style="color: #880E4F; font-size: 0.95rem; margin-bottom: 8px;">
+                <div style="color: #880E4F !important; font-size: 0.95rem; margin-bottom: 8px;">
                     🏥 <b>{v.hospital_or_company}</b> &nbsp;•&nbsp; 📍 {v.location}
                 </div>
                 <div style="margin-bottom: 10px;">
@@ -641,7 +631,7 @@ with tab_vagas:
                     <span class="badge">⏰ {v.shift_type}</span>
                     <span class="badge">✨ Afinidade: {score}%</span>
                 </div>
-                <p style="color: #444; font-size: 0.92rem; line-height: 1.4;">{v.description}</p>
+                <p style="color: #333333 !important; font-size: 0.92rem; line-height: 1.4;">{v.description}</p>
                 <div style="margin-top: 10px;">
                     <a href="{link_vaga}" target="_blank" class="action-link" style="background:#FF69B4; color:white !important; font-weight:bold;">Acessar no Portal 🔗</a>
                     <a href="{rota_maps}" target="_blank" class="action-link">🗺️ Simular Rota Maps</a>
@@ -666,10 +656,10 @@ with tab_vagas:
 
 # ================= TAB 2: ESPECIAL BIOMEDICINA =================
 with tab_biomed:
-    st.markdown("### 🔬 Painel Exclusivo de Biomedicina")
+    st.markdown("<h2 style='color: #AD1457 !important;'>🔬 Painel Exclusivo de Biomedicina</h2>", unsafe_allow_html=True)
     st.info("Espaço dedicado a Análises Clínicas, Biologia Molecular, Imunologia e Diagnósticos Laboratoriais.")
 
-    st.markdown("#### 🎓 Verificação Profissional")
+    st.markdown("<h4 style='color: #880E4F !important;'>🎓 Verificação Profissional</h4>", unsafe_allow_html=True)
     tem_formacao = st.radio(
         "Em Biomedicina, é necessária a sua formação completa, você já concluiu a graduação?",
         ["Sim, possuo graduação completa e registro no CRBM", "Não, estou cursando / formação em andamento"],
@@ -690,15 +680,15 @@ with tab_biomed:
         st.rerun()
 
     if "Não" in tem_formacao:
-        st.warning("⚠️ **Atenção:** Vagas para *Biomédica Responsável Técnica*, emissão e assinatura de laudos exigem diploma e registro ativo no CRBM. Enquanto não concluir, priorize oportunidades como **Técnica de Laboratório**, **Auxiliar de Coleta** ou **Estágio em Análises Clínicas**!")
+        st.warning("⚠️ Atenção: Vagas para Biomédica Responsável Técnica, emissão e assinatura de laudos exigem diploma e registro ativo no CRBM. Enquanto não concluir, priorize oportunidades como Técnica de Laboratório, Auxiliar de Coleta ou Estágio em Análises Clínicas!")
     else:
-        st.success("✨ **Elegível:** Você está apta a assumir bancadas analíticas, liberação de laudos e responsabilidade técnica laboratorial.")
+        st.success("✨ Elegível: Você está apta a assumir bancadas analíticas, liberação de laudos e responsabilidade técnica laboratorial.")
 
     st.divider()
 
     col_mod1, col_mod2 = st.columns(2)
     with col_mod1:
-        st.markdown("#### 📄 Currículo Sugestivo (Biomedicina)")
+        st.markdown("<h4 style='color: #880E4F !important;'>📄 Currículo Sugestivo (Biomedicina)</h4>", unsafe_allow_html=True)
         st.text_area(
             "Estrutura Pronta:",
             """OBJETIVO: Biomédica - Análises Clínicas / Diagnóstico Laboratorial
@@ -715,7 +705,7 @@ FORMAÇÃO:
         )
 
     with col_mod2:
-        st.markdown("#### ✉️ Carta de Apresentação (Biomedicina)")
+        st.markdown("<h4 style='color: #880E4F !important;'>✉️ Carta de Apresentação (Biomedicina)</h4>", unsafe_allow_html=True)
         st.text_area(
             "Modelo para Envio:",
             """Prezada Coordenação de Laboratório e RH,
@@ -733,14 +723,14 @@ Biomédica | Contato WhatsApp""",
 
 # ================= TAB 3: ROTAS & EMERGÊNCIA =================
 with tab_rotas_emerg:
-    st.markdown("### 🗺️ Simulação de Trajeto & Apoio Rápido de Segurança")
+    st.markdown("<h2 style='color: #AD1457 !important;'>🗺️ Simulação de Trajeto & Apoio Rápido de Segurança</h2>", unsafe_allow_html=True)
     
     col_em1, col_em2 = st.columns(2)
     with col_em1:
         st.markdown("""
         <div class="emergency-card">
-            <h4 style="color:#C62828; margin:0 0 10px 0;">🚨 Botão de Segurança p/ Voltar de Plantão</h4>
-            <p style="color:#333; font-size:0.9rem;">Saindo de noite ou de madrugada? Clique para mandar mensagem instantânea com aviso de trajeto direto para o Thiago:</p>
+            <h4 style="color:#C62828 !important; margin:0 0 10px 0;">🚨 Botão de Segurança p/ Voltar de Plantão</h4>
+            <p style="color:#333333 !important; font-size:0.9rem;">Saindo de noite ou de madrugada? Clique para mandar mensagem instantânea com aviso de trajeto direto para o Thiago:</p>
             <a href="https://api.whatsapp.com/send?text=Oi%20amor,%20estou%20saindo%20do%20plant%C3%A3o%20agora%20e%20a%20caminho%20de%20casa!%20Te%20aviso%20assim%20que%20chegar%20%E2%9D%A4%EF%B8%8F" 
                target="_blank" class="action-link" style="background:#D32F2F; color:white !important; font-weight:bold; padding:10px 16px;">
                 📲 Mandar Aviso de Saída de Plantão p/ Thiago
@@ -750,18 +740,20 @@ with tab_rotas_emerg:
     
     with col_em2:
         st.markdown("""
-        #### 📞 Contatos Úteis de Emergência & Saúde:
-        * 🚑 **SAMU:** 192
-        * 🚓 **Polícia Militar:** 190
-        * 🩺 **COREN-PA (Belém):** (91) 3262-6052
-        * 🩺 **COREN-SP (Capital):** (11) 3225-6300
-        * 🔬 **CRBM-4 (Norte):** (91) 3212-3850
-        * 🔬 **CRBM-1 (São Paulo):** (11) 3347-5555
-        """)
+        <h4 style="color:#880E4F !important;">📞 Contatos Úteis de Emergência & Saúde:</h4>
+        <ul style="color:#333333 !important; font-weight:600; line-height: 1.8;">
+            <li>🚑 <b>SAMU:</b> 192</li>
+            <li>🚓 <b>Polícia Militar:</b> 190</li>
+            <li>🩺 <b>COREN-PA (Belém):</b> (91) 3262-6052</li>
+            <li>🩺 <b>COREN-SP (Capital):</b> (11) 3225-6300</li>
+            <li>🔬 <b>CRBM-4 (Norte):</b> (91) 3212-3850</li>
+            <li>🔬 <b>CRBM-1 (São Paulo):</b> (11) 3347-5555</li>
+        </ul>
+        """, unsafe_allow_html=True)
 
 # ================= TAB 4: CANDIDATURAS =================
 with tab_candidaturas:
-    st.markdown("### 📋 Painel de Acompanhamento")
+    st.markdown("<h2 style='color: #AD1457 !important;'>📋 Painel de Acompanhamento</h2>", unsafe_allow_html=True)
     with Session(engine) as session:
         salvas = session.exec(select(Job).where(Job.status == "Candidatada")).all()
 
@@ -785,7 +777,7 @@ with tab_candidaturas:
 # --- ASSINATURA E CRÉDITOS ---
 st.divider()
 st.markdown("""
-<div style="text-align: center; color: #AD1457; font-size: 0.95rem; font-weight: 700; padding: 10px;">
+<div style="text-align: center; color: #AD1457 !important; font-size: 0.95rem; font-weight: 700; padding: 10px;">
     Desenvolvido com todo amor por Thiago Zuza 💕 🐾
 </div>
 """, unsafe_allow_html=True)
