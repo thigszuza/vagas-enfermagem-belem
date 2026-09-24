@@ -25,9 +25,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install streamlit sqlmodel sqlalchemy pypdf requests beautifulsoup4
 
-      - name: Executar Varredura 24h
+      - name: Coletar Novas Vagas
         run: |
-          python sync_worker.py
+          python sync_service.py
 
       - name: Salvar e Persistir Novas Vagas no Repositorio
         run: |
