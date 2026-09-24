@@ -2,10 +2,14 @@ import os
 from email_service import enviar_boletim_email
 from models import Job, UserSubscription
 from scrapers_belem import ScraperHospitaisBelem
-from sqlmodel import Session, create_engine, select
+from sqlmodel import SQLModel, Session, create_engine, select
 
+# Configuração e inicialização do banco SQLite
 sqlite_url = "sqlite:///vagas_enfermagem.db"
 engine = create_engine(sqlite_url, echo=False)
+
+# Garante a criação de todas as tabelas (incluindo usersubscription)
+SQLModel.metadata.create_all(engine)
 
 
 def sincronizar_e_notificar():
@@ -27,22 +31,6 @@ def sincronizar_e_notificar():
                 session.commit()
                 session.refresh(nova)
                 vagas_novas.append(nova)
-
-        # --- TESTE TEMPORÁRIO PARA FORÇAR O DISPARO ---
-        if not vagas_novas:
-            print("Nenhuma vaga inédita raspada. Injetando vaga de teste para validar e-mail...")
-            vagas_novas.append(
-                Job(
-                    title="Enfermeiro(a) - Teste Automático",
-                    hospital_or_company="Hospital Beneficente Portuguesa",
-                    location="Belém - PA",
-                    description="Esta é uma mensagem de teste para validar o disparo automático do robô.",
-                    specialty="Geral",
-                    shift_type="12x36",
-                    url_apply="https://google.com",
-                )
-            )
-        # ---------------------------------------------
 
         # Dispara e-mail com todas as vagas novas reunidas para as pessoas inscritas
         if vagas_novas:
