@@ -188,32 +188,37 @@ CATALOGO_24H = [
 
 def auto_alimentar_banco_24h():
     with Session(engine) as session:
-        existentes = session.exec(select(Job)).all()
-        urls_cadastradas = {j.url_apply for j in existentes}
+        try:
+            existentes = session.exec(select(Job)).all()
+            urls_cadastradas = {j.url_apply for j in existentes if getattr(j, "url_apply", None)}
+        except Exception:
+            urls_cadastradas = set()
         
-        novos = 0
         for item in CATALOGO_24H:
-            if item["url_apply"] not in urls_cadastradas:
-                tempo_min = random.randint(5, 180)
-                job = Job(
-                    title=item["title"],
-                    hospital_or_company=item["hospital_or_company"],
-                    location=item["location"],
-                    state=item["state"],
-                    category=item["category"],
-                    shift_type=item["shift_type"],
-                    specialty=item["specialty"],
-                    description=item["description"],
-                    url_apply=item["url_apply"],
-                    source=item["source"],
-                    status="Disponível",
-                    requires_graduation=item["requires_graduation"],
-                    created_at=datetime.utcnow() - timedelta(minutes=tempo_min)
-                )
-                session.add(job)
-                novos += 1
-        if novos > 0:
-            session.commit()
+            url = item.get("url_apply")
+            if url and url not in urls_cadastradas:
+                try:
+                    tempo_min = random.randint(5, 180)
+                    job = Job(
+                        title=str(item.get("title", "")),
+                        hospital_or_company=str(item.get("hospital_or_company", "")),
+                        location=str(item.get("location", "")),
+                        state=str(item.get("state", "PA")),
+                        category=str(item.get("category", "Enfermagem")),
+                        shift_type=str(item.get("shift_type", "12x36")),
+                        specialty=str(item.get("specialty", "Geral")),
+                        description=str(item.get("description", "")),
+                        url_apply=str(url),
+                        source=str(item.get("source", "Web")),
+                        status="Disponível",
+                        requires_graduation=bool(item.get("requires_graduation", False)),
+                        created_at=datetime.utcnow() - timedelta(minutes=tempo_min)
+                    )
+                    session.add(job)
+                    session.commit()
+                    urls_cadastradas.add(url)
+                except Exception:
+                    session.rollback()
 
 auto_alimentar_banco_24h()
 
@@ -225,11 +230,10 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- SISTEMA DE PERSISTÊNCIA OFFLINE NO DISPOSITIVO (LOCALSTORAGE PWA) ---
+# --- SISTEMA DE PERSISTÊNCIA OFFLINE NO DISPOSITIVO (PWA) ---
 components.html(
     """
 <script>
-    // 1. Detecta queda de conexão 3G/Wi-Fi
     window.addEventListener('offline', function() {
         const banner = document.getElementById('offline-alert');
         if (!banner) {
@@ -246,7 +250,6 @@ components.html(
         if (banner) banner.remove();
     });
 
-    // 2. Registro do Service Worker para PWA
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
             navigator.serviceWorker.register('/sw.js').catch(function(err) {
@@ -259,7 +262,7 @@ components.html(
     height=0,
 )
 
-# Toast surpresa ao abrir
+# Toast carinhoso
 frases_toasts = [
     "eu te amo ou eu te lobo <3",
     "Você vai longe, meu bem! Orgulho imenso do seu esforço 💕",
@@ -322,19 +325,19 @@ def simular_analise_ia_thiago(vaga: Job, perfil_kws: list) -> str:
     msg += f"Analisei com todo o carinho a oportunidade de **{vaga.title}** no **{vaga.hospital_or_company}**:\n\n"
     
     if match_perc >= 50:
-        msg += f"✨ **Afinidade Alta ({match_perc}%):** Essa vaga tem um alinhamento excelente com o que você já conhece! "
+        msg += f"✨ **Afinidade Alta ({match_perc}%):** Essa vaga combina bastante com o que você já domina! "
         if pontos_fortes:
-            msg += f"Eles valorizam muito conhecimentos em **{', '.join(pontos_fortes)}**. "
-        msg += "Destaque suas vivências práticas, rigor técnico e foco no paciente na hora de se inscrever.\n\n"
+            msg += f"Eles valorizam conhecimentos práticos em **{', '.join(pontos_fortes)}**. "
+        msg += "Destaque suas vivências em rotina assistencial, biossegurança e dedicação integral.\n\n"
     else:
-        msg += f"🌱 **Oportunidade Promissora ({match_perc}%):** Uma porta aberta fantástica para aprender e crescer! "
-        msg += "No processo seletivo, mencione sua facilidade com rotinas de qualidade, atenção aos detalhes e dedicação integral.\n\n"
+        msg += f"🌱 **Oportunidade Promissora ({match_perc}%):** Uma excelente porta de entrada para expandir sua carreira! "
+        msg += "No processo seletivo, evidencie sua facilidade com protocolos, atenção a detalhes e compromisso com o cuidado.\n\n"
         
-    msg += f"📍 **Dica de Deslocamento:** A instituição fica em {vaga.location}. Simule a rota com antecedência para chegar calma e tranquila no dia da entrevista!\n\n"
-    msg += "💌 *'Você é uma profissional admirável, dedicada e competente. Confio 100% no seu brilho e estou torcendo por você!'* — Com amor, Thiago Zuza."
+    msg += f"📍 **Dica de Deslocamento:** A unidade fica em {vaga.location}. Simule o trajeto com calma para chegar sem imprevistos na entrevista!\n\n"
+    msg += "💌 *'Você é uma profissional incrível, dedicada e competente. Tenho muito orgulho de você e estou sempre torcendo!'* — Com amor, Thiago Zuza."
     return msg
 
-# --- ESTILIZAÇÃO CSS DE ALTO CONTRASTE E TEMA HELLO KITTY ---
+# --- ESTILIZAÇÃO CSS COMPLETA COM CONTRASTE RIGOROSO NAS ABAS ---
 st.markdown("""
 <style>
     .stApp {
@@ -527,12 +530,10 @@ if st.sidebar.button("🔄 Sincronizar Portais 24h Agora"):
     with st.spinner("Atualizando feed dos portais hospitalares..."):
         scraper = ScraperHospitaisBelem()
         novas = scraper.coletar_todas()
-        qtd = 0
         with Session(engine) as session:
             for v in novas:
                 if not session.exec(select(Job).where(Job.url_apply == v["url_apply"])).first():
                     session.add(Job(**v))
-                    qtd += 1
             session.commit()
         auto_alimentar_banco_24h()
         st.sidebar.success("Base 24h atualizada!")
