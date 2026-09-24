@@ -18,12 +18,12 @@ jobs:
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Instalar Dependencias
         run: |
           python -m pip install --upgrade pip
-          pip install streamlit sqlmodel sqlalchemy pypdf requests beautifulsoup4
+          pip install -r requirements.txt
 
       - name: Coletar Novas Vagas
         run: |
@@ -33,5 +33,7 @@ jobs:
         run: |
           git config --global user.name 'Robo Thiago 24h'
           git config --global user.email 'bot@thiagozuza.com'
+          git pull --rebase origin main
           git add vagas_enfermagem.db
-          git diff --staged --quiet || (git commit -m "Auto-sync 24h: novas vagas coletadas" && git push)
+          git diff --staged --quiet || (git commit -m "Auto-sync 24h: novas vagas coletadas" && git push origin main)
+          
