@@ -553,7 +553,7 @@ with col_title:
 
 st.divider()
 
-# Mensagem Afetiva
+# Mensagem Afetiva Fixa
 st.markdown("""
 <div style="background: linear-gradient(90deg, #FFE4EC, #FFF0F5); border: 1px dashed #FF69B4; border-radius: 12px; padding: 10px 16px; text-align: center; color: #C2185B; font-weight: 600; margin-bottom: 16px;">
     🐾 <i>eu te amo ou eu te lobo &lt;3</i> ✨
@@ -583,15 +583,6 @@ components.html(
 """,
     height=0,
 )
-
-# Toast carinhoso ao iniciar
-frases_toasts = [
-    "eu te amo ou eu te lobo <3",
-    "Você vai longe, meu bem! Orgulho imenso do seu esforço 💕",
-    "Belém, SP ou RJ: seu talento cabe no mundo inteiro! ✨",
-    "eu te lobo infinito <3 🐾",
-]
-st.toast(f"💌 {random.choice(frases_toasts)}", icon="🎀")
 
 # --- FUNÇÕES DE MATCH E IA GEMINI ---
 def normalizar_texto(txt: str) -> str:
@@ -865,7 +856,7 @@ with tab_biomed:
 
     st.divider()
 
-    # MODELOS DE CURRÍCULO E CARTA (COM CAIXA BRANCA E TEXTO ESCURO NÍTIDO)
+    # MODELOS DE CURRÍCULO E CARTA (COM CAIXA BRANCA PURA E TEXTO ESCURO NÍTIDO)
     col_mod1, col_mod2 = st.columns(2)
     
     texto_curriculo = """OBJETIVO:
