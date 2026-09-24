@@ -731,9 +731,19 @@ with tab_rotas_emerg:
         <div class="emergency-card">
             <h4 style="color:#C62828 !important; margin:0 0 10px 0;">🚨 Botão de Segurança p/ Voltar de Plantão</h4>
             <p style="color:#333333 !important; font-size:0.9rem;">Saindo de noite ou de madrugada? Clique para mandar mensagem instantânea com aviso de trajeto direto para o Thiago:</p>
-            <a href="https://api.whatsapp.com/send?text=Oi%20amor,%20estou%20saindo%20do%20plant%C3%A3o%20agora%20e%20a%20caminho%20de%20casa!%20Te%20aviso%20assim%20que%20chegar%20%E2%9D%A4%EF%B8%8F" 
-               target="_blank" class="action-link" style="background:#D32F2F; color:white !important; font-weight:bold; padding:10px 16px;">
-                📲 Mandar Aviso de Saída de Plantão p/ Thiago
+            <a href="..." target="_blank" style="
+    display: inline-block;
+    background-color: #ff6584;
+    color: #ffffff;
+    padding: 12px 24px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(255, 101, 132, 0.3);
+    transition: all 0.3s ease;
+">
+    📲 Mandar Aviso de Saída de Plantão p/ Thiago
+</a>
             </a>
         </div>
         """, unsafe_allow_html=True)
