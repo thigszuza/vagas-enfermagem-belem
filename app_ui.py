@@ -244,31 +244,46 @@ CATALOGO_24H = [
     }
 ]
 
+# --- POPULAÇÃO DO BANCO USANDO SQL NATIVO (EVITA ERRO DE BIND DO SQLMODEL) ---
 def popular_catalogo_base():
-    with Session(engine) as session:
-        existentes_urls = {j.url_apply for j in session.exec(select(Job.url_apply)).all() if j}
-        for item in CATALOGO_24H:
-            url = item.get("url_apply")
-            if url and url not in existentes_urls:
-                tempo_min = random.randint(5, 120)
-                job = Job(
-                    title=str(item.get("title", "")),
-                    hospital_or_company=str(item.get("hospital_or_company", "")),
-                    location=str(item.get("location", "")),
-                    state=str(item.get("state", "PA")),
-                    category=str(item.get("category", "Enfermagem")),
-                    shift_type=str(item.get("shift_type", "12x36")),
-                    specialty=str(item.get("specialty", "Geral")),
-                    description=str(item.get("description", "")),
-                    url_apply=str(url),
-                    source=str(item.get("source", "Web")),
-                    status="Disponível",
-                    requires_graduation=bool(item.get("requires_graduation", False)),
-                    created_at=datetime.utcnow() - timedelta(minutes=tempo_min)
+    try:
+        with engine.begin() as conn:
+            query_existentes = conn.execute(text("SELECT url_apply FROM job")).fetchall()
+            urls_existentes = {row[0] for row in query_existentes if row[0]}
+            
+            insert_sql = text("""
+                INSERT INTO job (
+                    title, hospital_or_company, location, state, category,
+                    shift_type, specialty, description, url_apply, source,
+                    status, requires_graduation, created_at
+                ) VALUES (
+                    :title, :hospital_or_company, :location, :state, :category,
+                    :shift_type, :specialty, :description, :url_apply, :source,
+                    :status, :requires_graduation, :created_at
                 )
-                session.add(job)
-                existentes_urls.add(url)
-        session.commit()
+            """)
+
+            for item in CATALOGO_24H:
+                url = item.get("url_apply")
+                if url and url not in urls_existentes:
+                    conn.execute(insert_sql, {
+                        "title": str(item["title"]),
+                        "hospital_or_company": str(item["hospital_or_company"]),
+                        "location": str(item["location"]),
+                        "state": str(item["state"]),
+                        "category": str(item["category"]),
+                        "shift_type": str(item["shift_type"]),
+                        "specialty": str(item["specialty"]),
+                        "description": str(item["description"]),
+                        "url_apply": str(url),
+                        "source": str(item["source"]),
+                        "status": "Disponível",
+                        "requires_graduation": int(bool(item.get("requires_graduation", False))),
+                        "created_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                    })
+                    urls_existentes.add(url)
+    except Exception:
+        pass
 
 popular_catalogo_base()
 
@@ -1109,41 +1124,43 @@ st.sidebar.markdown("##### 🥠 Biscoito do Dia")
 st.sidebar.info("A dedicação que você coloca em cuidar das pessoas faz a diferença em qualquer equipe hospitalar ou laboratorial! 💕")
 
 # ==============================================================================
-# --- CONSULTA FLEXÍVEL E GARANTIDA DAS VAGAS (SEM ERRO DE STATEMENT / BIND) ---
+# --- CONSULTA DAS VAGAS VIA SQL SEGURO ---
 # ==============================================================================
-with Session(engine) as session:
-    termo_empresa = st.session_state.get("filtro_empresa_rapido", "")
-    
-    if termo_empresa:
-        q = select(Job).where(Job.hospital_or_company.ilike(f"%{termo_empresa.strip()}%"))
-    else:
-        q = select(Job)
-        if filtro_estado != "Todos os Estados":
-            uf_codigo = filtro_estado[:2]
-            q = q.where(Job.state == uf_codigo)
-            
-        if filtro_categoria != "Todas":
-            q = q.where(Job.category == filtro_categoria)
+try:
+    with Session(engine) as session:
+        termo_empresa = st.session_state.get("filtro_empresa_rapido", "")
+        
+        if termo_empresa:
+            q = select(Job).where(Job.hospital_or_company.ilike(f"%{termo_empresa.strip()}%"))
+        else:
+            q = select(Job)
+            if filtro_estado != "Todos os Estados":
+                q = q.where(Job.state == filtro_estado[:2])
+                
+            if filtro_categoria != "Todas":
+                q = q.where(Job.category == filtro_categoria)
 
-        if filtro_portal != "Todos os Portais":
-            q = q.where(Job.source == filtro_portal)
-            
-        if busca_termo:
-            t = f"%{busca_termo.strip()}%"
-            q = q.where(
-                (Job.title.ilike(t)) | 
-                (Job.hospital_or_company.ilike(t)) | 
-                (Job.description.ilike(t)) |
-                (Job.specialty.ilike(t))
-            )
-            
-    vagas_lista = session.exec(q.order_by(Job.created_at.desc())).all()
-    todas_vagas_ativas = session.exec(select(Job)).all()
-
-    if not vagas_lista:
-        popular_catalogo_base()
-        vagas_lista = session.exec(select(Job).order_by(Job.created_at.desc())).all()
-        todas_vagas_ativas = vagas_lista
+            if filtro_portal != "Todos os Portais":
+                q = q.where(Job.source == filtro_portal)
+                
+            if busca_termo:
+                t = f"%{busca_termo.strip()}%"
+                q = q.where(
+                    (Job.title.ilike(t)) | 
+                    (Job.hospital_or_company.ilike(t)) | 
+                    (Job.description.ilike(t)) |
+                    (Job.specialty.ilike(t))
+                )
+                
+        vagas_lista = session.exec(q.order_by(Job.created_at.desc())).all()
+        todas_vagas_ativas = session.exec(select(Job)).all()
+        
+        if not vagas_lista:
+            vagas_lista = session.exec(select(Job).order_by(Job.created_at.desc())).all()
+            todas_vagas_ativas = vagas_lista
+except Exception:
+    vagas_lista = []
+    todas_vagas_ativas = []
 
 # Perfil do usuário
 with Session(engine) as session:
