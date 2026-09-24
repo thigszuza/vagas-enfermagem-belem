@@ -115,8 +115,9 @@ with engine.connect() as conn:
     except Exception:
         pass
 
-# --- CATÁLOGO DE VAGAS 24H (PA, SP, RJ) ---
+# --- CATÁLOGO DE VAGAS EXPANDIDO (HOSPITAIS, SANCTA MAGGIORE & FARMACÊUTICAS) ---
 CATALOGO_24H = [
+    # ================= PARÁ (BELÉM & REGIÃO) =================
     {
         "title": "Enfermeira Assistencial - UTI Adulto",
         "hospital_or_company": "Hospital Porto Dias",
@@ -131,7 +132,7 @@ CATALOGO_24H = [
         "location": "São Brás, Belém - PA",
         "state": "PA", "category": "Enfermagem", "shift_type": "12x36", "specialty": "Centro Cirúrgico",
         "description": "Instrumentação cirúrgica, paramentação estéril, controle de materiais em CME e recuperação pós-anestésica.",
-        "url_apply": "http://www.ophirloyola.pa.gov.br", "source": "Portal Direto RH", "requires_graduation": False
+        "url_apply": "https://www.vagas.com.br", "source": "Vagas.com", "requires_graduation": False
     },
     {
         "title": "Enfermeiro(a) - Urgência e Emergência (Pronto Atendimento)",
@@ -139,7 +140,7 @@ CATALOGO_24H = [
         "location": "BR-316, Ananindeua - PA",
         "state": "PA", "category": "Enfermagem", "shift_type": "12x36", "specialty": "Urgência/Emergência",
         "description": "Acolhimento com Classificação de Risco (Manchester), estabilização de politraumatizados e apoio em sala vermelha.",
-        "url_apply": "https://institutoabadiania.org.br/trabalhe-conosco", "source": "Vagas.com", "requires_graduation": True
+        "url_apply": "https://www.catho.com.br", "source": "Catho", "requires_graduation": True
     },
     {
         "title": "Enfermeira Pediátrica & Neonatal",
@@ -147,7 +148,7 @@ CATALOGO_24H = [
         "location": "Umarizal, Belém - PA",
         "state": "PA", "category": "Enfermagem", "shift_type": "12x36", "specialty": "Pediatria",
         "description": "Cuidados assistenciais humanizados na UCI e UTI Neonatal, punção de acesso venoso periférico pediátrico e apoio ao aleitamento materno.",
-        "url_apply": "http://santacasa.pa.gov.br/trabalhe-conosco", "source": "Portal Direto RH", "requires_graduation": True
+        "url_apply": "https://www.infojobs.com.br", "source": "InfoJobs", "requires_graduation": True
     },
     {
         "title": "Biomédica Analista - Hematologia e Bioquímica Clínica",
@@ -155,7 +156,7 @@ CATALOGO_24H = [
         "location": "Nazaré, Belém - PA",
         "state": "PA", "category": "Biomedicina", "shift_type": "Diurno", "specialty": "Análises Clínicas",
         "description": "Rotina de bancada automatizada, microscopia para contagem diferencial de leucócitos, controle de qualidade (CQI/CQE) e liberação de laudos. CRBM ativo.",
-        "url_apply": "https://trabalheconosco.vagas.com.br", "source": "Vagas.com", "requires_graduation": True
+        "url_apply": "https://www.linkedin.com/jobs", "source": "LinkedIn", "requires_graduation": True
     },
     {
         "title": "Auxiliar Técnico de Coleta e Triagem Laboratorial",
@@ -163,7 +164,25 @@ CATALOGO_24H = [
         "location": "Batista Campos, Belém - PA",
         "state": "PA", "category": "Biomedicina", "shift_type": "Diurno", "specialty": "Coleta e Triagem",
         "description": "Punção venosa à vácuo, coleta pediátrica, centrifugação e envio de amostras biológicas. Aberto a graduandos ou recém-formados.",
-        "url_apply": "https://ruthbrazao.com.br/trabalhe-conosco", "source": "InfoJobs", "requires_graduation": False
+        "url_apply": "https://www.glassdoor.com.br", "source": "Glassdoor", "requires_graduation": False
+    },
+
+    # ================= SÃO PAULO (SANCTA MAGGIORE & HOSPITAIS) =================
+    {
+        "title": "Enfermeiro(a) - Pronto Socorro Adulto",
+        "hospital_or_company": "Hospital Sancta Maggiore (Prevent Senior)",
+        "location": "Pinheiros / Mooca, São Paulo - SP",
+        "state": "SP", "category": "Enfermagem", "shift_type": "12x36", "specialty": "Pronto Socorro",
+        "description": "Atendimento emergencial a pacientes idosos, classificação de risco, infusão de medicação de urgência e supervisão da equipe técnica nos hospitais Sancta Maggiore.",
+        "url_apply": "https://carreiras.preventsenior.com.br", "source": "Vagas.com", "requires_graduation": True
+    },
+    {
+        "title": "Enfermeira de Centro Cirúrgico & CME",
+        "hospital_or_company": "Hospital Sancta Maggiore (Prevent Senior)",
+        "location": "Bela Vista / Itaim, São Paulo - SP",
+        "state": "SP", "category": "Enfermagem", "shift_type": "12x36", "specialty": "Centro Cirúrgico",
+        "description": "Coordenação de sala operatória, cirurgia segura, protocolos anestésicos e cuidados transoperatórios com foco no paciente sênior.",
+        "url_apply": "https://carreiras.preventsenior.com.br", "source": "Catho", "requires_graduation": True
     },
     {
         "title": "Enfermeira de Cuidados Avançados - Clínica Médica",
@@ -179,7 +198,7 @@ CATALOGO_24H = [
         "location": "Bela Vista, São Paulo - SP",
         "state": "SP", "category": "Enfermagem", "shift_type": "12x36", "specialty": "UTI",
         "description": "Assistência em recuperação pós-cateterismo e cirurgia cardiovascular, balão intra-aórtico e suporte multiprofissional.",
-        "url_apply": "https://hospitalsiriolibanes.gupy.io", "source": "Gupy Saúde", "requires_graduation": False
+        "url_apply": "https://www.linkedin.com/jobs", "source": "LinkedIn", "requires_graduation": False
     },
     {
         "title": "Biomédica Especialista - Genética & Biologia Molecular",
@@ -189,6 +208,24 @@ CATALOGO_24H = [
         "description": "Sequenciamento de Nova Geração (NGS), RT-PCR para painéis infecciosos e oncológicos e validação clínica de relatórios moleculares.",
         "url_apply": "https://fleury.gupy.io", "source": "Gupy Saúde", "requires_graduation": True
     },
+    {
+        "title": "Analista de Farmacovigilância & Ensaios Clínicos",
+        "hospital_or_company": "Eurofarma Laboratórios",
+        "location": "Itapevi / São Paulo - SP",
+        "state": "SP", "category": "Indústria Farmacêutica", "shift_type": "Comercial / Híbrido", "specialty": "Pesquisa Clínica",
+        "description": "Monitoramento de eventos adversos pós-comercialização, suporte a estudos de bioequivalência e contato direto com centros de pesquisa e hospitais.",
+        "url_apply": "https://eurofarma.gupy.io", "source": "Gupy Saúde", "requires_graduation": True
+    },
+    {
+        "title": "Enfermeira de Suporte Clínico ao Paciente (PSP)",
+        "hospital_or_company": "EMS Indústria Farmacêutica",
+        "location": "São Paulo - SP",
+        "state": "SP", "category": "Indústria Farmacêutica", "shift_type": "Comercial", "specialty": "Suporte Terapêutico",
+        "description": "Orientação e treinamento a pacientes em uso de medicamentos de alta complexidade (injetáveis), adesão ao tratamento e navegação em saúde.",
+        "url_apply": "https://www.glassdoor.com.br", "source": "Glassdoor", "requires_graduation": True
+    },
+
+    # ================= RIO DE JANEIRO =================
     {
         "title": "Enfermeira de Terapia Intensiva (CTI Adulto)",
         "hospital_or_company": "Hospital Copa D'Or (Rede D'Or)",
@@ -203,7 +240,7 @@ CATALOGO_24H = [
         "location": "Tijuca, Rio de Janeiro - RJ",
         "state": "RJ", "category": "Biomedicina", "shift_type": "Diurno", "specialty": "Análises Clínicas",
         "description": "Rotina técnica de hematologia, bioquímica e imunologia de bancada automatizada. Liberação, checagem e emissão de laudos. CRBM ativo.",
-        "url_apply": "https://dasa.gupy.io", "source": "Gupy Saúde", "requires_graduation": True
+        "url_apply": "https://www.infojobs.com.br", "source": "InfoJobs", "requires_graduation": True
     }
 ]
 
@@ -245,7 +282,7 @@ def popular_catalogo_base():
 
 popular_catalogo_base()
 
-# --- CSS COM ALTO CONTRASTE E CORREÇÃO RIGOROSA DE VISIBILIDADE ---
+# --- CSS COM ALTO CONTRASTE E CORREÇÃO RIGOROSA ---
 st.markdown("""
 <style>
     .stApp {
@@ -270,9 +307,6 @@ st.markdown("""
         text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25);
     }
 
-    /* ========================================================================= */
-    /* CORREÇÃO DO SELECTBOX: FUNDO BRANCO E TEXTO ESCURO NÍTIDO (NUNCA BRANCO)  */
-    /* ========================================================================= */
     div[data-testid="stSelectbox"] > div,
     div[data-testid="stSelectbox"] > div > div,
     div[data-baseweb="select"],
@@ -283,7 +317,6 @@ st.markdown("""
         border-radius: 12px !important;
     }
 
-    /* FORÇA O TEXTO INTERNO DA CAIXA SELECIONADA A FICAR TOTALMENTE VISÍVEL */
     div[data-testid="stSelectbox"] * {
         color: #111111 !important;
         -webkit-text-fill-color: #111111 !important;
@@ -292,7 +325,6 @@ st.markdown("""
         opacity: 1 !important;
     }
 
-    /* DROPDOWN / MENU SUSPENSO QUANDO CLICA */
     div[data-baseweb="popover"],
     div[data-baseweb="popover"] > div,
     ul[data-baseweb="menu"],
@@ -326,7 +358,6 @@ st.markdown("""
         font-weight: 800 !important;
     }
 
-    /* INPUTS GERAIS */
     div[data-baseweb="input"],
     div[data-baseweb="input"] > div,
     div[data-baseweb="base-input"],
@@ -355,7 +386,6 @@ st.markdown("""
         font-size: 0.95rem !important;
     }
 
-    /* ÁREA DE UPLOAD */
     [data-testid="stFileUploader"],
     [data-testid="stFileUploader"] > div,
     [data-testid="stFileUploader"] section,
@@ -571,6 +601,15 @@ st.markdown("""
         font-weight: 700;
         margin-right: 6px;
     }
+    .badge-farma {
+        background-color: #F3E5F5;
+        color: #6A1B9A !important;
+        padding: 4px 10px;
+        border-radius: 14px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-right: 6px;
+    }
     .badge-ninja {
         background-color: #FFF3E0;
         color: #E65100 !important;
@@ -747,6 +786,18 @@ INFO_EMPRESAS_SAUDE = {
         "pontos_atencao": "Estrutura com grande volume de atendimentos pelo SUS.",
         "dica_entrevista": "Evidencie carinho, paciência e manejo pediátrico/neonatal seguro."
     },
+    "sancta maggiore": {
+        "resumo": "Rede hospitalar própria da Prevent Senior com mais de 10 unidades em São Paulo especializadas no atendimento geriátrico e sênior.",
+        "cultura": "Foco integral no acolhimento ao paciente idoso, plano de carreira assistencial e forte estrutura de protocolos clínicos.",
+        "pontos_atencao": "Alto fluxo em prontos atendimentos e exigência de empatia e paciência redobradas com famílias.",
+        "dica_entrevista": "Destaque experiência com acolhimento sênior, prevenção de quedas e administração cuidadosa de polifarmácia."
+    },
+    "eurofarma": {
+        "resumo": "Uma das maiores farmacêuticas multinacionais brasileiras, com complexo industrial moderno em Itapevi/SP.",
+        "cultura": "Ambiente corporativo estruturado, excelente pacote de benefícios, foco em pesquisa clínica e inovação.",
+        "pontos_atencao": "Rotina corporativa diferente de hospital; exige relatórios regulatórios e bom domínio técnico de farmacovigilância.",
+        "dica_entrevista": "Evidencie rigor metodológico, atenção a detalhes e familiaridade com termos regulatórios da Anvisa."
+    },
     "einstein": {
         "resumo": "Hospital Israelita Albert Einstein (Morumbi, SP). O melhor hospital da América Latina.",
         "cultura": "Padrão de excelência internacional (JCI), tecnologia de ponta, remuneração e benefícios acima da média.",
@@ -779,7 +830,7 @@ INFO_EMPRESAS_SAUDE = {
     }
 }
 
-# --- BANCO DE DEMANDAS PARTICULARES SEPARADO POR ESTADO COM FOCO EM BELÉM (PA) ---
+# --- DEMANDAS PARTICULARES SEPARADAS POR ESTADO ---
 DEMANDAS_PARTICULARES_ESTADOS = {
     "PA - Pará (Belém e Região)": [
         {
@@ -890,6 +941,7 @@ PALAVRAS_CHAVE = [
     "biomedico", "biomedica", "analises clinicas", "bancada", "coleta",
     "hematologia", "bioquimica", "microbiologia", "imunologia",
     "biologia molecular", "sorologia", "laudos", "auditoria", "farmacia",
+    "farmaceutica", "farmacovigilancia", "pesquisa clinica", "sancta maggiore",
     "puncao", "gasometria", "triagem", "manchester", "quimioterapia", "drogas vasoativas"
 ]
 
@@ -920,8 +972,8 @@ def buscar_raio_x_empresa(nome_empresa: str) -> dict:
         if chave in nome_norm:
             return dados
     return {
-        "resumo": f"Instituição de saúde com atuação regional em {nome_empresa}.",
-        "cultura": "Ambiente assistencial hospitalar/laboratorial com escalas regulares e protocolos da vigilância sanitária.",
+        "resumo": f"Instituição de saúde ou laboratório com atuação em {nome_empresa}.",
+        "cultura": "Ambiente assistencial ou corporativo em saúde com protocolos sanitários consolidados.",
         "pontos_atencao": "Verifique a escala exata e os benefícios diretos (VT/VA) antes de aceitar a proposta.",
         "dica_entrevista": "Demonstre pontualidade, domínio dos Procedimentos Operacionais Padrão (POPs) e dedicação integral."
     }
@@ -985,7 +1037,7 @@ def gerar_analise_ia_completa(vaga: Job, curriculo_texto: str, perfil_kws: list)
     analise += f"💌 *'Você é uma profissional brilhante, competente e dedicada. Tenho orgulho infinito de você!'* — Com todo o meu amor, Thiago Zuza 💕 🐾"
     return analise
 
-# --- BARRA LATERAL (FILTROS + ALERTA DE E-MAIL) ---
+# --- BARRA LATERAL (FILTROS + PORTAIS DE VAGAS) ---
 st.sidebar.markdown("### 🎀 Localização & Carreira")
 
 LISTA_ESTADOS = [
@@ -1005,8 +1057,12 @@ filtro_estado = st.sidebar.selectbox("📍 Filtrar por Estado / Região:", LISTA
 
 filtro_categoria = st.sidebar.radio(
     "Área de Atuação:",
-    ["Todas", "Enfermagem", "Biomedicina", "Saúde Geral"]
+    ["Todas", "Enfermagem", "Biomedicina", "Indústria Farmacêutica", "Saúde Geral"]
 )
+
+# NOVO FILTRO EXCLUSIVO DE PORTAIS DE EMPREGO
+PORTAIS_DISPONIVEIS = ["Todos os Portais", "Catho", "Vagas.com", "InfoJobs", "LinkedIn", "Glassdoor", "Gupy Saúde"]
+filtro_portal = st.sidebar.selectbox("🌐 Filtrar por Portal de Vagas:", PORTAIS_DISPONIVEIS)
 
 if "filtro_empresa_rapido" not in st.session_state:
     st.session_state.filtro_empresa_rapido = ""
@@ -1014,7 +1070,7 @@ if "filtro_empresa_rapido" not in st.session_state:
 busca_termo = st.sidebar.text_input(
     "🔍 Busca por palavra",
     value=st.session_state.filtro_empresa_rapido,
-    placeholder="Ex: Sírio, Copa D'Or, Porto Dias, UTI, Coleta..."
+    placeholder="Ex: Sancta Maggiore, Eurofarma, Sírio, UTI..."
 )
 
 if st.sidebar.button("🔄 Sincronizar Portais 24h Agora"):
@@ -1085,6 +1141,9 @@ with Session(engine) as session:
         
     if filtro_categoria != "Todas":
         q = q.where(Job.category == filtro_categoria)
+
+    if filtro_portal != "Todos os Portais":
+        q = q.where(Job.source == filtro_portal)
         
     if busca_termo:
         t = f"%{busca_termo.strip()}%"
@@ -1098,7 +1157,7 @@ with Session(engine) as session:
     vagas_lista = session.exec(q.order_by(Job.created_at.desc())).all()
     todas_vagas_ativas = session.exec(select(Job)).all()
 
-    if not vagas_lista and filtro_estado == "Todos os Estados" and filtro_categoria == "Todas" and not busca_termo:
+    if not vagas_lista and filtro_estado == "Todos os Estados" and filtro_categoria == "Todas" and filtro_portal == "Todos os Portais" and not busca_termo:
         popular_catalogo_base()
         vagas_lista = session.exec(select(Job).order_by(Job.created_at.desc())).all()
 
@@ -1125,9 +1184,9 @@ tab_vagas, tab_biomed, tab_agenda, tab_necessidades, tab_ia_curriculo, tab_linke
 with tab_vagas:
     # --- 1. QUADRO DE EMPRESAS CONTRATANDO ---
     empresas_catalogo = [
+        "Hospital Sancta Maggiore (Prevent Senior)", "Eurofarma Laboratórios", "EMS Indústria Farmacêutica",
         "Hospital Porto Dias", "Hospital Sírio-Libanês", "Hospital Israelita Albert Einstein",
-        "Hospital Copa D'Or (Rede D'Or)", "Grupo Fleury Diagnósticos", "Laboratório Sérgio Franco (Dasa)",
-        "Hospital Ophir Loyola", "Hospital Santa Casa de Misericórdia do Pará"
+        "Hospital Copa D'Or (Rede D'Or)", "Grupo Fleury Diagnósticos"
     ]
     
     empresas_contagem = {emp: 0 for emp in empresas_catalogo}
@@ -1138,9 +1197,9 @@ with tab_vagas:
 
     st.markdown("""
     <div class="companies-box">
-        <h4 style="color:#C2185B !important; margin:0 0 4px 0;">🏥 Empresas Anunciando Vagas em Saúde Agora</h4>
+        <h4 style="color:#C2185B !important; margin:0 0 4px 0;">🏥 Hospitais, Sancta Maggiore & Farmacêuticas Contratando</h4>
         <p style="color:#4A1525; font-size:0.88rem; margin:0 0 8px 0;">
-            Selecione uma instituição para filtrar as oportunidades instantaneamente:
+            Selecione uma instituição para filtrar as vagas de enfermagem e pesquisa clínica instantaneamente:
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -1181,13 +1240,12 @@ with tab_vagas:
     </div>
     """, unsafe_allow_html=True)
 
-    # Estado de controle na sessão para visualização cristalina
     if "regiao_ninja_ativa" not in st.session_state:
         st.session_state.regiao_ninja_ativa = "PA"
     if "max_ninja_ativo" not in st.session_state:
         st.session_state.max_ninja_ativo = 6
 
-    # SELEÇÃO DE ESTADO COM BOTÕES CLAROS (SEM FALHA DE TEXTO INVISÍVEL)
+    # SELEÇÃO DE ESTADO
     st.markdown("<b style='color:#4A1525; font-size:0.92rem;'>📍 Escolha a Região:</b>", unsafe_allow_html=True)
     c_btn1, c_btn2, c_btn3 = st.columns(3)
     with c_btn1:
@@ -1206,7 +1264,7 @@ with tab_vagas:
             st.session_state.regiao_ninja_ativa = "RJ"
             st.rerun()
 
-    # SELEÇÃO DE QUANTIDADE MÁXIMA EM BOTÕES SEGMENTADOS COM ALTO CONTRASTE
+    # SELEÇÃO DE QUANTIDADE
     st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
     st.markdown("<b style='color:#4A1525; font-size:0.92rem;'>👥 Quantidade Máxima de Pessoas a Exibir na Tela:</b>", unsafe_allow_html=True)
     cq1, cq2, cq3, cq4 = st.columns(4)
@@ -1227,7 +1285,6 @@ with tab_vagas:
             st.session_state.max_ninja_ativo = "Todas"
             st.rerun()
 
-    # Mapeamento do estado ativo
     if st.session_state.regiao_ninja_ativa == "PA":
         chave_estado_ninja = "PA - Pará (Belém e Região)"
     elif st.session_state.regiao_ninja_ativa == "SP":
@@ -1237,7 +1294,6 @@ with tab_vagas:
 
     lista_demandas_estado = DEMANDAS_PARTICULARES_ESTADOS.get(chave_estado_ninja, [])
     
-    # Aplica o limite
     if st.session_state.max_ninja_ativo != "Todas":
         demandas_exibir = lista_demandas_estado[:int(st.session_state.max_ninja_ativo)]
     else:
@@ -1270,7 +1326,7 @@ with tab_vagas:
             </div>
             """, unsafe_allow_html=True)
 
-    # --- 3. GUIA PARA ENCONTRAREM ELA EM PORTAIS DE PRESTAÇÃO DE SERVIÇO ---
+    # --- 3. GUIA DE PORTAIS DE PRESTAÇÃO DE SERVIÇO ---
     st.markdown("""
     <div style="background:#FFFFFF; border:1px dashed #FF85A2; border-radius:14px; padding:14px 18px; margin: 12px 0 20px 0;">
         <h5 style="color:#C2185B !important; margin:0 0 6px 0;">🌐 Para Pacientes e Empresas Encontrarem Ela em Tempo Real:</h5>
@@ -1292,10 +1348,10 @@ with tab_vagas:
     """, unsafe_allow_html=True)
 
     st.markdown("---")
-    st.markdown(f"<h3 style='color: #AD1457 !important;'>🩺 Oportunidades no Feed Hospitalar 24h: <b>{len(vagas_lista)}</b></h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='color: #AD1457 !important;'>🩺 Oportunidades no Feed Hospitalar & Farmacêutico 24h: <b>{len(vagas_lista)}</b></h3>", unsafe_allow_html=True)
     
     if not vagas_lista:
-        st.info("Nenhuma oportunidade localizada para estes filtros. Tente selecionar 'Todos os Estados' ou limpar o filtro de empresa acima!")
+        st.info("Nenhuma oportunidade localizada para estes filtros. Tente selecionar 'Todos os Estados' ou 'Todos os Portais'!")
     else:
         for v in vagas_lista:
             score, _ = calcular_match_real(v, curriculo_armazenado, user_kws)
@@ -1310,7 +1366,13 @@ with tab_vagas:
             else:
                 badge_estado = f'<span class="badge">📍 {uf}</span>'
 
-            badge_cat = '<span class="badge-bio">🔬 Biomedicina</span>' if getattr(v, "category", "Enfermagem") == "Biomedicina" else '<span class="badge">🩺 Enfermagem</span>'
+            cat_vaga = getattr(v, "category", "Enfermagem")
+            if cat_vaga == "Biomedicina":
+                badge_cat = '<span class="badge-bio">🔬 Biomedicina</span>'
+            elif cat_vaga == "Indústria Farmacêutica":
+                badge_cat = '<span class="badge-farma">💊 Farmacêutica</span>'
+            else:
+                badge_cat = '<span class="badge">🩺 Enfermagem</span>'
             
             link_vaga = v.url_apply if v.url_apply.startswith("http") else f"https://{v.url_apply}"
             rota_maps = f"https://www.google.com/maps/dir/?api=1&destination={urllib.parse.quote(f'{v.hospital_or_company} {v.location}')}&travelmode=transit"
@@ -1331,7 +1393,7 @@ with tab_vagas:
                 </div>
                 <p style="color: #333333 !important; font-size: 0.92rem; line-height: 1.4;">{v.description}</p>
                 <div style="margin-top: 10px;">
-                    <a href="{link_vaga}" target="_blank" class="action-link" style="background:#FF69B4; color:white !important; font-weight:bold;">Acessar no Portal 🔗</a>
+                    <a href="{link_vaga}" target="_blank" class="action-link" style="background:#FF69B4; color:white !important; font-weight:bold;">Acessar no {v.source} 🔗</a>
                     <a href="{rota_maps}" target="_blank" class="action-link">🗺️ Simular Rota Maps</a>
                     <a href="{link_zap}" target="_blank" class="action-link">💬 Compartilhar Zap</a>
                 </div>
@@ -1580,7 +1642,7 @@ with tab_agenda:
 
     st.markdown("---")
 
-    # --- PORTAL SUS / CONECTE SUS / LOCALIZAÇÃO E CONTATOS DE UBS E UPA ---
+    # --- PORTAL SUS / CONECTE SUS ---
     st.markdown("### 🏥 Portal SUS & Agendamentos na Rede Pública (UBS & UPA)")
     st.markdown("Canais diretos para marcação de consultas, vacinas, exames gratuitos e pronto atendimento pelo SUS:")
 
