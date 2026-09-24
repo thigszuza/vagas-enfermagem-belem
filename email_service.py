@@ -66,21 +66,43 @@ def formatar_html_vagas(vagas: List[Job], nome_destinatario="Meu Amor"):
     return html
 
 
-def enviar_boletim_email(vagas: List[Job], nome_destinatario="Meu Amor"):
+def enviar_boletim_email(vagas: List[Job], destinatario_direto: str = None, nome_destinatario: str = "Meu Amor"):
     if not SMTP_USER or not SMTP_PASSWORD:
-        print("⚠️ Credenciais SMTP não configuradas. Defina EMAIL_REMETENTE e EMAIL_SENHA nos Segredos do GitHub.")
+        print("⚠️ Credenciais SMTP não configuradas. Defina EMAIL_REMETENTE e EMAIL_SENHA.")
         return False
 
     if not vagas:
         print("ℹ️ Nenhuma nova vaga encontrada nesta execução.")
         return True
 
-    # Lê os destinatários separados por vírgula do GitHub Secret EMAIL_DESTINATARIO
-    destinatarios_raw = os.getenv("EMAIL_DESTINATARIO", SMTP_USER)
-    destinatarios = [e.strip() for e in destinatarios_raw.split(",") if e.strip()]
+    # Se um destinatário específico foi passado, usa ele; senão usa os Secrets
+    if destinatario_direto:
+        destinatarios = [destinatario_direto.strip()]
+    else:
+        destinatarios_raw = os.getenv("EMAIL_DESTINATARIO", SMTP_USER)
+        destinatarios = [e.strip() for e in destinatarios_raw.split(",") if e.strip()]
 
     if not destinatarios:
         print("⚠️ Nenhum destinatário de e-mail definido.")
+        return False
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"🌸 {len(vagas)} Novas Vagas de Enfermagem em Belém para Você! 💕"
+    msg["From"] = f"Vagas Enfermagem Belém <{SMTP_USER}>"
+    msg["To"] = ", ".join(destinatarios)
+
+    corpo_html = formatar_html_vagas(vagas, nome_destinatario)
+    msg.attach(MIMEText(corpo_html, "html"))
+
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(SMTP_USER, destinatarios, msg.as_string())
+        print(f"✅ E-mail HTML enviado com sucesso para: {', '.join(destinatarios)}!")
+        return True
+    except Exception as e:
+        print(f"❌ Erro ao enviar e-mail: {e}")
         return False
 
     msg = MIMEMultipart("alternative")

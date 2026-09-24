@@ -27,20 +27,31 @@ def sincronizar_e_notificar():
         session.commit()
         session.refresh(nova)
         vagas_novas.append(nova)
+        
+        # --- TESTE TEMPORÁRIO PARA FORÇAR O DISPARO ---
+    if not vagas_novas:
+        vagas_novas.append(Job(
+            title="Enfermeiro(a) - Vaga Teste",
+            hospital_or_company="Hospital Beneficente Portuguesa",
+            location="Belém - PA",
+            description="Esta é uma mensagem de teste para validar o disparo automático do robô.",
+            specialty="Geral",
+            shift_type="12x36",
+            url_apply="https://google.com"
+        ))
+    # ---------------------------------------------
 
     # Dispara e-mail com todas as vagas novas reunidas para as pessoas inscritas
     if vagas_novas:
-      assinantes = session.exec(
-          select(UserSubscription).where(UserSubscription.active == True)
-      ).all()
-      for sub in assinantes:
-        enviar_boletim_email(sub.email, vagas_novas)
+        # 1. Envio para destinatários configurados via GitHub Secrets / Variáveis de Ambiente
+        enviar_boletim_email(vagas_novas)
 
-  print(
-      f"Sincronização concluída: {len(vagas_novas)} vagas inéditas processadas."
-  )
-
-
-if __name__ == "__main__":
-  sincronizar_e_notificar()
-  
+        # 2. Envio para assinantes cadastrados no banco (se houver)
+        try:
+            assinantes = session.exec(
+                select(UserSubscription).where(UserSubscription.active == True)
+            ).all()
+            for sub in assinantes:
+                enviar_boletim_email(vagas_novas, destinatario_direto=sub.email, nome_destinatario=sub.name or "Candidato(a)")
+        except Exception as e:
+            print(f"Aviso ao buscar assinantes no banco: {e}")
