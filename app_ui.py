@@ -335,14 +335,21 @@ def disparar_push_todas_vagas(destinatario_email: str, destinatario_nome: str, l
     if not destinatario_email or not lista_vagas:
         return False
     
-    # 1. Tenta envio direto via Resend API (se configurado no secrets/env)
     resend_api_key = os.getenv("RESEND_API_KEY", "")
     remetente_email = os.getenv("EMAIL_FROM", "onboarding@resend.dev")
     
-    # Monta o corpo em HTML limpo e romântico com todas as vagas
     linhas_vagas_html = ""
     for v in lista_vagas[:20]:
-        data_anuncio_fmt = v.created_at.strftime("%d/%m/%Y às %H:%M") if hasattr(v, "created_at") and v.created_at else "Recém-publicada"
+        dt = getattr(v, "created_at", None)
+        if isinstance(dt, str):
+            try:
+                dt = datetime.strptime(dt[:19], "%Y-%m-%d %H:%M:%S")
+            except Exception:
+                dt = datetime.utcnow()
+        elif not isinstance(dt, datetime):
+            dt = datetime.utcnow()
+
+        data_anuncio_fmt = dt.strftime("%d/%m/%Y às %H:%M")
         link_vaga = v.url_apply if v.url_apply.startswith("http") else f"https://{v.url_apply}"
         linhas_vagas_html += f"""
         <div style="background:#FFFFFF; border:1px solid #FFCCD7; border-left:5px solid #FF69B4; border-radius:12px; padding:14px; margin-bottom:12px;">
@@ -390,7 +397,6 @@ def disparar_push_todas_vagas(destinatario_email: str, destinatario_nome: str, l
         except Exception:
             pass
 
-    # 2. Alternativa: Envio via SMTP padrão (se configurado nas credenciais)
     smtp_host = os.getenv("SMTP_HOST", "")
     smtp_port = int(os.getenv("SMTP_PORT", 587))
     smtp_user = os.getenv("SMTP_USER", "")
@@ -412,7 +418,7 @@ def disparar_push_todas_vagas(destinatario_email: str, destinatario_nome: str, l
         except Exception:
             pass
 
-    return True  # Retorna True em modo integrado/simulado garantido
+    return True
 
 # --- CSS COM ALTO CONTRASTE E UNIFORMIZAÇÃO DE CORES ---
 st.markdown("""
@@ -878,7 +884,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- FUNÇÕES DE PREVISÃO E LEITURA DE NOTÍCIAS ---
+# --- FUNÇÃO DE PREVISÃO DO TEMPO ---
 @st.cache_data(ttl=1800)
 def obter_previsao_tempo(cidade_nome: str):
     coords = {
@@ -1305,10 +1311,8 @@ with st.sidebar.form("form_inscricao_alertas"):
                     session.add(sub)
                 session.commit()
                 
-                # Coleta todas as vagas mais recentes de todos os estados para o push imediato
                 vagas_push = session.exec(select(Job).order_by(Job.created_at.desc())).all()
 
-            # Dispara o push imediato de todas as vagas simultâneas
             if ativo_check and vagas_push:
                 disparar_push_todas_vagas(email_limpo, nome_input.strip() or "Amor", vagas_push)
                 st.sidebar.success(f"✅ Push enviado para {email_limpo}! As novas vagas de todos os estados chegarão em tempo real.")
@@ -1383,7 +1387,6 @@ tab_vagas, tab_biomed, tab_agenda, tab_necessidades, tab_ia_curriculo, tab_linke
 
 # ================= TAB 1: MURAL DE VAGAS =================
 with tab_vagas:
-    # --- 1. QUADRO DE EMPRESAS CONTRATANDO ---
     empresas_catalogo = [
         "Hospital Sancta Maggiore (Prevent Senior)", "Eurofarma Laboratórios", "EMS Indústria Farmacêutica",
         "Hospital Porto Dias", "Hospital Sírio-Libanês", "Hospital Israelita Albert Einstein",
@@ -1576,10 +1579,24 @@ with tab_vagas:
             
             badge_portal = f'<span class="badge-portal-azul">🌐 {v.source}</span>'
 
-            # DATA DO ANÚNCIO E TEMPO RELATIVO FORMATADOS COM DESTAQUE
-            dt_criacao = v.created_at if hasattr(v, "created_at") and v.created_at else datetime.utcnow()
+            # --- TRATAMENTO ROBUSTO DA DATA DE ANÚNCIO (COMPATÍVEL COM STR E DATETIME) ---
+            dt_criacao = getattr(v, "created_at", None)
+
+            if isinstance(dt_criacao, str):
+                try:
+                    dt_criacao = datetime.strptime(dt_criacao[:19], "%Y-%m-%d %H:%M:%S")
+                except Exception:
+                    dt_criacao = datetime.utcnow()
+            elif not isinstance(dt_criacao, datetime):
+                dt_criacao = datetime.utcnow()
+
+            if dt_criacao.tzinfo is not None:
+                dt_criacao = dt_criacao.replace(tzinfo=None)
+
             dt_formatada = dt_criacao.strftime("%d/%m/%Y às %H:%M")
-            minutos_atras = int((datetime.utcnow() - dt_criacao).total_seconds() / 60)
+            delta_segundos = max((datetime.utcnow() - dt_criacao).total_seconds(), 0)
+            minutos_atras = int(delta_segundos / 60)
+
             if minutos_atras <= 60:
                 tempo_relativo = f"Publicada há {max(minutos_atras, 2)} min"
             elif minutos_atras <= 1440:
@@ -2116,7 +2133,7 @@ with tab_necessidades:
                     if st.button("Excluir", key=f"del_nec_{item.id}"):
                         with Session(engine) as s:
                             obj = s.get(MonthlyNeed, item.id)
-                            s.delete(obj)
+                            obj.delete(obj)
                             s.commit()
                         st.rerun()
                 st.divider()
