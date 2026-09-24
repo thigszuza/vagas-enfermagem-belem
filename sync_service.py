@@ -9,49 +9,64 @@ engine = create_engine(sqlite_url, echo=False)
 
 
 def sincronizar_e_notificar():
-  print("Iniciando varredura de vagas em Belém...")
-  scraper = ScraperHospitaisBelem()
-  vagas_encontradas = scraper.coletar_todas()
+    print("Iniciando varredura de vagas em Belém...")
+    scraper = ScraperHospitaisBelem()
+    vagas_encontradas = scraper.coletar_todas()
 
-  vagas_novas = []
+    vagas_novas = []
 
-  with Session(engine) as session:
-    for v_data in vagas_encontradas:
-      existente = session.exec(
-          select(Job).where(Job.url_apply == v_data["url_apply"])
-      ).first()
+    with Session(engine) as session:
+        for v_data in vagas_encontradas:
+            existente = session.exec(
+                select(Job).where(Job.url_apply == v_data["url_apply"])
+            ).first()
 
-      if not existente:
-        nova = Job(**v_data)
-        session.add(nova)
-        session.commit()
-        session.refresh(nova)
-        vagas_novas.append(nova)
-        
+            if not existente:
+                nova = Job(**v_data)
+                session.add(nova)
+                session.commit()
+                session.refresh(nova)
+                vagas_novas.append(nova)
+
         # --- TESTE TEMPORÁRIO PARA FORÇAR O DISPARO ---
-    if not vagas_novas:
-        vagas_novas.append(Job(
-            title="Enfermeiro(a) - Vaga Teste",
-            hospital_or_company="Hospital Beneficente Portuguesa",
-            location="Belém - PA",
-            description="Esta é uma mensagem de teste para validar o disparo automático do robô.",
-            specialty="Geral",
-            shift_type="12x36",
-            url_apply="https://google.com"
-        ))
-    # ---------------------------------------------
+        if not vagas_novas:
+            print("Nenhuma vaga inédita raspada. Injetando vaga de teste para validar e-mail...")
+            vagas_novas.append(
+                Job(
+                    title="Enfermeiro(a) - Teste Automático",
+                    hospital_or_company="Hospital Beneficente Portuguesa",
+                    location="Belém - PA",
+                    description="Esta é uma mensagem de teste para validar o disparo automático do robô.",
+                    specialty="Geral",
+                    shift_type="12x36",
+                    url_apply="https://google.com",
+                )
+            )
+        # ---------------------------------------------
 
-    # Dispara e-mail com todas as vagas novas reunidas para as pessoas inscritas
-    if vagas_novas:
-        # 1. Envio para destinatários configurados via GitHub Secrets / Variáveis de Ambiente
-        enviar_boletim_email(vagas_novas)
+        # Dispara e-mail com todas as vagas novas reunidas para as pessoas inscritas
+        if vagas_novas:
+            print(f"Disparando e-mail para {len(vagas_novas)} vaga(s)...")
+            # 1. Envio para destinatários configurados via GitHub Secrets / Variáveis de Ambiente
+            enviar_boletim_email(vagas_novas)
 
-        # 2. Envio para assinantes cadastrados no banco (se houver)
-        try:
-            assinantes = session.exec(
-                select(UserSubscription).where(UserSubscription.active == True)
-            ).all()
-            for sub in assinantes:
-                enviar_boletim_email(vagas_novas, destinatario_direto=sub.email, nome_destinatario=sub.name or "Candidato(a)")
-        except Exception as e:
-            print(f"Aviso ao buscar assinantes no banco: {e}")
+            # 2. Envio para assinantes cadastrados no banco (se houver)
+            try:
+                assinantes = session.exec(
+                    select(UserSubscription).where(UserSubscription.active == True)
+                ).all()
+                for sub in assinantes:
+                    enviar_boletim_email(
+                        vagas_novas,
+                        destinatario_direto=sub.email,
+                        nome_destinatario=sub.name or "Candidato(a)",
+                    )
+            except Exception as e:
+                print(f"Aviso ao buscar assinantes no banco: {e}")
+
+    print(f"Sincronização concluída: {len(vagas_novas)} vagas processadas.")
+
+
+if __name__ == "__main__":
+    sincronizar_e_notificar()
+    
