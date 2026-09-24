@@ -43,7 +43,6 @@ def sanitizar_datetime(dt) -> datetime:
     if not dt:
         return datetime.utcnow()
     if isinstance(dt, str):
-        # Tenta formatos comuns salvos pelo SQLite
         for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
             try:
                 return datetime.strptime(dt[:19], fmt)
@@ -358,7 +357,7 @@ def disparar_push_todas_vagas(destinatario_email: str, destinatario_nome: str, l
 
     return True
 
-# --- ESTILIZAÇÃO CSS COMPLETA ---
+# --- CSS COM ALTO CONTRASTE TOTAL (ELIMINA FUNDOS ESCUROS E TEXTOS ILEGÍVEIS) ---
 st.markdown("""
 <style>
     .stApp {
@@ -374,11 +373,8 @@ st.markdown("""
         background-color: #FF85A2 !important;
         border-right: 2px solid #FF5C8A;
     }
-    [data-testid="stSidebar"] * {
-        color: #FFFFFF !important;
-        font-weight: 700 !important;
-    }
 
+    /* ELIMINA A BARRA PRETA E AJUSTA O MENU SUPERIOR */
     .stTabs [data-baseweb="tab-list"] {
         gap: 6px !important;
         background-color: transparent !important;
@@ -412,6 +408,92 @@ st.markdown("""
     }
     .stTabs [aria-selected="true"] * {
         color: #FFFFFF !important;
+    }
+
+    /* ========================================================================= */
+    /* ELIMINA FUNDOS PRETOS DE TEXTAREA, INPUTS E SELECTBOXES (100% ROSA/BRANCO) */
+    /* ========================================================================= */
+    div[data-baseweb="textarea"],
+    div[data-baseweb="textarea"] > textarea,
+    textarea,
+    div[data-baseweb="input"],
+    div[data-baseweb="input"] > div,
+    div[data-baseweb="base-input"],
+    .stTextInput > div,
+    .stTextInput > div > div,
+    .stTextArea > div,
+    .stTextArea > div > div,
+    div[data-testid="stSelectbox"] > div,
+    div[data-testid="stSelectbox"] > div > div,
+    div[data-baseweb="select"],
+    div[data-baseweb="select"] > div {
+        background-color: #FFFFFF !important;
+        background: #FFFFFF !important;
+        border: 2px solid #FFCCD7 !important;
+        border-radius: 14px !important;
+        color: #1A1A1A !important;
+        -webkit-text-fill-color: #1A1A1A !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+    }
+
+    textarea::placeholder, input::placeholder {
+        color: #888888 !important;
+        -webkit-text-fill-color: #888888 !important;
+        font-weight: 500 !important;
+    }
+
+    /* ========================================================================= */
+    /* TODOS OS BOTÕES E POPOVERS EM ROSA CHICLETE COM TEXTO BRANCO LEGÍVEL     */
+    /* ========================================================================= */
+    div[data-testid="stPopover"],
+    div[data-testid="stPopover"] > button,
+    div[data-testid="stPopover"] button,
+    .stButton > button,
+    .stDownloadButton > button,
+    div[data-testid="stFormSubmitButton"] > button,
+    button[kind="primary"],
+    button[kind="secondary"] {
+        background: linear-gradient(135deg, #FF69B4, #E91E63) !important;
+        background-color: #FF69B4 !important;
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+        border: none !important;
+        border-radius: 22px !important;
+        font-weight: 800 !important;
+        padding: 9px 20px !important;
+        box-shadow: 0 4px 12px rgba(233, 30, 99, 0.28) !important;
+        transition: all 0.3s ease;
+    }
+
+    div[data-testid="stPopover"] > button *,
+    div[data-testid="stPopover"] button *,
+    .stButton > button *,
+    .stDownloadButton > button *,
+    div[data-testid="stFormSubmitButton"] > button * {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+        font-weight: 800 !important;
+    }
+
+    div[data-testid="stPopover"] > button:hover,
+    .stButton > button:hover,
+    div[data-testid="stFormSubmitButton"] > button:hover {
+        background: linear-gradient(135deg, #E91E63, #C2185B) !important;
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+        transform: translateY(-1px);
+    }
+
+    /* MINI GAME DE PROGRESSO */
+    .game-card {
+        background: linear-gradient(135deg, #FFFFFF, #FFF0F5);
+        border: 2px solid #FF85A2;
+        border-left: 8px solid #E91E63;
+        border-radius: 18px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 14px rgba(233, 30, 99, 0.12);
     }
 
     .hello-kitty-alert {
@@ -483,54 +565,37 @@ st.markdown("""
         margin-right: 6px;
         border: 1px solid #F8BBD0;
     }
-
-    div[data-testid="stPopover"],
-    div[data-testid="stPopover"] > button,
-    .stButton > button {
-        background: linear-gradient(135deg, #FF69B4, #E91E63) !important;
-        color: #FFFFFF !important;
-        border: none !important;
-        border-radius: 20px !important;
-        font-weight: 700 !important;
-        padding: 8px 18px !important;
-        box-shadow: 0 4px 10px rgba(233, 30, 99, 0.28) !important;
-    }
-    div[data-testid="stPopover"] > button *,
-    .stButton > button * {
-        color: #FFFFFF !important;
-        font-weight: 700 !important;
-    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- BARRA LATERAL ---
+# --- BARRA LATERAL: CARTÃO DE ATUALIZAÇÕES COM FUNDO BRANCO E CONTRASTE PERFEITO ---
 st.sidebar.markdown("""
 <div style="
-    background: linear-gradient(135deg, #FFFFFF, #FFF0F5);
-    border: 2px solid #FFCCD7;
-    border-left: 6px solid #E91E63;
-    border-radius: 14px;
-    padding: 14px 16px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 12px rgba(233, 30, 99, 0.08);
+    background-color: #FFFFFF !important;
+    border: 2px solid #FFCCD7 !important;
+    border-left: 6px solid #E91E63 !important;
+    border-radius: 16px !important;
+    padding: 16px 18px !important;
+    margin-bottom: 22px !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08) !important;
 ">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
-        <b style="color:#C2185B; font-size: 0.95rem;">🛠️ Atualizações do Desenvolvedor</b>
-        <span style="background:#FFE0E9; color:#AD1457; font-size:0.75rem; font-weight:700; padding:2px 8px; border-radius:10px;">v2.6</span>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+        <b style="color:#C2185B !important; font-size: 1rem; font-weight: 800;">🛠️ Atualizações do Dev</b>
+        <span style="background:#FFE0E9; color:#AD1457 !important; font-size:0.75rem; font-weight:800; padding:2px 8px; border-radius:10px;">v2.7</span>
     </div>
-    <p style="color:#666; font-size: 0.78rem; margin: 0 0 8px 0;">Notas de versão por Thiago Zuza 💕</p>
-    <ul style="color:#33101E; font-size:0.83rem; line-height:1.45; padding-left:18px; margin:0;">
-        <li><b>Radar Nacional:</b> Expansão e catalogação dinâmica de vagas hospitalares e farmacêuticas.</li>
-        <li><b>Ordenação Inteligente:</b> Prioridade automática para vagas mais próximas da sua casa (Belém/Centro).</li>
-        <li><b>Data & Recência:</b> Exibição da data/hora exata do anúncio e tempo relativo decorrido.</li>
-        <li><b>Push Automático por E-mail:</b> Disparo simultâneo de oportunidades nacionais recém-publicadas.</li>
-        <li><b>Alerta Hello Kitty & Diário:</b> Notificação rápida da última vaga e envio de feedback no WhatsApp.</li>
-        <li><b>Uniformização Visual:</b> Correção total de contraste, remoção de fundos pretos, setas rosas e divisórias.</li>
+    <p style="color:#777777 !important; font-size: 0.8rem; font-weight: 600; margin: 0 0 10px 0;">Feito com amor por Thiago Zuza 💕</p>
+    <ul style="color:#221017 !important; font-size:0.84rem; line-height:1.5; padding-left:18px; margin:0; font-weight:600;">
+        <li><b style="color:#AD1457 !important;">Radar Nacional:</b> Vagas hospitalares e farmacêuticas catalogadas.</li>
+        <li><b style="color:#AD1457 !important;">Mais Perto de Casa:</b> Prioridade para bairros centrais de Belém.</li>
+        <li><b style="color:#AD1457 !important;">Data do Anúncio:</b> Horário e minutos da postagem em cada vaga.</li>
+        <li><b style="color:#AD1457 !important;">Push por E-mail:</b> Alerta simultâneo com envio em tempo real.</li>
+        <li><b style="color:#AD1457 !important;">Hello Kitty & Diário:</b> Notificação rápida e feedback no WhatsApp.</li>
+        <li><b style="color:#AD1457 !important;">Visual 100% Rosa & Legível:</b> Fim das caixas pretas e contraste alto.</li>
     </ul>
 </div>
 """, unsafe_allow_html=True)
 
-st.sidebar.markdown("### 🎀 Localização & Carreira")
+st.sidebar.markdown("<h3 style='color:#FFFFFF !important;'>🎀 Localização & Carreira</h3>", unsafe_allow_html=True)
 
 LISTA_ESTADOS = [
     "Todos os Estados", "PA - Pará (Belém e Região)", "SP - São Paulo",
@@ -563,7 +628,7 @@ if st.sidebar.button("🔄 Sincronizar Portais 24h Agora"):
         st.rerun()
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 💌 Alertas Automáticos por E-mail")
+st.sidebar.markdown("<h3 style='color:#FFFFFF !important;'>💌 Alertas Automáticos por E-mail</h3>", unsafe_allow_html=True)
 with st.sidebar.form("form_inscricao_alertas"):
     nome_input = st.text_input("Nome:", placeholder="Ex: Meu Amor")
     email_input = st.text_input("E-mail para Receber Alertas:", placeholder="exemplo@gmail.com")
@@ -618,9 +683,21 @@ try:
             return (calcular_peso_proximidade(j), dt_limpa)
 
         vagas_lista = sorted(vagas_brutas, key=chave_ordenacao, reverse=True)
+        
+        # Estatísticas para o Mini Game de Candidaturas
+        total_vagas_sistema = len(todas_vagas_ativas)
+        total_candidatadas = len(session.exec(select(Job).where(Job.status == "Candidatada")).all())
+        total_feedbacks = len(session.exec(select(FeedbackEntry)).all())
+        
+        # Meta do jogo baseada no progresso real
+        meta_candidaturas = max(total_vagas_sistema, 1)
+        porcentagem_conquistada = min(int((total_candidatadas / max(meta_candidaturas, 1)) * 100), 100)
 except Exception:
     vagas_lista = []
     todas_vagas_ativas = []
+    total_candidatadas = 0
+    total_feedbacks = 0
+    porcentagem_conquistada = 0
 
 vaga_recente = vagas_lista[0] if vagas_lista else None
 
@@ -636,6 +713,27 @@ tab_vagas, tab_feedback, tab_biomed, tab_agenda, tab_ia, tab_rotas = st.tabs([
 
 # ================= TAB 1: MURAL DE VAGAS =================
 with tab_vagas:
+    # 🎮 MINI-GAME DE CANDIDATURAS & PALAVRA DE APOIO
+    msg_nivel = "Iniciante Determinada 🌱" if porcentagem_conquistada < 20 else ("Profissional em Ascensão 🌟" if porcentagem_conquistada < 60 else "Candidata Imparável 👑")
+    
+    st.markdown(f"""
+    <div class="game-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <b style="color:#C2185B; font-size:1.05rem;">🎮 Mini-Game de Carreiras: Nível {msg_nivel}</b>
+            <span style="background:#FFE0E9; color:#AD1457; font-weight:800; font-size:0.85rem; padding:3px 12px; border-radius:12px;">
+                🎯 {total_candidatadas} Vagas Salvas ({porcentagem_conquistada}% de Conquista)
+            </span>
+        </div>
+        <p style="color:#4A1525; font-size:0.92rem; margin:8px 0 10px 0; font-weight:600;">
+            💖 <b>Não desanime!</b> Cada candidatura enviada e cada vaga salva é um passo concreto rumo à realização dos seus sonhos e à sua contratação dos sonhos! ✨
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Barra de progresso do mini game
+    st.progress(porcentagem_conquistada / 100.0)
+
+    # 🎀 NOTIFICAÇÃO EM TEMPO REAL DA HELLO KITTY
     if vaga_recente:
         dt_v = sanitizar_datetime(getattr(vaga_recente, "created_at", None))
         minutos = max(int((datetime.utcnow() - dt_v).total_seconds() / 60), 1)
