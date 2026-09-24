@@ -38,6 +38,24 @@ st.set_page_config(
 if "ultimo_refresh" not in st.session_state:
     st.session_state.ultimo_refresh = datetime.utcnow()
 
+# --- FUNÇÃO UTILITÁRIA BLINDADA PARA DATAS ---
+def sanitizar_datetime(dt) -> datetime:
+    if not dt:
+        return datetime.utcnow()
+    if isinstance(dt, str):
+        # Tenta formatos comuns salvos pelo SQLite
+        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
+            try:
+                return datetime.strptime(dt[:19], fmt)
+            except Exception:
+                pass
+        return datetime.utcnow()
+    if isinstance(dt, datetime):
+        if dt.tzinfo is not None:
+            return dt.replace(tzinfo=None)
+        return dt
+    return datetime.utcnow()
+
 # --- MODELOS ADICIONAIS DE BANCO ---
 class MedicalAppointment(SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
@@ -289,15 +307,7 @@ def disparar_push_todas_vagas(destinatario_email: str, destinatario_nome: str, l
     
     linhas_vagas_html = ""
     for v in lista_vagas[:20]:
-        dt = getattr(v, "created_at", None)
-        if isinstance(dt, str):
-            try:
-                dt = datetime.strptime(dt[:19], "%Y-%m-%d %H:%M:%S")
-            except Exception:
-                dt = datetime.utcnow()
-        elif not isinstance(dt, datetime):
-            dt = datetime.utcnow()
-
+        dt = sanitizar_datetime(getattr(v, "created_at", None))
         data_anuncio_fmt = dt.strftime("%d/%m/%Y às %H:%M")
         link_vaga = v.url_apply if v.url_apply.startswith("http") else f"https://{v.url_apply}"
         linhas_vagas_html += f"""
@@ -493,7 +503,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- BARRA LATERAL (COM ATUALIZAÇÕES DO DESENVOLVEDOR NO TOPO) ---
+# --- BARRA LATERAL ---
 st.sidebar.markdown("""
 <div style="
     background: linear-gradient(135deg, #FFFFFF, #FFF0F5);
@@ -604,15 +614,8 @@ try:
         vagas_brutas = session.exec(q).all()
 
         def chave_ordenacao(j):
-            dt = getattr(j, "created_at", None)
-            if isinstance(dt, str):
-                try:
-                    dt = datetime.strptime(dt[:19], "%Y-%m-%d %H:%M:%S")
-                except Exception:
-                    dt = datetime.utcnow()
-            elif not isinstance(dt, datetime):
-                dt = datetime.utcnow()
-            return (calcular_peso_proximidade(j), dt)
+            dt_limpa = sanitizar_datetime(getattr(j, "created_at", None))
+            return (calcular_peso_proximidade(j), dt_limpa)
 
         vagas_lista = sorted(vagas_brutas, key=chave_ordenacao, reverse=True)
 except Exception:
@@ -634,12 +637,7 @@ tab_vagas, tab_feedback, tab_biomed, tab_agenda, tab_ia, tab_rotas = st.tabs([
 # ================= TAB 1: MURAL DE VAGAS =================
 with tab_vagas:
     if vaga_recente:
-        dt_v = getattr(vaga_recente, "created_at", datetime.utcnow())
-        if isinstance(dt_v, str):
-            try:
-                dt_v = datetime.strptime(dt_v[:19], "%Y-%m-%d %H:%M:%S")
-            except Exception:
-                dt_v = datetime.utcnow()
+        dt_v = sanitizar_datetime(getattr(vaga_recente, "created_at", None))
         minutos = max(int((datetime.utcnow() - dt_v).total_seconds() / 60), 1)
 
         st.markdown(f"""
@@ -665,18 +663,7 @@ with tab_vagas:
         peso_prox = calcular_peso_proximidade(v)
         badge_prox = '<span class="badge-proxima">🏠 Bem Pertinho de Casa</span>' if peso_prox >= 80 else ''
         
-        dt_c = getattr(v, "created_at", datetime.utcnow())
-        if isinstance(dt_c, str):
-            try:
-                dt_c = datetime.strptime(dt_c[:19], "%Y-%m-%d %H:%M:%S")
-            except Exception:
-                dt_c = datetime.utcnow()
-        elif not isinstance(dt_c, datetime):
-            dt_c = datetime.utcnow()
-
-        if dt_c.tzinfo is not None:
-            dt_c = dt_c.replace(tzinfo=None)
-
+        dt_c = sanitizar_datetime(getattr(v, "created_at", None))
         dt_fmt = dt_c.strftime("%d/%m/%Y às %H:%M")
         delta_s = max((datetime.utcnow() - dt_c).total_seconds(), 0)
         minutos_calc = int(delta_s / 60)
