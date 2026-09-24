@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 
 import streamlit as st
 import streamlit.components.v1 as components
-from pypdf import PdfReader
 from sqlalchemy import text
 from sqlmodel import Session, SQLModel, create_engine, select
 
@@ -241,7 +240,7 @@ st.markdown("""
         color: #4A1525 !important;
     }
 
-    /* Forçar todos os títulos e textos a terem cor escura e visível */
+    /* Títulos e textos com alto contraste */
     h1, h2, h3, h4, h5, h6, p, label, span {
         color: #4A1525 !important;
     }
@@ -285,7 +284,7 @@ st.markdown("""
         font-size: 0.95rem !important;
     }
 
-    /* Avisos e Alertas (Warnings e Infos) com texto sempre escuro e legível */
+    /* Avisos e Alertas com texto legível */
     [data-testid="stAlert"] {
         border-radius: 12px !important;
         border: 1px solid #FFB6C1 !important;
@@ -322,7 +321,7 @@ st.markdown("""
         font-weight: 700 !important;
     }
 
-    /* ABAS (TABS) - ALTO CONTRASTE */
+    /* ABAS (TABS) */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px !important;
         background-color: transparent !important;
@@ -414,11 +413,29 @@ st.markdown("""
         border: 1px solid #F8BBD0;
     }
     .emergency-card {
-        background: #FFEBEE;
-        border-left: 5px solid #D32F2F;
-        padding: 14px;
-        border-radius: 10px;
+        background: #FFFFFF;
+        border: 2px solid #FFD1DC;
+        border-left: 6px solid #FF6584;
+        padding: 18px;
+        border-radius: 14px;
         margin-bottom: 15px;
+        box-shadow: 0 4px 12px rgba(255, 101, 132, 0.08);
+    }
+    .btn-safety-alert {
+        display: inline-block;
+        background: linear-gradient(135deg, #FF6584, #FF476F);
+        color: #FFFFFF !important;
+        padding: 12px 24px;
+        border-radius: 25px;
+        text-decoration: none !important;
+        font-weight: 700;
+        box-shadow: 0 4px 12px rgba(255, 71, 111, 0.32);
+        transition: all 0.3s ease;
+    }
+    .btn-safety-alert:hover {
+        background: linear-gradient(135deg, #FF476F, #E02856);
+        box-shadow: 0 6px 16px rgba(255, 71, 111, 0.45);
+        color: #FFFFFF !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -541,7 +558,7 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("##### 🥠 Biscoito do Dia")
 st.sidebar.info("A dedicação que você coloca em cuidar das pessoas faz a diferença em qualquer equipe hospitalar ou laboratorial! 💕")
 
-# BOTÃO DE SINCRONIZAÇÃO DUPLO (Robô Web + Recarga Base)
+# BOTÃO DE SINCRONIZAÇÃO DUPLO
 if st.sidebar.button("🔄 Sincronizar Portais 24h Agora"):
     with st.spinner("Atualizando feed dos portais e conectando banco..."):
         adicionadas_web = 0
@@ -727,23 +744,17 @@ with tab_rotas_emerg:
     
     col_em1, col_em2 = st.columns(2)
     with col_em1:
-        st.markdown("""
+        msg_aviso = urllib.parse.quote("Oi amor! Estou saindo do plantão agora e já a caminho de casa. Te aviso assim que chegar! 💕")
+        link_aviso_thiago = f"https://api.whatsapp.com/send?text={msg_aviso}"
+
+        st.markdown(f"""
         <div class="emergency-card">
-            <h4 style="color:#C62828 !important; margin:0 0 10px 0;">🚨 Botão de Segurança p/ Voltar de Plantão</h4>
-            <p style="color:#333333 !important; font-size:0.9rem;">Saindo de noite ou de madrugada? Clique para mandar mensagem instantânea com aviso de trajeto direto para o Thiago:</p>
-            <a href="..." target="_blank" style="
-    display: inline-block;
-    background-color: #ff6584;
-    color: #ffffff;
-    padding: 12px 24px;
-    border-radius: 25px;
-    text-decoration: none;
-    font-weight: bold;
-    box-shadow: 0 4px 10px rgba(255, 101, 132, 0.3);
-    transition: all 0.3s ease;
-">
-    📲 Mandar Aviso de Saída de Plantão p/ Thiago
-</a>
+            <h4 style="color:#C2185B !important; margin:0 0 10px 0;">🚨 Botão de Segurança p/ Voltar de Plantão</h4>
+            <p style="color:#333333 !important; font-size:0.92rem; line-height:1.4; margin-bottom:16px;">
+                Saindo de noite ou de madrugada? Clique para mandar mensagem instantânea com aviso de trajeto direto para o Thiago:
+            </p>
+            <a href="{link_aviso_thiago}" target="_blank" class="btn-safety-alert">
+                📲 Mandar Aviso de Saída de Plantão p/ Thiago
             </a>
         </div>
         """, unsafe_allow_html=True)
