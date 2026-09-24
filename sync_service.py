@@ -53,8 +53,6 @@ def sincronizar_e_notificar():
                 print(f"Aviso ao buscar assinantes no banco: {e}")
 
     print(f"Sincronização concluída: {len(vagas_novas)} vagas processadas.")
-
-
+    
 if __name__ == "__main__":
     sincronizar_e_notificar()
-    
