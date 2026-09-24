@@ -245,7 +245,7 @@ def popular_catalogo_base():
 
 popular_catalogo_base()
 
-# --- CSS COM ALTO CONTRASTE E CORREÇÃO DE SELECTBOX NA SIDEBAR E CONTEÚDO ---
+# --- CSS COM ALTO CONTRASTE E CORREÇÃO TOTAL ---
 st.markdown("""
 <style>
     .stApp {
@@ -270,9 +270,6 @@ st.markdown("""
         text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25);
     }
 
-    /* ========================================================================= */
-    /* CORREÇÃO DA CAIXA DE SELEÇÃO DE ESTADO/CIDADE (TEXTO ESCURO E VISÍVEL)   */
-    /* ========================================================================= */
     [data-testid="stSidebar"] [data-baseweb="select"] > div,
     div[data-baseweb="select"] > div {
         background-color: #FFFFFF !important;
@@ -290,7 +287,6 @@ st.markdown("""
         text-shadow: none !important;
     }
 
-    /* DROPDOWN / LISTA ABERTA DO SELECTBOX (FUNDO BRANCO E TEXTO ESCURO) */
     ul[data-baseweb="menu"],
     div[data-baseweb="popover"] > div {
         background-color: #FFFFFF !important;
@@ -314,7 +310,6 @@ st.markdown("""
         -webkit-text-fill-color: #C2185B !important;
     }
 
-    /* INPUTS GERAIS */
     div[data-baseweb="input"],
     div[data-baseweb="input"] > div,
     div[data-baseweb="base-input"],
@@ -344,7 +339,6 @@ st.markdown("""
         font-size: 0.95rem !important;
     }
 
-    /* ÁREA DE UPLOAD */
     [data-testid="stFileUploader"],
     [data-testid="stFileUploader"] > div,
     [data-testid="stFileUploader"] section,
@@ -386,13 +380,23 @@ st.markdown("""
         margin-bottom: 12px !important;
     }
 
-    .news-card, .appointment-card, .network-card {
+    .news-card, .appointment-card, .network-card, .sus-card {
         background-color: #FFFFFF !important;
         border: 2px solid #FFCCD7 !important;
         border-radius: 14px !important;
         padding: 16px 20px !important;
         margin-bottom: 14px !important;
         box-shadow: 0 3px 10px rgba(255, 105, 180, 0.08) !important;
+    }
+
+    .companies-box {
+        background: #FFFFFF !important;
+        border: 2px solid #FFCCD7 !important;
+        border-left: 6px solid #E91E63 !important;
+        border-radius: 14px !important;
+        padding: 16px 18px !important;
+        margin-bottom: 18px !important;
+        box-shadow: 0 4px 12px rgba(233, 30, 99, 0.08) !important;
     }
 
     .wellness-card {
@@ -571,15 +575,6 @@ st.markdown("""
         margin-bottom: 15px;
         box-shadow: 0 4px 12px rgba(255, 101, 132, 0.08);
     }
-    .linkedin-card {
-        background: #FFFFFF;
-        border: 2px solid #D6E4FF;
-        border-left: 6px solid #0077B5;
-        padding: 18px;
-        border-radius: 14px;
-        margin-bottom: 15px;
-        box-shadow: 0 4px 12px rgba(0, 119, 181, 0.08);
-    }
     .btn-safety-alert {
         display: inline-block;
         background: linear-gradient(135deg, #FF6584, #FF476F);
@@ -601,6 +596,17 @@ st.markdown("""
         background: #E8F5E9;
         color: #2E7D32 !important;
         border: 1px solid #C8E6C9;
+        padding: 8px 16px;
+        border-radius: 18px;
+        text-decoration: none !important;
+        font-weight: 700;
+        font-size: 0.85rem;
+    }
+    .btn-sus-direct {
+        display: inline-block;
+        background: #E3F2FD;
+        color: #1565C0 !important;
+        border: 1px solid #BBDEFB;
         padding: 8px 16px;
         border-radius: 18px;
         text-decoration: none !important;
@@ -674,7 +680,7 @@ def obter_noticias_reais_saude():
 
     return noticias_enf, noticias_bio
 
-# --- BASE DE CONHECIMENTO CRÍTICA SOBRE HOSPITAIS / LABORATÓRIOS ---
+# --- BASE DE CONHECIMENTO CRÍTICA ---
 INFO_EMPRESAS_SAUDE = {
     "porto dias": {
         "resumo": "Maior complexo hospitalar privado de Belém (Rede D'Or), no bairro do Marco. Referência em urgência e UTI.",
@@ -732,7 +738,6 @@ INFO_EMPRESAS_SAUDE = {
     }
 }
 
-# --- FUNÇÕES DE ANÁLISE DE CURRÍCULO E IA ---
 def normalizar_texto(txt: str) -> str:
     if not txt:
         return ""
@@ -863,7 +868,16 @@ filtro_categoria = st.sidebar.radio(
     "Área de Atuação:",
     ["Todas", "Enfermagem", "Biomedicina", "Saúde Geral"]
 )
-busca_termo = st.sidebar.text_input("🔍 Busca por palavra", placeholder="Ex: Sírio, Copa D'Or, Porto Dias, UTI, Coleta...")
+
+# Inicializa estado de filtro rápido de empresa se não existir
+if "filtro_empresa_rapido" not in st.session_state:
+    st.session_state.filtro_empresa_rapido = ""
+
+busca_termo = st.sidebar.text_input(
+    "🔍 Busca por palavra",
+    value=st.session_state.filtro_empresa_rapido,
+    placeholder="Ex: Sírio, Copa D'Or, Porto Dias, UTI, Coleta..."
+)
 
 if st.sidebar.button("🔄 Sincronizar Portais 24h Agora"):
     with st.spinner("Atualizando feed dos portais e conectando banco..."):
@@ -944,6 +958,7 @@ with Session(engine) as session:
         )
         
     vagas_lista = session.exec(q.order_by(Job.created_at.desc())).all()
+    todas_vagas_ativas = session.exec(select(Job)).all()
 
     if not vagas_lista and filtro_estado == "Todos os Estados" and filtro_categoria == "Todas" and not busca_termo:
         popular_catalogo_base()
@@ -960,7 +975,7 @@ with Session(engine) as session:
 tab_vagas, tab_biomed, tab_agenda, tab_necessidades, tab_ia_curriculo, tab_linkedin, tab_rotas_emerg, tab_candidaturas = st.tabs([
     "🌸 Mural Geral de Vagas",
     "🔬 Especial Biomedicina",
-    "📅 Agenda Médica & Redes",
+    "📅 Agenda Médica & SUS",
     "💊 Necessidades & Custos Mensais",
     "🤖 Central IA: Análise de Currículo",
     "💼 Perfil Campeão LinkedIn",
@@ -970,10 +985,44 @@ tab_vagas, tab_biomed, tab_agenda, tab_necessidades, tab_ia_curriculo, tab_linke
 
 # ================= TAB 1: MURAL DE VAGAS =================
 with tab_vagas:
+    # --- QUADRO RÁPIDO DE EMPRESAS CONTRATANDO (ENFERMAGEM E BIOMEDICINA) ---
+    empresas_contagem = {}
+    for j in todas_vagas_ativas:
+        emp = j.hospital_or_company
+        if emp:
+            empresas_contagem[emp] = empresas_contagem.get(emp, 0) + 1
+
+    st.markdown("""
+    <div class="companies-box">
+        <h4 style="color:#C2185B !important; margin:0 0 6px 0;">🏥 Empresas Anunciando Vagas em Saúde Agora</h4>
+        <p style="color:#4A1525; font-size:0.9rem; margin:0 0 10px 0;">
+            Clique no botão de qualquer hospital ou laboratório abaixo para filtrar diretamente as vagas dele:
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    top_empresas = sorted(empresas_contagem.items(), key=lambda x: x[1], reverse=True)[:8]
+    if top_empresas:
+        cols_emp = st.columns(len(top_empresas))
+        for idx, (emp_nome, qtd) in enumerate(top_empresas):
+            with cols_emp[idx]:
+                label_btn = f"{emp_nome[:14]}.. ({qtd})" if len(emp_nome) > 16 else f"{emp_nome} ({qtd})"
+                if st.button(label_btn, key=f"btn_filter_emp_{idx}"):
+                    st.session.filtro_empresa_rapido = emp_nome
+                    st.rerun()
+
+    if st.session_state.filtro_empresa_rapido:
+        col_limp, _ = st.columns([2, 5])
+        with col_limp:
+            if st.button(f"❌ Limpar Filtro ({st.session_state.filtro_empresa_rapido})"):
+                st.session_state.filtro_empresa_rapido = ""
+                st.rerun()
+
+    st.markdown("---")
     st.markdown(f"<h3 style='color: #AD1457 !important;'>🩺 Oportunidades no Feed 24h: <b>{len(vagas_lista)}</b></h3>", unsafe_allow_html=True)
     
     if not vagas_lista:
-        st.info("Nenhuma oportunidade localizada para estes filtros. Tente selecionar 'Todos os Estados' na barra lateral!")
+        st.info("Nenhuma oportunidade localizada para estes filtros. Tente selecionar 'Todos os Estados' ou limpar o filtro de empresa acima!")
     else:
         for v in vagas_lista:
             score, _ = calcular_match_real(v, curriculo_armazenado, user_kws)
@@ -1117,10 +1166,10 @@ Biomédica | Contato WhatsApp"""
             use_container_width=True
         )
 
-# ================= TAB 3: AGENDA MÉDICA, VALORES & REDES CREDENCIADAS =================
+# ================= TAB 3: AGENDA MÉDICA, REDES & PORTAL SUS =================
 with tab_agenda:
-    st.markdown("<h2 style='color: #AD1457 !important;'>📅 Agenda Médica, Valores & Redes Credenciadas</h2>", unsafe_allow_html=True)
-    st.markdown("Agendamento completo com valores estimados, redes de atendimento e contatos diretos para marcação de exames. 💕")
+    st.markdown("<h2 style='color: #AD1457 !important;'>📅 Agenda Médica, Valores & Portal SUS (UBS / UPA)</h2>", unsafe_allow_html=True)
+    st.markdown("Agendamento completo de exames, consultas, redes credenciadas e acesso direto aos canais oficiais do SUS. 💕")
 
     hoje_str = date.today().strftime("%Y-%m-%d")
     hoje_formatada = date.today().strftime("%d/%m/%Y")
@@ -1178,23 +1227,24 @@ with tab_agenda:
 
     st.markdown("---")
 
+    # --- FORMULÁRIO DE NOVO AGENDAMENTO ---
     col_cad1, col_cad2 = st.columns([1, 1])
     with col_cad1:
         st.markdown("#### ➕ Agendar Novo Exame ou Consulta")
         with st.form("form_novo_compromisso"):
             novo_tipo = st.selectbox(
                 "Tipo de Registro:",
-                ["Exame a Realizar", "Exame Feito / Resultado", "Consulta Médica", "Retorno / Procedimento", "Compromisso Geral"]
+                ["Exame a Realizar", "Exame Feito / Resultado", "Consulta Médica", "Procedimento UBS/UPA", "Compromisso Geral"]
             )
             novo_titulo = st.text_input("Nome do Exame ou Consulta:", placeholder="Ex: Hemograma Completo, Ultrassom, Consulta Gineco...")
             
             col_loc, col_rede = st.columns(2)
             with col_loc:
-                novo_local = st.text_input("Unidade / Hospital:", placeholder="Ex: Unidade Nazaré, Delboni...")
+                novo_local = st.text_input("Unidade / Hospital / UBS:", placeholder="Ex: UBS Nazaré, UPA Sacramenta, Delboni...")
             with col_rede:
                 nova_rede = st.selectbox(
                     "Rede / Convênio:",
-                    ["Lavoisier / Dasa", "Grupo Fleury", "Hospital Porto Dias", "Santa Casa", "Ophir Loyola", "SUS / UBS", "Particular", "Outro"]
+                    ["SUS / UBS / UPA", "Lavoisier / Dasa", "Grupo Fleury", "Hospital Porto Dias", "Santa Casa", "Ophir Loyola", "Particular", "Outro"]
                 )
 
             col_val_ex, col_dt, col_hr = st.columns(3)
@@ -1205,7 +1255,7 @@ with tab_agenda:
             with col_hr:
                 nova_hora = st.time_input("Horário:", value=datetime.now().time())
 
-            novas_obs = st.text_input("Instruções / Preparo:", placeholder="Ex: Jejum de 8h, levar pedido médico, retirar na recepção...")
+            novas_obs = st.text_input("Instruções / Preparo:", placeholder="Ex: Levar Cartão SUS, documento com foto, jejum de 8h...")
             
             btn_salvar_comp = st.form_submit_button("💾 Salvar na Agenda Médica")
 
@@ -1236,7 +1286,7 @@ with tab_agenda:
             for item in todos_compromissos:
                 dataFormat = datetime.strptime(item.scheduled_date, "%Y-%m-%d").strftime("%d/%m/%Y")
                 cor_borda = "#4CAF50" if item.is_completed else ("#FF9800" if item.scheduled_date == hoje_str else "#FFB6C1")
-                val_badge = f" | <b>R$ {item.estimated_price:.2f}</b>" if item.estimated_price > 0 else ""
+                val_badge = f" | <b>R$ {item.estimated_price:.2f}</b>" if item.estimated_price > 0 else " | <b>Gratuito (SUS)</b>"
                 st.markdown(f"""
                 <div class="appointment-card" style="border-left: 5px solid {cor_borda}; padding:10px 14px;">
                     <b style="color:#C2185B;">{item.appointment_type}: {item.title}</b><br>
@@ -1258,45 +1308,69 @@ with tab_agenda:
 
     st.markdown("---")
 
-    st.markdown("### 🏥 Redes Credenciadas & Contatos Diretos de Agendamento")
-    st.markdown("Canais diretos para marcação rápida de exames laboratoriais, consultas e orçamentos:")
+    # --- PORTAL SUS / CONECTE SUS / LOCALIZAÇÃO E CONTATOS DE UBS E UPA ---
+    st.markdown("### 🏥 Portal SUS & Agendamentos na Rede Pública (UBS & UPA)")
+    st.markdown("Canais diretos para marcação de consultas, vacinas, exames gratuitos e pronto atendimento pelo SUS:")
 
-    col_net1, col_net2, col_net3 = st.columns(3)
-    with col_net1:
+    col_sus_app, _ = st.columns([1, 1])
+    with col_sus_app:
         st.markdown("""
-        <div class="network-card">
-            <h4 style="color:#C2185B !important; margin:0 0 6px 0;">🔬 Dasa / Lavoisier / Sérgio Franco</h4>
-            <p style="font-size:0.88rem; color:#333; margin:0 0 10px 0;">
-                Atendimento laboratorial, análises clínicas completas e exames por imagem.
+        <div class="sus-card" style="border-left: 6px solid #1976D2;">
+            <h4 style="color:#1565C0 !important; margin:0 0 6px 0;">📲 Meu SUS Digital (Conecte SUS Oficial)</h4>
+            <p style="font-size:0.9rem; color:#333; margin:0 0 10px 0;">
+                Acesse o portal federal do SUS para consultar seu Cartão Nacional de Saúde, agendamentos, histórico de vacinas e resultados de exames laboratoriais gratuitos.
             </p>
-            <a href="https://api.whatsapp.com/send?phone=551130474488&text=Olá,%20gostaria%20de%20agendar%20um%20exame" target="_blank" class="btn-contact-direct">
-                💬 Agendar via WhatsApp
+            <a href="https://meususdigital.saude.gov.br" target="_blank" class="btn-sus-direct">
+                🌐 Acessar Portal Meu SUS Digital
             </a>
         </div>
         """, unsafe_allow_html=True)
 
-    with col_net2:
+    col_sus1, col_sus2, col_sus3 = st.columns(3)
+    with col_sus1:
         st.markdown("""
-        <div class="network-card">
-            <h4 style="color:#00695C !important; margin:0 0 6px 0;">🔬 Grupo Fleury Diagnósticos</h4>
-            <p style="font-size:0.88rem; color:#333; margin:0 0 10px 0;">
-                Referência em biologia molecular, genética e exames laboratoriais de alta precisão.
+        <div class="sus-card">
+            <h4 style="color:#C2185B !important; margin:0 0 6px 0;">🌴 Belém / RMB (SESMA)</h4>
+            <p style="font-size:0.86rem; color:#333; margin:0 0 8px 0;">
+                <b>Central de Regulação / SESMA:</b><br>
+                📞 (91) 3184-6100 / 3184-6104<br>
+                🚑 <b>UPA Sacramenta:</b> Av. Senador Lemos, s/n<br>
+                🚑 <b>UPA Icoaraci:</b> Tv. Manoel Barata, 895
             </p>
-            <a href="https://api.whatsapp.com/send?phone=551131790822&text=Olá,%20gostaria%20de%20informações%20sobre%20exames" target="_blank" class="btn-contact-direct">
-                💬 Agendar via WhatsApp
+            <a href="https://api.whatsapp.com/send?phone=559131846100&text=Olá,%20gostaria%20de%20informações%20sobre%20atendimento%20SUS" target="_blank" class="btn-contact-direct">
+                💬 Informações SESMA Belém
             </a>
         </div>
         """, unsafe_allow_html=True)
 
-    with col_net3:
+    with col_sus2:
         st.markdown("""
-        <div class="network-card">
-            <h4 style="color:#880E4F !important; margin:0 0 6px 0;">🏥 Hospital Porto Dias (Belém)</h4>
-            <p style="font-size:0.88rem; color:#333; margin:0 0 10px 0;">
-                Centro de diagnóstico hospitalar, ressonância, tomografia e exames cardiológicos.
+        <div class="sus-card">
+            <h4 style="color:#0277BD !important; margin:0 0 6px 0;">🏙️ São Paulo (SMS / e-SaúdeSP)</h4>
+            <p style="font-size:0.86rem; color:#333; margin:0 0 8px 0;">
+                <b>Central 156 / Agenda Fácil SP:</b><br>
+                📞 Disque 156 ou (11) 3113-8000<br>
+                🏥 <b>App e-SaúdeSP:</b> Agendamento direto na UBS de referência do seu bairro.<br>
+                🚑 <b>UPA Vergueiro:</b> R. Vergueiro, 3500
             </p>
-            <a href="https://api.whatsapp.com/send?phone=559130843000&text=Olá,%20gostaria%20de%20agendar%20exame%20no%20Porto%20Dias" target="_blank" class="btn-contact-direct">
-                💬 Central de Exames PA
+            <a href="https://esaudesp.prefeitura.sp.gov.br" target="_blank" class="btn-sus-direct">
+                🌐 Portal e-SaúdeSP
+            </a>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_sus3:
+        st.markdown("""
+        <div class="sus-card">
+            <h4 style="color:#E65100 !important; margin:0 0 6px 0;">🌊 Rio de Janeiro (SMS-Rio)</h4>
+            <p style="font-size:0.86rem; color:#333; margin:0 0 8px 0;">
+                <b>Central 1746 / Saúde Carioca:</b><br>
+                📞 Disque 1746 ou (21) 3460-1746<br>
+                🏥 <b>Onde Ser Atendido:</b> Encontre sua Clínica da Família pelo CEP.<br>
+                🚑 <b>UPA Copacabana:</b> R. Siqueira Campos, 129
+            </p>
+            <a href="https://www.rio.rj.gov.br/web/sms" target="_blank" class="btn-sus-direct">
+                🌐 Portal Saúde Rio
             </a>
         </div>
         """, unsafe_allow_html=True)
