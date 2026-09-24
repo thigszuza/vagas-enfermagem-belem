@@ -245,7 +245,7 @@ def popular_catalogo_base():
 
 popular_catalogo_base()
 
-# --- CSS COM ALTO CONTRASTE E CORREÇÃO TOTAL ---
+# --- CSS COM ALTO CONTRASTE E CORREÇÃO RIGOROSA DE TODOS OS SELECTBOXES ---
 st.markdown("""
 <style>
     .stApp {
@@ -270,52 +270,66 @@ st.markdown("""
         text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25);
     }
 
-    [data-testid="stSidebar"] [data-baseweb="select"] > div,
-    div[data-baseweb="select"] > div {
-        background-color: #FFFFFF !important;
-        background: #FFFFFF !important;
-        border: 2px solid #FF5C8A !important;
-        border-radius: 12px !important;
-    }
-    [data-testid="stSidebar"] [data-baseweb="select"] span,
-    [data-testid="stSidebar"] [data-baseweb="select"] div,
-    div[data-baseweb="select"] span,
-    div[data-baseweb="select"] div {
-        color: #4A1525 !important;
-        -webkit-text-fill-color: #4A1525 !important;
-        font-weight: 700 !important;
-        text-shadow: none !important;
-    }
-
-    ul[data-baseweb="menu"],
-    div[data-baseweb="popover"] > div {
+    /* ========================================================================= */
+    /* BLINDAGEM TOTAL DO SELECTBOX: FUNDO BRANCO E TEXTO ESCURO NÍTIDO          */
+    /* ========================================================================= */
+    div[data-baseweb="select"],
+    div[data-baseweb="select"] > div,
+    [data-testid="stSelectbox"] > div > div {
         background-color: #FFFFFF !important;
         background: #FFFFFF !important;
         border: 2px solid #FFCCD7 !important;
         border-radius: 12px !important;
     }
-    ul[data-baseweb="menu"] li,
-    ul[data-baseweb="menu"] li div,
-    ul[data-baseweb="menu"] li span {
+
+    /* Garante que o texto dentro da caixinha fechada NUNCA fique branco ou invisível */
+    div[data-baseweb="select"] * {
         color: #33101E !important;
         -webkit-text-fill-color: #33101E !important;
-        background-color: #FFFFFF !important;
-        font-weight: 600 !important;
-        font-size: 0.92rem !important;
-    }
-    ul[data-baseweb="menu"] li:hover,
-    ul[data-baseweb="menu"] li[aria-selected="true"] {
-        background-color: #FFE6EE !important;
-        color: #C2185B !important;
-        -webkit-text-fill-color: #C2185B !important;
+        font-weight: 700 !important;
+        text-shadow: none !important;
     }
 
+    /* O menu flutuante / dropdown aberto com fundo branco */
+    div[data-baseweb="popover"],
+    div[data-baseweb="popover"] > div,
+    ul[data-baseweb="menu"],
+    div[data-baseweb="menu"] {
+        background-color: #FFFFFF !important;
+        background: #FFFFFF !important;
+        border: 2px solid #FFCCD7 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 8px 24px rgba(255, 105, 180, 0.2) !important;
+    }
+
+    /* Itens dentro da lista suspensa */
+    li[role="option"],
+    ul[data-baseweb="menu"] li {
+        background-color: #FFFFFF !important;
+        background: #FFFFFF !important;
+        color: #33101E !important;
+        -webkit-text-fill-color: #33101E !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+        padding: 10px 14px !important;
+    }
+
+    li[role="option"]:hover,
+    li[role="option"][aria-selected="true"],
+    ul[data-baseweb="menu"] li:hover {
+        background-color: #FFE6EE !important;
+        background: #FFE6EE !important;
+        color: #C2185B !important;
+        -webkit-text-fill-color: #C2185B !important;
+        font-weight: 700 !important;
+    }
+
+    /* INPUTS GERAIS */
     div[data-baseweb="input"],
     div[data-baseweb="input"] > div,
     div[data-baseweb="base-input"],
     .stTextInput > div,
     .stTextInput > div > div,
-    .stSelectbox > div > div,
     .stDateInput > div > div,
     .stTimeInput > div > div,
     .stNumberInput > div > div {
@@ -339,6 +353,7 @@ st.markdown("""
         font-size: 0.95rem !important;
     }
 
+    /* ÁREA DE UPLOAD */
     [data-testid="stFileUploader"],
     [data-testid="stFileUploader"] > div,
     [data-testid="stFileUploader"] section,
@@ -762,7 +777,7 @@ INFO_EMPRESAS_SAUDE = {
     }
 }
 
-# --- BANCO DE DEMANDAS PARTICULARES SEPARADO POR ESTADO COM FOCO EM BELÉM (PA) ---
+# --- DEMANDAS PARTICULARES SEPARADAS POR ESTADO ---
 DEMANDAS_PARTICULARES_ESTADOS = {
     "PA - Pará (Belém e Região)": [
         {
@@ -1106,7 +1121,7 @@ tab_vagas, tab_biomed, tab_agenda, tab_necessidades, tab_ia_curriculo, tab_linke
 
 # ================= TAB 1: MURAL DE VAGAS =================
 with tab_vagas:
-    # --- 1. QUADRO BLINDADO DE EMPRESAS CONTRATANDO ---
+    # --- 1. QUADRO DE EMPRESAS CONTRATANDO ---
     empresas_catalogo = [
         "Hospital Porto Dias", "Hospital Sírio-Libanês", "Hospital Israelita Albert Einstein",
         "Hospital Copa D'Or (Rede D'Or)", "Grupo Fleury Diagnósticos", "Laboratório Sérgio Franco (Dasa)",
@@ -1192,7 +1207,6 @@ with tab_vagas:
 
     lista_demandas_estado = DEMANDAS_PARTICULARES_ESTADOS.get(chave_estado_ninja, [])
     
-    # Aplica o limite máximo selecionado
     if max_pessoas_mostrar != "Todas":
         demandas_exibir = lista_demandas_estado[:int(max_pessoas_mostrar)]
     else:
