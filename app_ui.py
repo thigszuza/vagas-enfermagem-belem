@@ -2329,9 +2329,35 @@ with tab_candidaturas:
             st.divider()
 
 # --- ASSINATURA E CRÉDITOS ---
+# --- ASSINATURA & CRÉDITOS FIXOS (VISÍVEL NO CANTO INFERIOR) ---
 st.divider()
+
+# Espaço de respiro para rolar até o final sem cortar conteúdo
+st.markdown("<div style='height: 60px;'></div>", unsafe_allow_html=True)
+
 st.markdown("""
-<div style="text-align: center; color: #AD1457 !important; font-size: 0.95rem; font-weight: 700; padding: 10px;">
-    Desenvolvido com todo amor por Thiago Zuza 💕 🐾
+<!-- Assinatura Central Tradicional -->
+<div style="text-align: center; color: #AD1457 !important; font-size: 1.05rem; font-weight: 800; padding: 15px 0;">
+    🐾 Desenvolvido com todo o amor por <b>Thiago Zuza</b> para o seu amor 💕 ✨
+</div>
+
+<!-- Badge Flutuante no Canto Inferior Direito (com recuo para não bater no botão do Streamlit) -->
+<div style="
+    position: fixed;
+    bottom: 12px;
+    right: 95px;
+    background: linear-gradient(135deg, #FFFFFF, #FFF0F5);
+    border: 2px solid #FF85A2;
+    border-radius: 20px;
+    padding: 6px 16px;
+    box-shadow: 0 4px 14px rgba(233, 30, 99, 0.25);
+    z-index: 999990;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+">
+    <span style="font-size: 0.82rem; color: #880E4F; font-weight: 800; letter-spacing: 0.3px;">
+        ✨ Created with love by <b>Thiago Zuza</b> 💕
+    </span>
 </div>
 """, unsafe_allow_html=True)
