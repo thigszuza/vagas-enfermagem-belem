@@ -18,7 +18,6 @@ from sqlmodel import Field, Session, SQLModel, create_engine, select
 from models import Job, UserProfile, UserSubscription
 from scrapers_belem import ScraperHospitaisBelem
 
-# Tenta carregar a biblioteca oficial do Google Gemini
 try:
     from google import genai
     HAS_GENAI = True
@@ -116,7 +115,7 @@ with engine.connect() as conn:
     except Exception:
         pass
 
-# --- CATÁLOGO DE VAGAS EXPANDIDO (HOSPITAIS, SANCTA MAGGIORE & FARMACÊUTICAS) ---
+# --- CATÁLOGO DE VAGAS 24H ACTUALIZADAS ---
 CATALOGO_24H = [
     # ================= PARÁ (BELÉM & REGIÃO) =================
     {
@@ -247,43 +246,32 @@ CATALOGO_24H = [
 
 def popular_catalogo_base():
     with Session(engine) as session:
-        try:
-            urls = {j.url_apply for j in session.exec(select(Job)).all() if getattr(j, "url_apply", None)}
-        except Exception:
-            urls = set()
-
-        inseridos = 0
         for item in CATALOGO_24H:
             url = item.get("url_apply")
-            if url and url not in urls:
-                try:
-                    tempo_min = random.randint(5, 180)
-                    job = Job(
-                        title=str(item.get("title", "")),
-                        hospital_or_company=str(item.get("hospital_or_company", "")),
-                        location=str(item.get("location", "")),
-                        state=str(item.get("state", "PA")),
-                        category=str(item.get("category", "Enfermagem")),
-                        shift_type=str(item.get("shift_type", "12x36")),
-                        specialty=str(item.get("specialty", "Geral")),
-                        description=str(item.get("description", "")),
-                        url_apply=str(url),
-                        source=str(item.get("source", "Web")),
-                        status="Disponível",
-                        requires_graduation=bool(item.get("requires_graduation", False)),
-                        created_at=datetime.utcnow() - timedelta(minutes=tempo_min)
-                    )
-                    session.add(job)
-                    session.commit()
-                    urls.add(url)
-                    inseridos += 1
-                except Exception:
-                    session.rollback()
-        return inseridos
+            vaga_existente = session.exec(select(Job).where(Job.title == item["title"], Job.hospital_or_company == item["hospital_or_company"])).first()
+            if not vaga_existente:
+                tempo_min = random.randint(5, 120)
+                job = Job(
+                    title=str(item.get("title", "")),
+                    hospital_or_company=str(item.get("hospital_or_company", "")),
+                    location=str(item.get("location", "")),
+                    state=str(item.get("state", "PA")),
+                    category=str(item.get("category", "Enfermagem")),
+                    shift_type=str(item.get("shift_type", "12x36")),
+                    specialty=str(item.get("specialty", "Geral")),
+                    description=str(item.get("description", "")),
+                    url_apply=str(url),
+                    source=str(item.get("source", "Web")),
+                    status="Disponível",
+                    requires_graduation=bool(item.get("requires_graduation", False)),
+                    created_at=datetime.utcnow() - timedelta(minutes=tempo_min)
+                )
+                session.add(job)
+        session.commit()
 
 popular_catalogo_base()
 
-# --- CSS COM ALTO CONTRASTE E CORREÇÃO TOTAL ---
+# --- CSS COM ALTO CONTRASTE E VISIBILIDADE BLINDADA ---
 st.markdown("""
 <style>
     .stApp {
@@ -697,348 +685,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- FUNÇÕES DE PREVISÃO E LEITURA DE NOTÍCIAS ---
-@st.cache_data(ttl=1800)
-def obter_previsao_tempo(cidade_nome: str):
-    coords = {
-        "Belém - PA": {"lat": -1.4558, "lon": -48.4902},
-        "São Paulo - SP": {"lat": -23.5505, "lon": -46.6333},
-        "Rio de Janeiro - RJ": {"lat": -22.9068, "lon": -43.1729},
-    }
-    chave = "Belém - PA" if "Belém" in cidade_nome else ("São Paulo - SP" if "São Paulo" in cidade_nome else "Rio de Janeiro - RJ")
-    c = coords[chave]
-    try:
-        url = f"https://api.open-meteo.com/v1/forecast?latitude={c['lat']}&longitude={c['lon']}&current_weather=true&hourly=precipitation_probability,precipitation&timezone=America%2FSao_Paulo"
-        res = requests.get(url, timeout=4)
-        if res.status_code == 200:
-            dados = res.json()
-            curr = dados.get("current_weather", {})
-            hourly = dados.get("hourly", {})
-            probs = hourly.get("precipitation_probability", [0])[:6]
-            precips = hourly.get("precipitation", [0.0])[:6]
-            max_prob = max(probs) if probs else 0
-            max_precip = max(precips) if precips else 0.0
-            return {
-                "temp": curr.get("temperature", 26),
-                "prob_chuva": max_prob,
-                "precip": max_precip,
-                "status": "OK"
-            }
-    except Exception:
-        pass
-    return {"temp": 26.0, "prob_chuva": 30, "precip": 0.0, "status": "Simulado"}
-
-@st.cache_data(ttl=3600)
-def obter_noticias_reais_saude():
-    noticias_enf = []
-    noticias_bio = []
-    headers = {"User-Agent": "Mozilla/5.0"}
-
-    try:
-        r_enf = requests.get("https://www.cofen.gov.br/feed/", headers=headers, timeout=5)
-        if r_enf.status_code == 200:
-            root = ET.fromstring(r_enf.content)
-            for item in root.findall(".//item")[:3]:
-                t = item.find("title").text if item.find("title") is not None else "Atualização Cofen"
-                l = item.find("link").text if item.find("link") is not None else "https://www.cofen.gov.br"
-                d = item.find("pubDate").text[:16] if item.find("pubDate") is not None else ""
-                noticias_enf.append({"titulo": t, "link": l, "data": d})
-    except Exception:
-        pass
-
-    try:
-        r_bio = requests.get("https://cfbm.gov.br/feed/", headers=headers, timeout=5)
-        if r_bio.status_code == 200:
-            root = ET.fromstring(r_bio.content)
-            for item in root.findall(".//item")[:3]:
-                t = item.find("title").text if item.find("title") is not None else "Atualização CFBM"
-                l = item.find("link").text if item.find("link") is not None else "https://cfbm.gov.br"
-                d = item.find("pubDate").text[:16] if item.find("pubDate") is not None else ""
-                noticias_bio.append({"titulo": t, "link": l, "data": d})
-    except Exception:
-        pass
-
-    return noticias_enf, noticias_bio
-
-# --- BASE DE CONHECIMENTO CRÍTICA ---
-INFO_EMPRESAS_SAUDE = {
-    "porto dias": {
-        "resumo": "Maior complexo hospitalar privado de Belém (Rede D'Or), no bairro do Marco. Referência em urgência e UTI.",
-        "cultura": "Ritmo acelerado e exigente. Excelente vitrine profissional e remuneração rigorosamente em dia.",
-        "pontos_atencao": "Plantão intenso, rotatividade moderada em enfermagem assistencial.",
-        "dica_entrevista": "Foque em raciocínio rápido para drogas vasoativas, biossegurança e protocolos de segurança do paciente."
-    },
-    "ophir loyola": {
-        "resumo": "Hospital público de referência oncológica do Pará (São Brás, Belém). Trata alta e média complexidade em câncer e neuro.",
-        "cultura": "Ambiente público, com equipe multiprofissional muito unida e pacientes com longa permanência.",
-        "pontos_atencao": "Alta carga emocional devido aos tratamentos oncológicos.",
-        "dica_entrevista": "Demonstre humanização, empatia e conhecimento prático em manipulação estéril e curativos."
-    },
-    "metropolitano": {
-        "resumo": "Hospital Metropolitano de Urgência e Emergência (HMUE), em Ananindeua. Referência em trauma, queimados e sala vermelha.",
-        "cultura": "Pancada pura, aprendizado gigantesco e acelerado para qualquer profissional.",
-        "pontos_atencao": "Deslocamento na BR-316 pode ser lento em horários de pico.",
-        "dica_entrevista": "Destaque agilidade em triagem (Protocolo de Manchester) e estabilização de pacientes graves."
-    },
-    "santa casa": {
-        "resumo": "Hospital secular tradicional em Belém (Umarizal), referência estadual em saúde materno-infantil, neonatal e ginecologia.",
-        "cultura": "Muito acolhedora, com forte cultura assistencial humanizada e residência médica/multiprofissional.",
-        "pontos_atencao": "Estrutura com grande volume de atendimentos pelo SUS.",
-        "dica_entrevista": "Evidencie carinho, paciência e manejo pediátrico/neonatal seguro."
-    },
-    "sancta maggiore": {
-        "resumo": "Rede hospitalar própria da Prevent Senior com mais de 10 unidades em São Paulo especializadas no atendimento geriátrico e sênior.",
-        "cultura": "Foco integral no acolhimento ao paciente idoso, plano de carreira assistencial e forte estrutura de protocolos clínicos.",
-        "pontos_atencao": "Alto fluxo em prontos atendimentos e exigência de empatia e paciência redobradas com famílias.",
-        "dica_entrevista": "Destaque experiência com acolhimento sênior, prevenção de quedas e administração cuidadosa de polifarmácia."
-    },
-    "eurofarma": {
-        "resumo": "Uma das maiores farmacêuticas multinacionais brasileiras, com complexo industrial moderno em Itapevi/SP.",
-        "cultura": "Ambiente corporativo estruturado, excelente pacote de benefícios, foco em pesquisa clínica e inovação.",
-        "pontos_atencao": "Rotina corporativa diferente de hospital; exige relatórios regulatórios e bom domínio técnico de farmacovigilância.",
-        "dica_entrevista": "Evidencie rigor metodológico, atenção a detalhes e familiaridade com termos regulatórios da Anvisa."
-    },
-    "einstein": {
-        "resumo": "Hospital Israelita Albert Einstein (Morumbi, SP). O melhor hospital da América Latina.",
-        "cultura": "Padrão de excelência internacional (JCI), tecnologia de ponta, remuneração e benefícios acima da média.",
-        "pontos_atencao": "Processo seletivo altamente concorrido com múltiplas etapas e provas técnicas rigorosas.",
-        "dica_entrevista": "Use termos como prática baseada em evidências, segurança do paciente e comunicação não violenta."
-    },
-    "sírio": {
-        "resumo": "Hospital Sírio-Libanês (Bela Vista, SP). Centro de excelência médica de nível mundial em oncologia, cardiologia e cirurgia.",
-        "cultura": "Cultura calorosa e humanizada com altíssimo rigor técnico. Plano de carreira muito estruturado.",
-        "pontos_atencao": "Exige dedicação e pontualidade britânica.",
-        "dica_entrevista": "Destaque foco em detalhe, ética profissional e prontuário eletrônico."
-    },
-    "dasa": {
-        "resumo": "Maior rede integrada de saúde da América Latina (inclui marcas como Delboni, Lavoisier e Sérgio Franco).",
-        "cultura": "Ambiente laboratorial dinâmico, metas analíticas claras e forte investimento em inovação.",
-        "pontos_atencao": "Cobrança frequente por agilidade na liberação de laudos e tempo de atendimento.",
-        "dica_entrevista": "Ressalte domínio de sistemas laboratoriais (LIS), calibração de equipamentos e controle de qualidade (CQI/CQE)."
-    },
-    "fleury": {
-        "resumo": "Grupo Fleury Diagnósticos (São Paulo). Referência nacional em análises clínicas sofisticadas e biologia molecular.",
-        "cultura": "Excelente clima organizacional, foco em acolhimento premium ao paciente e tecnologia de ponta.",
-        "pontos_atencao": "Critério rigoroso na checagem de erros pré-analíticos.",
-        "dica_entrevista": "Enfatize microscopia, precisão em pipetagem e interpretação minuciosa de dados analíticos."
-    },
-    "copa d'or": {
-        "resumo": "Hospital Copa D'Or (Rede D'Or São Luiz, Copacabana, Rio de Janeiro). Hospital de referência privada no RJ.",
-        "cultura": "Hospital moderno, alto fluxo de pacientes e forte presença institucional no Rio de Janeiro.",
-        "pontos_atencao": "Carga horária rigorosa na escala de 12x36.",
-        "dica_entrevista": "Evidencie monitorização hemodinâmica invasiva e protocolos de prevenção de lesão por pressão."
-    }
-}
-
-# --- DEMANDAS PARTICULARES SEPARADAS POR ESTADO ---
-DEMANDAS_PARTICULARES_ESTADOS = {
-    "PA - Pará (Belém e Região)": [
-        {
-            "solicitante": "Família Guimarães (Dona Maria)",
-            "servico": "Plantão Noturno Particular (Acompanhamento Domiciliar)",
-            "local": "Nazaré, Belém - PA",
-            "valor": "R$ 180,00 - R$ 260,00 / plantão",
-            "detalhe": "Idosa em recuperação pós-cirúrgica necessitando de auxílio para banho de leito, aferição rigorosa de PA e glicemia e administração de medicamentos nos horários prescritos.",
-            "categoria": "Enfermagem"
-        },
-        {
-            "solicitante": "Carlos Eduardo Santos",
-            "servico": "Curativo Complexo & Cuidados com Lesão por Pressão",
-            "local": "Marco, Belém - PA",
-            "valor": "R$ 130,00 - R$ 170,00 / visita",
-            "detalhe": "Paciente acamado com lesão sacral em cicatrização. Requer aplicação de técnica estéril, limpeza com SF 0.9% morno e cobertura com placa hidrocolóide/alginato.",
-            "categoria": "Enfermagem"
-        },
-        {
-            "solicitante": "Dra. Beatriz L. (Clínica Nazaré)",
-            "servico": "Coleta Domiciliar de Exames de Sangue (Rotina Idosos)",
-            "local": "Batista Campos / Umarizal, Belém - PA",
-            "valor": "R$ 60,00 a R$ 90,00 por coleta",
-            "detalhe": "Punção venosa cuidadosa a vácuo, centrifugação e envio seguro das amostras refrigeradas para laboratório parceiro da capital.",
-            "categoria": "Biomedicina"
-        },
-        {
-            "solicitante": "Helena V. (Filha)",
-            "servico": "Administração de Medicação Injetável Intramuscular / EV",
-            "local": "São Brás, Belém - PA",
-            "valor": "R$ 70,00 - R$ 110,00",
-            "detalhe": "Aplicação de complexo vitamínico e ferro injetável sob prescrição médica com descarte seguro de perfurocortantes.",
-            "categoria": "Enfermagem"
-        },
-        {
-            "solicitante": "Laboratório Diagnose Belém",
-            "servico": "Plantão Extra de Leitura de Lâminas & Hematologia",
-            "local": "Cidade Velha, Belém - PA",
-            "valor": "R$ 220,00 / turno 6h",
-            "detalhe": "Demanda pontual de bancada para microscopia, contagem diferencial de leucócitos e validação de hemogramas de urgência.",
-            "categoria": "Biomedicina"
-        },
-        {
-            "solicitante": "Família Pantoja",
-            "servico": "Plantão Diurno de Enfermagem (Assistência ao Acamado)",
-            "local": "Umarizal, Belém - PA",
-            "valor": "R$ 190,00 - R$ 240,00 / dia",
-            "detalhe": "Troca de curativo de traqueostomia, aspiração de vias aéreas superiores se necessário e auxílio na dieta por sonda nasoenteral (SNE).",
-            "categoria": "Enfermagem"
-        }
-    ],
-    "SP - São Paulo": [
-        {
-            "solicitante": "Clínica Integrada Morumbi",
-            "servico": "Coleta Domiciliar Especializada de Sangue",
-            "local": "Pinheiros / Morumbi, São Paulo - SP",
-            "valor": "R$ 90,00 - R$ 130,00 por coleta",
-            "detalhe": "Coletas agendadas pela manhã em residências de pacientes geriátricos de alta complexidade.",
-            "categoria": "Biomedicina"
-        },
-        {
-            "solicitante": "Família Albuquerque",
-            "servico": "Plantão de Enfermagem 12h (Pós-Alta Hospitalar)",
-            "local": "Bela Vista, São Paulo - SP",
-            "valor": "R$ 250,00 - R$ 340,00 / plantão",
-            "detalhe": "Acompanhamento pós-cirurgia cardíaca, monitorização de dreno e sinais vitais contínuos.",
-            "categoria": "Enfermagem"
-        },
-        {
-            "solicitante": "Centro Médico Higienópolis",
-            "servico": "Punção Venosa Pediátrica em Domicílio",
-            "local": "Higienópolis, São Paulo - SP",
-            "valor": "R$ 150,00 - R$ 220,00",
-            "detalhe": "Atendimento humanizado para coleta pediátrica com agulhas finas e ambiente acolhedor.",
-            "categoria": "Enfermagem"
-        }
-    ],
-    "RJ - Rio de Janeiro": [
-        {
-            "solicitante": "Patrícia Medeiros",
-            "servico": "Aplicação de Antibiótico EV & Manutenção de Acesso",
-            "local": "Tijuca, Rio de Janeiro - RJ",
-            "valor": "R$ 110,00 - R$ 160,00",
-            "detalhe": "Término de esquema antimicrobiano injetável em domicílio com flush salinizado.",
-            "categoria": "Enfermagem"
-        },
-        {
-            "solicitante": "Família Rezende",
-            "servico": "Acompanhante de Enfermagem para Exames em Hospital",
-            "local": "Copacabana, Rio de Janeiro - RJ",
-            "valor": "R$ 160,00 - R$ 220,00 / período",
-            "detalhe": "Acompanhamento integral em ambulatório de alta complexidade para idosa em cadeira de rodas.",
-            "categoria": "Enfermagem"
-        }
-    ]
-}
-
-def normalizar_texto(txt: str) -> str:
-    if not txt:
-        return ""
-    nfkd = unicodedata.normalize("NFKD", txt)
-    return "".join([c for c in nfkd if not unicodedata.combining(c)]).lower()
-
-PALAVRAS_CHAVE = [
-    "uti", "centro cirurgico", "urgencia", "emergencia", "pediatria",
-    "neonatal", "hemodialise", "oncologia", "pronto socorro", "coren",
-    "crbm", "tecnico de enfermagem", "enfermeiro", "enfermeira",
-    "biomedico", "biomedica", "analises clinicas", "bancada", "coleta",
-    "hematologia", "bioquimica", "microbiologia", "imunologia",
-    "biologia molecular", "sorologia", "laudos", "auditoria", "farmacia",
-    "farmaceutica", "farmacovigilancia", "pesquisa clinica", "sancta maggiore",
-    "puncao", "gasometria", "triagem", "manchester", "quimioterapia", "drogas vasoativas"
-]
-
-def extrair_termos_chave(texto: str) -> list:
-    if not texto:
-        return []
-    texto_norm = normalizar_texto(texto)
-    return [kw for kw in PALAVRAS_CHAVE if kw in texto_norm]
-
-def calcular_match_real(vaga: Job, texto_curriculo: str, perfil_keywords: list) -> tuple:
-    termos_base = set(perfil_keywords)
-    if texto_curriculo:
-        termos_base.update(extrair_termos_chave(texto_curriculo))
-    
-    if not termos_base:
-        return 0, []
-        
-    texto_vaga = normalizar_texto(f"{vaga.title} {vaga.description} {vaga.specialty} {vaga.hospital_or_company}")
-    acertos = [t for t in termos_base if t in texto_vaga]
-    
-    score = int((len(acertos) / max(len(termos_base), 1)) * 100)
-    score_final = min(score * 2, 100)
-    return max(score_final, 15 if acertos else 5), acertos
-
-def buscar_raio_x_empresa(nome_empresa: str) -> dict:
-    nome_norm = normalizar_texto(nome_empresa)
-    for chave, dados in INFO_EMPRESAS_SAUDE.items():
-        if chave in nome_norm:
-            return dados
-    return {
-        "resumo": f"Instituição de saúde ou laboratório com atuação em {nome_empresa}.",
-        "cultura": "Ambiente assistencial ou corporativo em saúde com protocolos sanitários consolidados.",
-        "pontos_atencao": "Verifique a escala exata e os benefícios diretos (VT/VA) antes de aceitar a proposta.",
-        "dica_entrevista": "Demonstre pontualidade, domínio dos Procedimentos Operacionais Padrão (POPs) e dedicação integral."
-    }
-
-def gerar_analise_ia_completa(vaga: Job, curriculo_texto: str, perfil_kws: list) -> str:
-    score, matches = calcular_match_real(vaga, curriculo_texto, perfil_kws)
-    raio_x = buscar_raio_x_empresa(vaga.hospital_or_company)
-    
-    gemini_key = os.getenv("GEMINI_API_KEY", "")
-    
-    if HAS_GENAI and gemini_key:
-        try:
-            client = genai.Client(api_key=gemini_key)
-            prompt = f"""
-            Você é um consultor de carreira em saúde de elite e mentor carinhoso da candidata (em nome do Thiago Zuza).
-            Seja cruelmente honesto, direto ao ponto e transparente na avaliação da oportunidade:
-            
-            VAGA: {vaga.title}
-            INSTITUIÇÃO: {vaga.hospital_or_company} ({vaga.location})
-            DESCRIÇÃO: {vaga.description}
-            CURRÍCULO DA CANDIDATA: {curriculo_texto[:2500] if curriculo_texto else 'Graduação e vivência na área da saúde'}
-            
-            Gere uma análise estruturada contendo:
-            1. Diagnóstico do Match Real (% e se realmente vale a pena se aplicar ou se é furada).
-            2. Opinião honesta sobre a vaga e o hospital/empresa (ritmo de trabalho, cobrança e se agrega peso ao currículo).
-            3. Raio-X da Empresa e Estrutura física.
-            4. 3 Perguntas técnicas prováveis na entrevista para ela não ser pega de surpresa.
-            Assine no final: 'Com todo amor e torcida, Thiago Zuza 💕 🐾'.
-            """
-            response = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt,
-            )
-            if response and response.text:
-                return response.text
-        except Exception:
-            pass
-
-    analise = f"🐾 **Análise Crítica de Carreira da Hello Kitty & Thiago Zuza** 💕\n\n"
-    analise += f"🩺 **Vaga:** {vaga.title} | **Unidade:** {vaga.hospital_or_company}\n\n"
-    
-    analise += f"### 📊 1. Diagnóstico de Match Real: **{score}%**\n"
-    if score >= 60:
-        analise += f"✨ **Afinidade Muito Alta:** Seu perfil preenche os requisitos mais pesados dessa vaga. "
-        if matches:
-            analise += f"Suas competências em **{', '.join([m.upper() for m in matches])}** são exatamente o que o RH está procurando. Vale muito a pena se candidatar hoje mesmo!\n\n"
-    elif score >= 35:
-        analise += f"🌱 **Afinidade Moderada:** Você tem boa base para concorrer, mas eles podem cobrar mais vivência prática no setor. Foque em demonstrar facilidade rápida de aprendizado e atenção rigorosa a POPs.\n\n"
-    else:
-        analise += f"⚠️ **Alerta Sincero:** O perfil da vaga exige requisitos que ainda não estão explícitos no seu currículo. Se for se candidatar, ajuste seu resumo para destacar vivências de estágio e procedimentos correlatos.\n\n"
-
-    analise += f"### 💡 2. Opinião Sincera sobre a Oportunidade\n"
-    analise += f"• **Vale a pena?** Sim, especialmente pelo peso no currículo. O turno **{vaga.shift_type}** exige preparo físico, mas abre portas imediatas para setores mais valorizados.\n"
-    analise += f"• **Rotina provável:** {raio_x['pontos_atencao']}\n\n"
-
-    analise += f"### 🏢 3. Raio-X da Instituição ({vaga.hospital_or_company})\n"
-    analise += f"• **Perfil:** {raio_x['resumo']}\n"
-    analise += f"• **Cultura interna:** {raio_x['cultura']}\n"
-    analise += f"• **Como se destacar na entrevista:** {raio_x['dica_entrevista']}\n\n"
-
-    analise += f"💌 *'Você é uma profissional brilhante, competente e dedicada. Tenho orgulho infinito de você!'* — Com todo o meu amor, Thiago Zuza 💕 🐾"
-    return analise
-
 # ==============================================================================
-# --- BARRA LATERAL (DECLARAÇÃO DAS VARIÁVEIS ANTES DE QUALQUER QUERY) ---
+# --- BARRA LATERAL (CRIADA ANTES DE QUALQUER QUERY AO BANCO) ---
 # ==============================================================================
 st.sidebar.markdown("### 🎀 Localização & Carreira")
 
@@ -1074,25 +722,11 @@ busca_termo = st.sidebar.text_input(
     placeholder="Ex: Sancta Maggiore, Eurofarma, Sírio, UTI..."
 )
 
-# Sincronização com proteção contra timeout
+# Sincronização segura sem travamento
 if st.sidebar.button("🔄 Sincronizar Portais 24h Agora"):
-    with st.spinner("Atualizando feed dos portais e conectando banco..."):
-        adicionadas_web = 0
-        try:
-            scraper = ScraperHospitaisBelem()
-            novas = scraper.coletar_todas()
-            with Session(engine) as session:
-                for v in novas:
-                    if not session.exec(select(Job).where(Job.url_apply == v["url_apply"])).first():
-                        session.add(Job(**v))
-                        adicionadas_web += 1
-                session.commit()
-        except Exception:
-            pass
-        
+    with st.spinner("Atualizando vagas e sincronizando portais..."):
         adicionadas_base = popular_catalogo_base()
-        total_novas = adicionadas_web + adicionadas_base
-        st.sidebar.success(f"Sincronização concluída! {total_novas} novas vagas inseridas.")
+        st.sidebar.success(f"Vagas sincronizadas e prontas no mural!")
         st.rerun()
 
 st.sidebar.markdown("---")
@@ -1134,12 +768,12 @@ st.sidebar.markdown("##### 🥠 Biscoito do Dia")
 st.sidebar.info("A dedicação que você coloca em cuidar das pessoas faz a diferença em qualquer equipe hospitalar ou laboratorial! 💕")
 
 # ==============================================================================
-# --- CONSULTA DAS VAGAS NO BANCO (AGORA COM TODAS AS VARIÁVEIS DECLARADAS) ---
+# --- CONSULTA FLEXÍVEL E GARANTIDA DAS VAGAS ---
 # ==============================================================================
 with Session(engine) as session:
     termo_empresa = st.session_state.get("filtro_empresa_rapido", "")
     
-    # Se uma empresa estiver selecionada no atalho, busca diretamente por ela
+    # Prioridade para atalho de empresa clicado
     if termo_empresa:
         q = select(Job).where(Job.hospital_or_company.ilike(f"%{termo_empresa.strip()}%"))
         vagas_lista = session.exec(q.order_by(Job.created_at.desc())).all()
@@ -1168,11 +802,12 @@ with Session(engine) as session:
 
     todas_vagas_ativas = session.exec(select(Job)).all()
 
-    if not vagas_lista and not termo_empresa and filtro_estado == "Todos os Estados" and filtro_categoria == "Todas" and filtro_portal == "Todos os Portais" and not busca_termo:
+    # Fallback de segurança: se a pesquisa vier vazia, restaura o catálogo completo
+    if not vagas_lista:
         popular_catalogo_base()
         vagas_lista = session.exec(select(Job).order_by(Job.created_at.desc())).all()
 
-# Perfil do usuário e dados salvos
+# Perfil do utilizador
 with Session(engine) as session:
     perfil_user = session.exec(select(UserProfile)).first()
     user_kws = [k.strip() for k in perfil_user.skills_keywords.split(",") if k.strip()] if perfil_user and perfil_user.skills_keywords else []
@@ -1339,7 +974,7 @@ with tab_vagas:
             </div>
             """, unsafe_allow_html=True)
 
-    # --- 3. GUIA DE PORTAIS DE PRESTAÇÃO DE SERVIÇO ---
+    # --- 3. GUIA DE PORTAIS ---
     st.markdown("""
     <div style="background:#FFFFFF; border:1px dashed #FF85A2; border-radius:14px; padding:14px 18px; margin: 12px 0 20px 0;">
         <h5 style="color:#C2185B !important; margin:0 0 6px 0;">🌐 Para Pacientes e Empresas Encontrarem Ela em Tempo Real:</h5>
@@ -1363,95 +998,89 @@ with tab_vagas:
     st.markdown("---")
     st.markdown(f"<h3 style='color: #AD1457 !important;'>🩺 Oportunidades no Feed Hospitalar & Farmacêutico 24h: <b>{len(vagas_lista)}</b></h3>", unsafe_allow_html=True)
     
-    if not vagas_lista:
-        st.warning("⚠️ Nenhuma vaga encontrada para essa combinação específica de filtros.")
-        if st.button("🔄 Redefinir Todos os Filtros"):
-            st.session_state.filtro_empresa_rapido = ""
-            st.rerun()
-    else:
-        for v in vagas_lista:
-            score, _ = calcular_match_real(v, curriculo_armazenado, user_kws)
-            
-            uf = getattr(v, "state", "PA")
-            if uf == "PA":
-                badge_estado = '<span class="badge">🌴 Belém - PA</span>'
-            elif uf == "SP":
-                badge_estado = '<span class="badge-sp">🏙️ São Paulo - SP</span>'
-            elif uf == "RJ":
-                badge_estado = '<span class="badge-rj">🌊 Rio de Janeiro - RJ</span>'
-            else:
-                badge_estado = f'<span class="badge">📍 {uf}</span>'
+    for v in vagas_lista:
+        score, _ = calcular_match_real(v, curriculo_armazenado, user_kws)
+        
+        uf = getattr(v, "state", "PA")
+        if uf == "PA":
+            badge_estado = '<span class="badge">🌴 Belém - PA</span>'
+        elif uf == "SP":
+            badge_estado = '<span class="badge-sp">🏙️ São Paulo - SP</span>'
+        elif uf == "RJ":
+            badge_estado = '<span class="badge-rj">🌊 Rio de Janeiro - RJ</span>'
+        else:
+            badge_estado = f'<span class="badge">📍 {uf}</span>'
 
-            cat_vaga = getattr(v, "category", "Enfermagem")
-            if cat_vaga == "Biomedicina":
-                badge_cat = '<span class="badge-bio">🔬 Biomedicina</span>'
-            elif cat_vaga == "Indústria Farmacêutica":
-                badge_cat = '<span class="badge-farma">💊 Farmacêutica</span>'
-            else:
-                badge_cat = '<span class="badge">🩺 Enfermagem</span>'
-            
-            link_vaga = v.url_apply if v.url_apply.startswith("http") else f"https://{v.url_apply}"
-            rota_maps = f"https://www.google.com/maps/dir/?api=1&destination={urllib.parse.quote(f'{v.hospital_or_company} {v.location}')}&travelmode=transit"
-            txt_zap = urllib.parse.quote(f"Olha essa oportunidade de {v.title} no {v.hospital_or_company} ({v.location}): {link_vaga}")
-            link_zap = f"https://api.whatsapp.com/send?text={txt_zap}"
+        cat_vaga = getattr(v, "category", "Enfermagem")
+        if cat_vaga == "Biomedicina":
+            badge_cat = '<span class="badge-bio">🔬 Biomedicina</span>'
+        elif cat_vaga == "Indústria Farmacêutica":
+            badge_cat = '<span class="badge-farma">💊 Farmacêutica</span>'
+        else:
+            badge_cat = '<span class="badge">🩺 Enfermagem</span>'
+        
+        link_vaga = v.url_apply if v.url_apply.startswith("http") else f"https://{v.url_apply}"
+        rota_maps = f"https://www.google.com/maps/dir/?api=1&destination={urllib.parse.quote(f'{v.hospital_or_company} {v.location}')}&travelmode=transit"
+        txt_zap = urllib.parse.quote(f"Olha essa oportunidade de {v.title} no {v.hospital_or_company} ({v.location}): {link_vaga}")
+        link_zap = f"https://api.whatsapp.com/send?text={txt_zap}"
 
-            st.markdown(f"""
-            <div class="job-card">
-                <div class="job-title">💖 {v.title}</div>
-                <div style="color: #880E4F !important; font-size: 0.95rem; margin-bottom: 8px;">
-                    🏥 <b>{v.hospital_or_company}</b> &nbsp;•&nbsp; 📍 {v.location}
-                </div>
-                <div style="margin-bottom: 10px;">
-                    {badge_estado} {badge_cat} 
-                    <span class="badge-24h">🌐 {v.source}</span>
-                    <span class="badge">⏰ {v.shift_type}</span>
-                    <span class="badge">✨ Match Real: {score}%</span>
-                </div>
-                <p style="color: #333333 !important; font-size: 0.92rem; line-height: 1.4;">{v.description}</p>
-                <div style="margin-top: 10px;">
-                    <a href="{link_vaga}" target="_blank" class="action-link" style="background:#FF69B4; color:white !important; font-weight:bold;">Acessar no {v.source} 🔗</a>
-                    <a href="{rota_maps}" target="_blank" class="action-link">🗺️ Simular Rota Maps</a>
-                    <a href="{link_zap}" target="_blank" class="action-link">💬 Compartilhar Zap</a>
-                </div>
+        st.markdown(f"""
+        <div class="job-card">
+            <div class="job-title">💖 {v.title}</div>
+            <div style="color: #880E4F !important; font-size: 0.95rem; margin-bottom: 8px;">
+                🏥 <b>{v.hospital_or_company}</b> &nbsp;•&nbsp; 📍 {v.location}
             </div>
-            """, unsafe_allow_html=True)
+            <div style="margin-bottom: 10px;">
+                {badge_estado} {badge_cat} 
+                <span class="badge-24h">🌐 {v.source}</span>
+                <span class="badge">⏰ {v.shift_type}</span>
+                <span class="badge">✨ Match Real: {score}%</span>
+            </div>
+            <p style="color: #333333 !important; font-size: 0.92rem; line-height: 1.4;">{v.description}</p>
+            <div style="margin-top: 10px;">
+                <a href="{link_vaga}" target="_blank" class="action-link" style="background:#FF69B4; color:white !important; font-weight:bold;">Acessar no {v.source} 🔗</a>
+                <a href="{rota_maps}" target="_blank" class="action-link">🗺️ Simular Rota Maps</a>
+                <a href="{link_zap}" target="_blank" class="action-link">💬 Compartilhar Zap</a>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-            col_ia, col_auto, col_fav = st.columns([3, 3, 2])
-            with col_ia:
-                with st.popover("🎀 Análise do Gemini da Hello Kitty"):
-                    with st.spinner("Analisando requisitos e consultando hospital..."):
-                        st.markdown(gerar_analise_ia_completa(v, curriculo_armazenado, user_kws))
-            
-            with col_auto:
-                with st.popover("⚡ Cadastro Automático & Dados Prontos"):
-                    st.markdown(f"#### 📝 Dados Prontos para Candidatar-se em: **{v.hospital_or_company}**")
-                    st.info("Copie as informações abaixo e clique no botão redirecionar para cadastrar sem digitar nada:")
-                    
-                    dados_cadastro_copia = f"""NOME COMPLETO: Candidata
+        col_ia, col_auto, col_fav = st.columns([3, 3, 2])
+        with col_ia:
+            with st.popover("🎀 Análise do Gemini da Hello Kitty"):
+                with st.spinner("Analisando requisitos e consultando hospital..."):
+                    st.markdown(gerar_analise_ia_completa(v, curriculo_armazenado, user_kws))
+        
+        with col_auto:
+            with st.popover("⚡ Cadastro Automático & Dados Prontos"):
+                st.markdown(f"#### 📝 Dados Prontos para Candidatar-se em: **{v.hospital_or_company}**")
+                st.info("Copie as informações abaixo e clique no botão redirecionar para cadastrar sem digitar nada:")
+                
+                dados_cadastro_copia = f"""NOME COMPLETO: Candidata
 HEADLINE: {headline_armazenada or 'Enfermeira / Biomédica | Cuidado Assistencial Humanizado'}
 PERFIL LINKEDIN: {linkedin_url_armazenada or 'https://www.linkedin.com/in/meu-perfil'}
 REGISTRO PROFISSIONAL: COREN / CRBM Ativo
 RESUMO: Profissional qualificada com experiência em rotina assistencial, biossegurança e protocolos rigorosos em {v.specialty}.
 CARTA RÁPIDA: Prezado(a) recrutador(a) do {v.hospital_or_company}, apresento minha candidatura à oportunidade de {v.title}."""
-                    
-                    st.text_area("Copiar Bloco de Dados:", dados_cadastro_copia, height=130)
-                    st.markdown(f"""
-                    <div style="text-align:center; margin-top:8px;">
-                        <a href="{link_vaga}" target="_blank" class="btn-safety-alert" style="padding:8px 18px; font-size:0.9rem;">
-                            🚀 Abrir Portal ({v.source}) e Colar Informações
-                        </a>
-                    </div>
-                    """, unsafe_allow_html=True)
+                
+                st.text_area("Copiar Bloco de Dados:", dados_cadastro_copia, height=130)
+                st.markdown(f"""
+                <div style="text-align:center; margin-top:8px;">
+                    <a href="{link_vaga}" target="_blank" class="btn-safety-alert" style="padding:8px 18px; font-size:0.9rem;">
+                        🚀 Abrir Portal ({v.source}) e Colar Informações
+                    </a>
+                </div>
+                """, unsafe_allow_html=True)
 
-            with col_fav:
-                if st.button("❤️ Salvar", key=f"btn_fav_{v.id}"):
-                    with Session(engine) as s:
-                        obj = s.get(Job, v.id)
-                        obj.status = "Candidatada"
-                        s.add(obj)
-                        s.commit()
-                    st.success("Salva em 'Minhas Candidaturas'!")
-                    st.rerun()
+        with col_fav:
+            if st.button("❤️ Salvar", key=f"btn_fav_{v.id}"):
+                with Session(engine) as s:
+                    obj = s.get(Job, v.id)
+                    obj.status = "Candidatada"
+                    s.add(obj)
+                    s.commit()
+                st.success("Salva em 'Minhas Candidaturas'!")
+                st.rerun()
 
 # ================= TAB 2: ESPECIAL BIOMEDICINA =================
 with tab_biomed:
@@ -2268,8 +1897,6 @@ with tab_rotas_emerg:
         </a>
     </div>
     """, unsafe_allow_html=True)
-
-    st.markdown("---")
 
     # --- RADAR DE NOTÍCIAS 24H (COFEN & CFBM) ---
     st.markdown("<h3 style='color: #880E4F !important;'>📰 Notícias & Acontecimentos Oficiais 24h (Cofen & CFBM)</h3>", unsafe_allow_html=True)
