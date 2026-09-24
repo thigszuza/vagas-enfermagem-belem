@@ -762,54 +762,103 @@ INFO_EMPRESAS_SAUDE = {
     }
 }
 
-# --- BANCO DE DEMANDAS DE PESSOAS BUSCANDO SERVIÇOS (ESTILO GETNINJAS) ---
-DEMANDAS_PARTICULARES = [
-    {
-        "solicitante": "Dona Maria C. (Família)",
-        "servico": "Plantão Noturno Particular (Acompanhamento Hospitalar / Domiciliar)",
-        "local": "Nazaré, Belém - PA",
-        "valor": "R$ 180,00 - R$ 250,00 / plantão",
-        "detalhe": "Paciente idosa com pós-operatório recente, necessitando de auxílio para mobilização, controle rigoroso de sinais vitais e medicação oral e EV nos horários corretos.",
-        "tel_ficticio": "5591988880001",
-        "categoria": "Enfermagem"
-    },
-    {
-        "solicitante": "Carlos Eduardo S.",
-        "servico": "Curativo Complexo & Tratamento de Feridas (Home Care)",
-        "local": "Marco, Belém - PA",
-        "valor": "R$ 120,00 - R$ 160,00 / procedimento",
-        "detalhe": "Paciente com lesão por pressão estágio II, requer técnica estéril, desbridamento suave se necessário e aplicação de cobertura especial conforme prescrição médica.",
-        "tel_ficticio": "5591988880002",
-        "categoria": "Enfermagem"
-    },
-    {
-        "solicitante": "Clínica Integrada Bem Viver",
-        "servico": "Coleta Domiciliar de Exames de Sangue (Diurnos)",
-        "local": "Pinheiros / Morumbi, São Paulo - SP",
-        "valor": "R$ 70,00 a R$ 100,00 por paciente",
-        "detalhe": "Punção venosa a vácuo para rotina de idosos em domicílio, centrifugação rápida e entrega das amostras no posto de apoio laboratorial.",
-        "tel_ficticio": "5511988880003",
-        "categoria": "Biomedicina"
-    },
-    {
-        "solicitante": "Patrícia M. (Mãe)",
-        "servico": "Aplicação de Medicação Injetável & Acesso Venoso Pediátrico",
-        "local": "Tijuca, Rio de Janeiro - RJ",
-        "valor": "R$ 90,00 - R$ 140,00",
-        "detalhe": "Criança de 6 anos precisando de punção cuidadosa e humanizada para término de ciclo de antibiótico prescrito pelo pediatra.",
-        "tel_ficticio": "5521988880004",
-        "categoria": "Enfermagem"
-    },
-    {
-        "solicitante": "Laboratório Parceiro Diagnósticos",
-        "servico": "Plantão Extra de Bancada Analítica (Hematologia & Bioquímica)",
-        "local": "São Brás, Belém - PA",
-        "valor": "R$ 220,00 / turno",
-        "detalhe": "Reforço aos finais de semana para rodar analisadores automatizados e leitura de lâminas com microscopia direta.",
-        "tel_ficticio": "5591988880005",
-        "categoria": "Biomedicina"
-    }
-]
+# --- BANCO DE DEMANDAS PARTICULARES SEPARADO POR ESTADO COM FOCO EM BELÉM (PA) ---
+DEMANDAS_PARTICULARES_ESTADOS = {
+    "PA - Pará (Belém e Região)": [
+        {
+            "solicitante": "Família Guimarães (Dona Maria)",
+            "servico": "Plantão Noturno Particular (Acompanhamento Domiciliar)",
+            "local": "Nazaré, Belém - PA",
+            "valor": "R$ 180,00 - R$ 260,00 / plantão",
+            "detalhe": "Idosa em recuperação pós-cirúrgica necessitando de auxílio para banho de leito, aferição rigorosa de PA e glicemia e administração de medicamentos nos horários prescritos.",
+            "categoria": "Enfermagem"
+        },
+        {
+            "solicitante": "Carlos Eduardo Santos",
+            "servico": "Curativo Complexo & Cuidados com Lesão por Pressão",
+            "local": "Marco, Belém - PA",
+            "valor": "R$ 130,00 - R$ 170,00 / visita",
+            "detalhe": "Paciente acamado com lesão sacral em cicatrização. Requer aplicação de técnica estéril, limpeza com SF 0.9% morno e cobertura com placa hidrocolóide/alginato.",
+            "categoria": "Enfermagem"
+        },
+        {
+            "solicitante": "Dra. Beatriz L. (Clínica Nazaré)",
+            "servico": "Coleta Domiciliar de Exames de Sangue (Rotina Idosos)",
+            "local": "Batista Campos / Umarizal, Belém - PA",
+            "valor": "R$ 60,00 a R$ 90,00 por coleta",
+            "detalhe": "Punção venosa cuidadosa a vácuo, centrifugação e envio seguro das amostras refrigeradas para laboratório parceiro da capital.",
+            "categoria": "Biomedicina"
+        },
+        {
+            "solicitante": "Helena V. (Filha)",
+            "servico": "Administração de Medicação Injetável Intramuscular / EV",
+            "local": "São Brás, Belém - PA",
+            "valor": "R$ 70,00 - R$ 110,00",
+            "detalhe": "Aplicação de complexo vitamínico e ferro injetável sob prescrição médica com descarte seguro de perfurocortantes.",
+            "categoria": "Enfermagem"
+        },
+        {
+            "solicitante": "Laboratório Diagnose Belém",
+            "servico": "Plantão Extra de Leitura de Lâminas & Hematologia",
+            "local": "Cidade Velha, Belém - PA",
+            "valor": "R$ 220,00 / turno 6h",
+            "detalhe": "Demanda pontual de bancada para microscopia, contagem diferencial de leucócitos e validação de hemogramas de urgência.",
+            "categoria": "Biomedicina"
+        },
+        {
+            "solicitante": "Família Pantoja",
+            "servico": "Plantão Diurno de Enfermagem (Assistência ao Acamado)",
+            "local": "Umarizal, Belém - PA",
+            "valor": "R$ 190,00 - R$ 240,00 / dia",
+            "detalhe": "Troca de curativo de traqueostomia, aspiração de vias aéreas superiores se necessário e auxílio na dieta por sonda nasoenteral (SNE).",
+            "categoria": "Enfermagem"
+        }
+    ],
+    "SP - São Paulo": [
+        {
+            "solicitante": "Clínica Integrada Morumbi",
+            "servico": "Coleta Domiciliar Especializada de Sangue",
+            "local": "Pinheiros / Morumbi, São Paulo - SP",
+            "valor": "R$ 90,00 - R$ 130,00 por coleta",
+            "detalhe": "Coletas agendadas pela manhã em residências de pacientes geriátricos de alta complexidade.",
+            "categoria": "Biomedicina"
+        },
+        {
+            "solicitante": "Família Albuquerque",
+            "servico": "Plantão de Enfermagem 12h (Pós-Alta Hospitalar)",
+            "local": "Bela Vista, São Paulo - SP",
+            "valor": "R$ 250,00 - R$ 340,00 / plantão",
+            "detalhe": "Acompanhamento pós-cirurgia cardíaca, monitorização de dreno e sinais vitais contínuos.",
+            "categoria": "Enfermagem"
+        },
+        {
+            "solicitante": "Centro Médico Higienópolis",
+            "servico": "Punção Venosa Pediátrica em Domicílio",
+            "local": "Higienópolis, São Paulo - SP",
+            "valor": "R$ 150,00 - R$ 220,00",
+            "detalhe": "Atendimento humanizado para coleta pediátrica com agulhas finas e ambiente acolhedor.",
+            "categoria": "Enfermagem"
+        }
+    ],
+    "RJ - Rio de Janeiro": [
+        {
+            "solicitante": "Patrícia Medeiros",
+            "servico": "Aplicação de Antibiótico EV & Manutenção de Acesso",
+            "local": "Tijuca, Rio de Janeiro - RJ",
+            "valor": "R$ 110,00 - R$ 160,00",
+            "detalhe": "Término de esquema antimicrobiano injetável em domicílio com flush salinizado.",
+            "categoria": "Enfermagem"
+        },
+        {
+            "solicitante": "Família Rezende",
+            "servico": "Acompanhante de Enfermagem para Exames em Hospital",
+            "local": "Copacabana, Rio de Janeiro - RJ",
+            "valor": "R$ 160,00 - R$ 220,00 / período",
+            "detalhe": "Acompanhamento integral em ambulatório de alta complexidade para idosa em cadeira de rodas.",
+            "categoria": "Enfermagem"
+        }
+    ]
+}
 
 def normalizar_texto(txt: str) -> str:
     if not txt:
@@ -1098,21 +1147,61 @@ with tab_vagas:
                 st.session_state.filtro_empresa_rapido = ""
                 st.rerun()
 
-    # --- 2. QUADRO DE DEMANDAS DE PESSOAS BUSCANDO SERVIÇOS (ESTILO GETNINJAS) ---
-    st.markdown("""
+    # --- 2. QUADRO DE DEMANDAS SEPARADO POR ESTADO COM FOCO EM BELÉM (PA) ---
+    total_belem = len(DEMANDAS_PARTICULARES_ESTADOS.get("PA - Pará (Belém e Região)", []))
+    total_sp = len(DEMANDAS_PARTICULARES_ESTADOS.get("SP - São Paulo", []))
+    total_rj = len(DEMANDAS_PARTICULARES_ESTADOS.get("RJ - Rio de Janeiro", []))
+
+    st.markdown(f"""
     <div class="ninjas-box">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h4 style="color:#E65100 !important; margin:0 0 4px 0;">🤝 Pacientes & Famílias Buscando Profissionais Particulares (Estilo GetNinjas)</h4>
-            <span class="badge-ninja">Oportunidades Autônomas & Home Care</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <h4 style="color:#E65100 !important; margin:0;">🤝 Pessoas Buscando Seus Serviços Particulares (Home Care & Plantões)</h4>
+            <span class="badge-ninja">🌴 Belém em Destaque: {total_belem} solicitações ativas</span>
         </div>
-        <p style="color:#4A1525; font-size:0.88rem; margin:0 0 10px 0;">
-            Pessoas precisando de assistência imediata. Clique para abrir proposta de apresentação pronta e ética:
+        <p style="color:#4A1525; font-size:0.88rem; margin:6px 0 10px 0;">
+            Selecione o Estado e veja o número de famílias e clínicas precisando de atendimento particular imediato:
         </p>
     </div>
     """, unsafe_allow_html=True)
 
+    col_est_sel, col_max_qtd = st.columns([3, 2])
+    with col_est_sel:
+        estado_ninja_sel = st.selectbox(
+            "📍 Escolha a Região para Ver as Pessoas Solicitando:",
+            [
+                f"PA - Pará (Belém e Região) — 🔥 {total_belem} Pessoas",
+                f"SP - São Paulo — {total_sp} Pessoas",
+                f"RJ - Rio de Janeiro — {total_rj} Pessoas"
+            ],
+            index=0
+        )
+    with col_max_qtd:
+        max_pessoas_mostrar = st.selectbox(
+            "👥 Número Máximo de Pessoas na Tela:",
+            [2, 4, 6, "Todas"],
+            index=2
+        )
+
+    # Identifica chave do estado selecionado
+    if "PA" in estado_ninja_sel:
+        chave_estado_ninja = "PA - Pará (Belém e Região)"
+    elif "SP" in estado_ninja_sel:
+        chave_estado_ninja = "SP - São Paulo"
+    else:
+        chave_estado_ninja = "RJ - Rio de Janeiro"
+
+    lista_demandas_estado = DEMANDAS_PARTICULARES_ESTADOS.get(chave_estado_ninja, [])
+    
+    # Aplica o limite máximo selecionado
+    if max_pessoas_mostrar != "Todas":
+        demandas_exibir = lista_demandas_estado[:int(max_pessoas_mostrar)]
+    else:
+        demandas_exibir = lista_demandas_estado
+
+    st.markdown(f"<p style='color:#880E4F; font-weight:700; font-size:0.92rem; margin:4px 0 10px 0;'>Exibindo {len(demandas_exibir)} de {len(lista_demandas_estado)} pessoas precisando de atendimento em {chave_estado_ninja.split('—')[0].strip()}:</p>", unsafe_allow_html=True)
+
     col_nj1, col_nj2 = st.columns(2)
-    for idx_d, d in enumerate(DEMANDAS_PARTICULARES[:4]):
+    for idx_d, d in enumerate(demandas_exibir):
         col_target = col_nj1 if idx_d % 2 == 0 else col_nj2
         with col_target:
             texto_apresentacao = (
@@ -1138,7 +1227,7 @@ with tab_vagas:
 
     # --- 3. GUIA PARA ENCONTRAREM ELA EM PORTAIS DE PRESTAÇÃO DE SERVIÇO ---
     st.markdown("""
-    <div style="background:#FFFFFF; border:1px dashed #FF85A2; border-radius:14px; padding:14px 18px; margin: 10px 0 20px 0;">
+    <div style="background:#FFFFFF; border:1px dashed #FF85A2; border-radius:14px; padding:14px 18px; margin: 12px 0 20px 0;">
         <h5 style="color:#C2185B !important; margin:0 0 6px 0;">🌐 Para Pacientes e Empresas Encontrarem Ela em Tempo Real:</h5>
         <p style="color:#33101E; font-size:0.88rem; margin:0 0 10px 0;">
             Cadastre o perfil dela gratuitamente nos principais portais para receber pedidos de atendimento diretamente no celular:
