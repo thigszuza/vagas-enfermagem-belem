@@ -5,25 +5,22 @@ import smtplib
 from typing import List
 from models import Job
 
-# Configurações do SMTP (Exemplo usando Gmail)
-# Dica: No Gmail, utilize uma "Senha de App" (App Password) gerada em https://myaccount.google.com/apppasswords
+# Configurações do SMTP (Compatível com GitHub Secrets e variáveis locais)
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv(
-    "SMTP_USER", ""
-)  # Seu e-mail de envio (ex: seuemail@gmail.com)
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")  # Senha de app do Gmail de 16 letras
+SMTP_USER = os.getenv("EMAIL_REMETENTE") or os.getenv("SMTP_USER", "")
+SMTP_PASSWORD = os.getenv("EMAIL_SENHA") or os.getenv("SMTP_PASSWORD", "")
 
 
 def formatar_html_vagas(vagas: List[Job], nome_destinatario="Meu Amor"):
-  itens_html = ""
-  for v in vagas:
-    link = (
-        v.url_apply
-        if v.url_apply.startswith("http")
-        else f"https://{v.url_apply}"
-    )
-    itens_html += f"""
+    itens_html = ""
+    for v in vagas:
+        link = (
+            v.url_apply
+            if v.url_apply and v.url_apply.startswith("http")
+            else f"https://{v.url_apply}" if v.url_apply else "#"
+        )
+        itens_html += f"""
         <div style="background-color: #ffffff; border: 2px solid #ffccd7; border-radius: 12px; padding: 18px; margin-bottom: 16px; box-shadow: 0 3px 6px rgba(255, 182, 193, 0.2);">
             <h3 style="color: #c2185b; margin-top: 0; margin-bottom: 6px;">💖 {v.title}</h3>
             <p style="color: #880e4f; margin: 4px 0; font-size: 14px;">
@@ -40,7 +37,7 @@ def formatar_html_vagas(vagas: List[Job], nome_destinatario="Meu Amor"):
         </div>
         """
 
-  html = f"""
+    html = f"""
     <!DOCTYPE html>
     <html>
     <head><meta charset="utf-8"></head>
@@ -66,36 +63,42 @@ def formatar_html_vagas(vagas: List[Job], nome_destinatario="Meu Amor"):
     </body>
     </html>
     """
-  return html
+    return html
 
 
-def enviar_boletim_email(destinatario: str, vagas: List[Job]):
-  if not SMTP_USER or not SMTP_PASSWORD:
-    print(
-        "⚠️ Credenciais SMTP não configuradas. Defina SMTP_USER e SMTP_PASSWORD."
-    )
-    return False
+def enviar_boletim_email(vagas: List[Job], nome_destinatario="Meu Amor"):
+    if not SMTP_USER or not SMTP_PASSWORD:
+        print("⚠️ Credenciais SMTP não configuradas. Defina EMAIL_REMETENTE e EMAIL_SENHA nos Segredos do GitHub.")
+        return False
 
-  if not vagas:
-    return True
+    if not vagas:
+        print("ℹ️ Nenhuma nova vaga encontrada nesta execução.")
+        return True
 
-  msg = MIMEMultipart("alternative")
-  msg["Subject"] = (
-      f"🌸 {len(vagas)} Novas Vagas de Enfermagem em Belém para Você! 💕"
-  )
-  msg["From"] = f"Vagas Enfermagem Belém <{SMTP_USER}>"
-  msg["To"] = destinatario
+    # Lê os destinatários separados por vírgula do GitHub Secret EMAIL_DESTINATARIO
+    destinatarios_raw = os.getenv("EMAIL_DESTINATARIO", SMTP_USER)
+    destinatarios = [e.strip() for e in destinatarios_raw.split(",") if e.strip()]
 
-  corpo_html = formatar_html_vagas(vagas)
-  msg.attach(MIMEText(corpo_html, "html"))
+    if not destinatarios:
+        print("⚠️ Nenhum destinatário de e-mail definido.")
+        return False
 
-  try:
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-      server.starttls()
-      server.login(SMTP_USER, SMTP_PASSWORD)
-      server.sendmail(SMTP_USER, destinatario, msg.as_string())
-    print(f"✅ E-mail enviado com sucesso para {destinatario}!")
-    return True
-  except Exception as e:
-    print(f"❌ Erro ao enviar e-mail: {e}")
-    return False
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"🌸 {len(vagas)} Novas Vagas de Enfermagem em Belém para Você! 💕"
+    msg["From"] = f"Vagas Enfermagem Belém <{SMTP_USER}>"
+    msg["To"] = ", ".join(destinatarios)
+
+    corpo_html = formatar_html_vagas(vagas, nome_destinatario)
+    msg.attach(MIMEText(corpo_html, "html"))
+
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            # Envia para a lista completa de destinatários de uma só vez
+            server.sendmail(SMTP_USER, destinatarios, msg.as_string())
+        print(f"✅ E-mail HTML enviado com sucesso para: {', '.join(destinatarios)}!")
+        return True
+    except Exception as e:
+        print(f"❌ Erro ao enviar e-mail: {e}")
+        return False
