@@ -296,7 +296,7 @@ def popular_catalogo_base():
 
 popular_catalogo_base()
 
-# --- CSS COM ALTO CONTRASTE E CORREÇÃO VISUAL ---
+# --- CSS COM ALTO CONTRASTE E CORREÇÃO RIGOROSA DAS CAIXAS DE INPUT E UPLOAD ---
 st.markdown("""
 <style>
     /* Fundo geral da aplicação */
@@ -332,6 +332,62 @@ st.markdown("""
     [data-testid="stSidebar"] [data-baseweb="select"] * {
         color: #FFFFFF !important;
         font-weight: 600 !important;
+    }
+
+    /* ========================================================================= */
+    /* FORÇAR FUNDO BRANCO E TEXTO ESCURO EM INPUTS, TEXTAREAS E FILE UPLOADER   */
+    /* ========================================================================= */
+    div[data-baseweb="input"],
+    div[data-baseweb="input"] > div,
+    div[data-baseweb="base-input"],
+    .stTextInput > div,
+    .stTextInput > div > div {
+        background-color: #FFFFFF !important;
+        background: #FFFFFF !important;
+        border: 2px solid #FFCCD7 !important;
+        border-radius: 12px !important;
+    }
+
+    .stTextInput input,
+    div[data-baseweb="input"] input {
+        background-color: #FFFFFF !important;
+        background: #FFFFFF !important;
+        color: #1A1A1A !important;
+        -webkit-text-fill-color: #1A1A1A !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+    }
+    .stTextInput input::placeholder {
+        color: #888888 !important;
+        -webkit-text-fill-color: #888888 !important;
+    }
+
+    /* ÁREA DE UPLOAD DE ARQUIVOS (FILE UPLOADER BRANCO COM BORDA ROSA) */
+    [data-testid="stFileUploader"],
+    [data-testid="stFileUploader"] > div,
+    [data-testid="stFileUploader"] section,
+    [data-testid="stFileUploaderDropzone"] {
+        background-color: #FFFFFF !important;
+        background: #FFFFFF !important;
+        border: 2px dashed #FF85A2 !important;
+        border-radius: 14px !important;
+    }
+    [data-testid="stFileUploader"] span,
+    [data-testid="stFileUploader"] small,
+    [data-testid="stFileUploader"] p,
+    [data-testid="stFileUploaderDropzoneInstructions"] * {
+        color: #4A1525 !important;
+        font-weight: 600 !important;
+    }
+    [data-testid="stFileUploader"] button {
+        background: #FFF0F5 !important;
+        color: #C2185B !important;
+        border: 1px solid #FFCCD7 !important;
+        border-radius: 16px !important;
+        font-weight: 700 !important;
+    }
+    [data-testid="stFileUploader"] button * {
+        color: #C2185B !important;
     }
 
     /* CAIXA BRANCA DE LEITURA COM TEXTO ESCURO NÍTIDO */
@@ -603,8 +659,8 @@ def obter_previsao_tempo(cidade_nome: str):
 # --- BASE DE CONHECIMENTO CRÍTICA SOBRE HOSPITAIS / LABORATÓRIOS ---
 INFO_EMPRESAS_SAUDE = {
     "porto dias": {
-        "resumo": "Maior complexo hospitalar privado de Belém (Rede D'Or), localizado no bairro do Marco. Referência absoluta em urgência e UTI.",
-        "cultura": "Exigente e com ritmo acelerado de plantão. Excelente vitrine para carreira, paga rigorosamente em dia e tem estabilidade.",
+        "resumo": "Maior complexo hospitalar privado de Belém (Rede D'Or), no bairro do Marco. Referência em urgência e UTI.",
+        "cultura": "Ritmo acelerado e exigente. Excelente vitrine profissional e remuneração rigorosamente em dia.",
         "pontos_atencao": "Plantão intenso, rotatividade moderada em enfermagem assistencial.",
         "dica_entrevista": "Foque em raciocínio rápido para drogas vasoativas, biossegurança e protocolos de segurança do paciente."
     },
@@ -616,9 +672,9 @@ INFO_EMPRESAS_SAUDE = {
     },
     "metropolitano": {
         "resumo": "Hospital Metropolitano de Urgência e Emergência (HMUE), em Ananindeua. Referência em trauma, queimados e sala vermelha.",
-        "cultura": "Pancada pura, aprendizado gigantesco e acelerado para qualquer enfermeiro.",
+        "cultura": "Pancada pura, aprendizado gigantesco e acelerado para qualquer profissional.",
         "pontos_atencao": "Deslocamento na BR-316 pode ser lento em horários de pico.",
-        "dica_entrevista": "Destaque agilidade em triagem (Protocolo de Manchester) e controle de hemorragias/estabilização."
+        "dica_entrevista": "Destaque agilidade em triagem (Protocolo de Manchester) e estabilização de pacientes graves."
     },
     "santa casa": {
         "resumo": "Hospital secular tradicional em Belém (Umarizal), referência estadual em saúde materno-infantil, neonatal e ginecologia.",
@@ -709,13 +765,11 @@ def buscar_raio_x_empresa(nome_empresa: str) -> dict:
     }
 
 def gerar_analise_ia_completa(vaga: Job, curriculo_texto: str, perfil_kws: list) -> str:
-    """Análise crítica e honesta via IA (Google Gemini oficial ou motor semântico local)"""
     score, matches = calcular_match_real(vaga, curriculo_texto, perfil_kws)
     raio_x = buscar_raio_x_empresa(vaga.hospital_or_company)
     
     gemini_key = os.getenv("GEMINI_API_KEY", "")
     
-    # Se a API oficial do Gemini estiver disponível e configurada
     if HAS_GENAI and gemini_key:
         try:
             client = genai.Client(api_key=gemini_key)
@@ -744,11 +798,9 @@ def gerar_analise_ia_completa(vaga: Job, curriculo_texto: str, perfil_kws: list)
         except Exception:
             pass
 
-    # MOTOR SEMÂNTICO LOCAL HONESTO (Caso offline ou sem chave API)
     analise = f"🐾 **Análise Crítica de Carreira da Hello Kitty & Thiago Zuza** 💕\n\n"
     analise += f"🩺 **Vaga:** {vaga.title} | **Unidade:** {vaga.hospital_or_company}\n\n"
     
-    # Match Real
     analise += f"### 📊 1. Diagnóstico de Match Real: **{score}%**\n"
     if score >= 60:
         analise += f"✨ **Afinidade Muito Alta:** Seu perfil preenche os requisitos mais pesados dessa vaga. "
@@ -759,12 +811,10 @@ def gerar_analise_ia_completa(vaga: Job, curriculo_texto: str, perfil_kws: list)
     else:
         analise += f"⚠️ **Alerta Sincero:** O perfil da vaga exige requisitos que ainda não estão explícitos no seu currículo. Se for se candidatar, ajuste seu resumo para destacar vivências de estágio e procedimentos correlatos.\n\n"
 
-    # Opinião Honesta sobre a Vaga
     analise += f"### 💡 2. Opinião Sincera sobre a Oportunidade\n"
     analise += f"• **Vale a pena?** Sim, especialmente pelo peso no currículo. O turno **{vaga.shift_type}** exige preparo físico, mas abre portas imediatas para setores mais valorizados.\n"
     analise += f"• **Rotina provável:** {raio_x['pontos_atencao']}\n\n"
 
-    # Raio-X da Empresa
     analise += f"### 🏢 3. Raio-X da Instituição ({vaga.hospital_or_company})\n"
     analise += f"• **Perfil:** {raio_x['resumo']}\n"
     analise += f"• **Cultura interna:** {raio_x['cultura']}\n"
@@ -1049,7 +1099,7 @@ Biomédica | Contato WhatsApp"""
             use_container_width=True
         )
 
-# ================= TAB 3: ANÁLISE IA DO CURRÍCULO (NOVA) =================
+# ================= TAB 3: ANÁLISE IA DO CURRÍCULO =================
 with tab_ia_curriculo:
     st.markdown("<h2 style='color: #AD1457 !important;'>🤖 Central IA: Análise de Currículo & Raio-X de Empresas</h2>", unsafe_allow_html=True)
     st.markdown("Suba o currículo dela para que a IA analise a compatibilidade real em cada vaga, dê opiniões diretas sobre os hospitais e prepare para as entrevistas! 💕")
