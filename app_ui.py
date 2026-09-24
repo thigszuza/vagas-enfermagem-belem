@@ -244,7 +244,6 @@ CATALOGO_24H = [
     }
 ]
 
-# --- POPULAÇÃO DO BANCO USANDO SQL NATIVO (EVITA ERRO DE BIND DO SQLMODEL) ---
 def popular_catalogo_base():
     try:
         with engine.begin() as conn:
@@ -287,7 +286,7 @@ def popular_catalogo_base():
 
 popular_catalogo_base()
 
-# --- CSS COM ALTO CONTRASTE E VISIBILIDADE BLINDADA ---
+# --- CSS COM ALTO CONTRASTE E BLINDAGEM DE BOTÕES ESCUROS ---
 st.markdown("""
 <style>
     .stApp {
@@ -391,28 +390,41 @@ st.markdown("""
         font-size: 0.95rem !important;
     }
 
-    [data-testid="stFileUploader"],
-    [data-testid="stFileUploader"] > div,
-    [data-testid="stFileUploader"] section,
-    [data-testid="stFileUploaderDropzone"] {
-        background-color: #FFFFFF !important;
-        background: #FFFFFF !important;
-        border: 2px dashed #FF85A2 !important;
-        border-radius: 14px !important;
-    }
-    [data-testid="stFileUploader"] span,
-    [data-testid="stFileUploader"] small,
-    [data-testid="stFileUploader"] p,
-    [data-testid="stFileUploaderDropzoneInstructions"] * {
-        color: #4A1525 !important;
-        font-weight: 600 !important;
-    }
-    [data-testid="stFileUploader"] button {
-        background: #FFF0F5 !important;
-        color: #C2185B !important;
-        border: 1px solid #FFCCD7 !important;
-        border-radius: 16px !important;
+    /* FORÇA TODOS OS POPOVERS E BOTÕES A SEREM ROSAS (ELIMINA OS BOTÕES PRETOS) */
+    div[data-testid="stPopover"],
+    div[data-testid="stPopover"] > button,
+    div[data-testid="stPopover"] button,
+    .stButton > button,
+    .stDownloadButton > button,
+    div[data-testid="stFormSubmitButton"] > button {
+        background: linear-gradient(135deg, #FF69B4, #E91E63) !important;
+        background-color: #FF69B4 !important;
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+        border: none !important;
+        border-radius: 20px !important;
         font-weight: 700 !important;
+        padding: 8px 18px !important;
+        box-shadow: 0 4px 10px rgba(233, 30, 99, 0.28) !important;
+        transition: all 0.3s ease;
+    }
+
+    div[data-testid="stPopover"] > button *,
+    div[data-testid="stPopover"] button *,
+    .stButton > button *,
+    .stDownloadButton > button *,
+    div[data-testid="stFormSubmitButton"] > button * {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+        font-weight: 700 !important;
+    }
+
+    div[data-testid="stPopover"] > button:hover,
+    .stButton > button:hover,
+    .stDownloadButton > button:hover {
+        background: linear-gradient(135deg, #E91E63, #C2185B) !important;
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
     }
 
     .doc-display-box {
@@ -481,53 +493,6 @@ st.markdown("""
         align-items: center;
         gap: 16px;
         box-shadow: 0 4px 12px rgba(255, 105, 180, 0.12) !important;
-    }
-
-    [data-testid="stAlert"] {
-        border-radius: 12px !important;
-        border: 1px solid #FFB6C1 !important;
-        background-color: #FFFFFF !important;
-    }
-    [data-testid="stAlert"] * {
-        color: #5D1A2F !important;
-        font-weight: 600 !important;
-    }
-
-    [data-testid="stRadio"] label,
-    [data-testid="stRadio"] p,
-    [data-testid="stRadio"] span,
-    [data-testid="stCheckbox"] label,
-    [data-testid="stCheckbox"] span {
-        color: #4A1525 !important;
-        font-weight: 700 !important;
-    }
-
-    .stButton > button,
-    .stDownloadButton > button,
-    div[data-testid="stFormSubmitButton"] > button,
-    div[data-testid="stPopover"] > button {
-        background: linear-gradient(135deg, #FF69B4, #E91E63) !important;
-        color: #FFFFFF !important;
-        border: none !important;
-        border-radius: 20px !important;
-        font-weight: 700 !important;
-        padding: 8px 18px !important;
-        box-shadow: 0 4px 10px rgba(233, 30, 99, 0.28) !important;
-        transition: all 0.3s ease;
-    }
-    .stButton > button:hover,
-    .stDownloadButton > button:hover,
-    div[data-testid="stFormSubmitButton"] > button:hover {
-        background: linear-gradient(135deg, #E91E63, #C2185B) !important;
-        box-shadow: 0 6px 14px rgba(233, 30, 99, 0.4) !important;
-        color: #FFFFFF !important;
-    }
-    .stButton > button *,
-    .stDownloadButton > button *,
-    div[data-testid="stFormSubmitButton"] > button *,
-    div[data-testid="stPopover"] > button * {
-        color: #FFFFFF !important;
-        font-weight: 700 !important;
     }
 
     .stTabs [data-baseweb="tab-list"] {
@@ -1148,7 +1113,7 @@ try:
                 q = q.where(
                     (Job.title.ilike(t)) | 
                     (Job.hospital_or_company.ilike(t)) | 
-                    (Job.description.ilike(t)) |
+                    (Job.description.ilike(t)) | 
                     (Job.specialty.ilike(t))
                 )
                 
@@ -1379,63 +1344,65 @@ with tab_vagas:
         txt_zap = urllib.parse.quote(f"Olha essa oportunidade de {v.title} no {v.hospital_or_company} ({v.location}): {link_vaga}")
         link_zap = f"https://api.whatsapp.com/send?text={txt_zap}"
 
-        st.markdown(f"""
-        <div class="job-card">
-            <div class="job-title">💖 {v.title}</div>
-            <div style="color: #880E4F !important; font-size: 0.95rem; margin-bottom: 8px;">
-                🏥 <b>{v.hospital_or_company}</b> &nbsp;•&nbsp; 📍 {v.location}
+        # Card envolvente incluindo os botões de ação e popovers rosas
+        with st.container():
+            st.markdown(f"""
+            <div class="job-card">
+                <div class="job-title">💖 {v.title}</div>
+                <div style="color: #880E4F !important; font-size: 0.95rem; margin-bottom: 8px;">
+                    🏥 <b>{v.hospital_or_company}</b> &nbsp;•&nbsp; 📍 {v.location}
+                </div>
+                <div style="margin-bottom: 10px;">
+                    {badge_estado} {badge_cat} 
+                    <span class="badge-24h">🌐 {v.source}</span>
+                    <span class="badge">⏰ {v.shift_type}</span>
+                    <span class="badge">✨ Match Real: {score}%</span>
+                </div>
+                <p style="color: #333333 !important; font-size: 0.92rem; line-height: 1.4;">{v.description}</p>
+                <div style="margin-top: 10px; margin-bottom: 14px;">
+                    <a href="{link_vaga}" target="_blank" class="action-link" style="background:#FF69B4; color:white !important; font-weight:bold;">Acessar no {v.source} 🔗</a>
+                    <a href="{rota_maps}" target="_blank" class="action-link">🗺️ Simular Rota Maps</a>
+                    <a href="{link_zap}" target="_blank" class="action-link">💬 Compartilhar Zap</a>
+                </div>
             </div>
-            <div style="margin-bottom: 10px;">
-                {badge_estado} {badge_cat} 
-                <span class="badge-24h">🌐 {v.source}</span>
-                <span class="badge">⏰ {v.shift_type}</span>
-                <span class="badge">✨ Match Real: {score}%</span>
-            </div>
-            <p style="color: #333333 !important; font-size: 0.92rem; line-height: 1.4;">{v.description}</p>
-            <div style="margin-top: 10px;">
-                <a href="{link_vaga}" target="_blank" class="action-link" style="background:#FF69B4; color:white !important; font-weight:bold;">Acessar no {v.source} 🔗</a>
-                <a href="{rota_maps}" target="_blank" class="action-link">🗺️ Simular Rota Maps</a>
-                <a href="{link_zap}" target="_blank" class="action-link">💬 Compartilhar Zap</a>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
 
-        col_ia, col_auto, col_fav = st.columns([3, 3, 2])
-        with col_ia:
-            with st.popover("🎀 Análise do Gemini da Hello Kitty"):
-                with st.spinner("Analisando requisitos e consultando hospital..."):
-                    st.markdown(gerar_analise_ia_completa(v, curriculo_armazenado, user_kws))
-        
-        with col_auto:
-            with st.popover("⚡ Cadastro Automático & Dados Prontos"):
-                st.markdown(f"#### 📝 Dados Prontos para Candidatar-se em: **{v.hospital_or_company}**")
-                st.info("Copie as informações abaixo e clique no botão redirecionar para cadastrar sem digitar nada:")
-                
-                dados_cadastro_copia = f"""NOME COMPLETO: Candidata
+            col_ia, col_auto, col_fav = st.columns([3, 3, 2])
+            with col_ia:
+                with st.popover("🎀 Análise do Gemini da Hello Kitty"):
+                    with st.spinner("Analisando requisitos e consultando hospital..."):
+                        st.markdown(gerar_analise_ia_completa(v, curriculo_armazenado, user_kws))
+            
+            with col_auto:
+                with st.popover("⚡ Cadastro Automático & Dados Prontos"):
+                    st.markdown(f"#### 📝 Dados Prontos para: **{v.hospital_or_company}**")
+                    st.info("Copie as informações abaixo e clique para colar diretamente no formulário:")
+                    
+                    dados_cadastro_copia = f"""NOME COMPLETO: Candidata
 HEADLINE: {headline_armazenada or 'Enfermeira / Biomédica | Cuidado Assistencial Humanizado'}
 PERFIL LINKEDIN: {linkedin_url_armazenada or 'https://www.linkedin.com/in/meu-perfil'}
 REGISTRO PROFISSIONAL: COREN / CRBM Ativo
 RESUMO: Profissional qualificada com experiência em rotina assistencial, biossegurança e protocolos rigorosos em {v.specialty}.
 CARTA RÁPIDA: Prezado(a) recrutador(a) do {v.hospital_or_company}, apresento minha candidatura à oportunidade de {v.title}."""
-                
-                st.text_area("Copiar Bloco de Dados:", dados_cadastro_copia, height=130)
-                st.markdown(f"""
-                <div style="text-align:center; margin-top:8px;">
-                    <a href="{link_vaga}" target="_blank" class="btn-safety-alert" style="padding:8px 18px; font-size:0.9rem;">
-                        🚀 Abrir Portal ({v.source}) e Colar Informações
-                    </a>
-                </div>
-                """, unsafe_allow_html=True)
+                    
+                    st.text_area("Copiar Bloco de Dados:", dados_cadastro_copia, height=130)
+                    st.markdown(f"""
+                    <div style="text-align:center; margin-top:8px;">
+                        <a href="{link_vaga}" target="_blank" class="btn-safety-alert" style="padding:8px 18px; font-size:0.9rem;">
+                            🚀 Abrir Portal ({v.source}) e Colar Informações
+                        </a>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-        with col_fav:
-            if st.button("❤️ Salvar", key=f"btn_fav_{v.id}"):
-                with Session(engine) as s:
-                    obj = s.get(Job, v.id)
-                    obj.status = "Candidatada"
-                    s.add(obj)
-                    s.commit()
-                st.success("Salva em 'Minhas Candidaturas'!")
-                st.rerun()
+            with col_fav:
+                if st.button("❤️ Salvar Vaga", key=f"btn_fav_{v.id}"):
+                    with Session(engine) as s:
+                        obj = s.get(Job, v.id)
+                        obj.status = "Candidatada"
+                        s.add(obj)
+                        s.commit()
+                    st.success("Salva em 'Minhas Candidaturas'!")
+                    st.rerun()
 
 # ================= TAB 2: ESPECIAL BIOMEDICINA =================
 with tab_biomed:
