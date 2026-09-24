@@ -14,7 +14,7 @@ from sqlmodel import Session, SQLModel, create_engine, select
 from models import Job, UserProfile, UserSubscription
 from scrapers_belem import ScraperHospitaisBelem
 
-# --- INICIALIZAÇÃO DO BANCO E MIGRAÇÃO ---
+# --- INICIALIZAÇÃO DO BANCO E AUTO-MIGRAÇÃO ---
 sqlite_url = "sqlite:///vagas_enfermagem.db"
 engine = create_engine(sqlite_url, echo=False)
 SQLModel.metadata.create_all(engine)
@@ -41,9 +41,7 @@ with engine.connect() as conn:
     except Exception:
         pass
 
-# --- MOTOR DE VAGAS 24 HORAS (TODAS AS ÁREAS - PA & SP) ---
-PORTAIS = ["Gupy Saúde", "Vagas.com", "LinkedIn", "Catho Hospitalar", "InfoJobs", "Portal Direto RH"]
-
+# --- CATÁLOGO BASE DE VAGAS 24H (PA & SP - TODAS AS ÁREAS) ---
 CATALOGO_24H = [
     # ENFERMAGEM - BELÉM / ANANINDEUA
     {
@@ -169,7 +167,7 @@ CATALOGO_24H = [
         "description": "Rotina analítica de urgência hospitalar (gases sanguíneos, coagulação, enzimas cardíacas e líquor). Assinatura de laudos emergenciais.",
         "url_apply": "https://www.vagas.com.br/hc-fmusp", "source": "Vagas.com", "requires_graduation": True
     },
-    # MULTIPROFISSIONAL / GERAL EM SAÚDE
+    # ÁREAS MULTIPROFISSIONAIS / SAÚDE GERAL
     {
         "title": "Farmacêutica Hospitalar - Dispensação e Dose Unitária",
         "hospital_or_company": "Hospital Guadalupe",
@@ -219,6 +217,7 @@ def auto_alimentar_banco_24h():
 
 auto_alimentar_banco_24h()
 
+# --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
     page_title="Portal de Carreiras em Saúde & Biomedicina 💕",
     page_icon="🎀",
@@ -226,7 +225,41 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Toast surpresa
+# --- SISTEMA DE PERSISTÊNCIA OFFLINE NO DISPOSITIVO (LOCALSTORAGE PWA) ---
+components.html(
+    """
+<script>
+    // 1. Detecta queda de conexão 3G/Wi-Fi
+    window.addEventListener('offline', function() {
+        const banner = document.getElementById('offline-alert');
+        if (!banner) {
+            const div = document.createElement('div');
+            div.id = 'offline-alert';
+            div.style = "position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:#D32F2F;color:white;padding:10px 20px;border-radius:25px;font-weight:bold;z-index:999999;box-shadow:0 4px 12px rgba(0,0,0,0.3);font-family:sans-serif;font-size:13px;text-align:center;";
+            div.innerHTML = "📡 Modo Offline: Você está sem conexão 3G/Wi-Fi. As oportunidades carregadas continuam disponíveis!";
+            document.body.appendChild(div);
+        }
+    });
+
+    window.addEventListener('online', function() {
+        const banner = document.getElementById('offline-alert');
+        if (banner) banner.remove();
+    });
+
+    // 2. Registro do Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/sw.js').catch(function(err) {
+                console.log('PWA ServiceWorker ativo.');
+            });
+        });
+    }
+</script>
+""",
+    height=0,
+)
+
+# Toast surpresa ao abrir
 frases_toasts = [
     "eu te amo ou eu te lobo <3",
     "Você vai longe, meu bem! Orgulho imenso do seu esforço 💕",
@@ -235,7 +268,7 @@ frases_toasts = [
 ]
 st.toast(f"💌 {random.choice(frases_toasts)}", icon="🎀")
 
-# --- FUNÇÕES DE MATCH E IA GEMINI ---
+# --- FUNÇÕES DE PROCESSAMENTO E IA GEMINI ---
 def normalizar_texto(txt: str) -> str:
     if not txt:
         return ""
@@ -286,22 +319,22 @@ def simular_analise_ia_thiago(vaga: Job, perfil_kws: list) -> str:
     pontos_fortes = [kw.upper() for kw in perfil_kws if kw in normalizar_texto(f"{vaga.description} {vaga.title}")]
     
     msg = "🐾 **Oi meu amor! Aqui é a Hello Kitty falando em nome do Thiago!** 💕\n\n"
-    msg += f"Analisei os detalhes da vaga de **{vaga.title}** no **{vaga.hospital_or_company}**:\n\n"
+    msg += f"Analisei com todo o carinho a oportunidade de **{vaga.title}** no **{vaga.hospital_or_company}**:\n\n"
     
     if match_perc >= 50:
-        msg += f"✨ **Afinidade Alta ({match_perc}%):** Essa oportunidade combina muito com seu perfil! "
+        msg += f"✨ **Afinidade Alta ({match_perc}%):** Essa vaga tem um alinhamento excelente com o que você já conhece! "
         if pontos_fortes:
-            msg += f"Eles valorizam competências em **{', '.join(pontos_fortes)}**. "
-        msg += "Destaque suas experiências práticas e seu rigor técnico.\n\n"
+            msg += f"Eles valorizam muito conhecimentos em **{', '.join(pontos_fortes)}**. "
+        msg += "Destaque suas vivências práticas, rigor técnico e foco no paciente na hora de se inscrever.\n\n"
     else:
-        msg += f"🌱 **Oportunidade Promissora ({match_perc}%):** Ótima opção para ampliar sua experiência! "
-        msg += "No processo seletivo, evidencie sua atenção aos detalhes, compromisso e rápida curva de aprendizado.\n\n"
+        msg += f"🌱 **Oportunidade Promissora ({match_perc}%):** Uma porta aberta fantástica para aprender e crescer! "
+        msg += "No processo seletivo, mencione sua facilidade com rotinas de qualidade, atenção aos detalhes e dedicação integral.\n\n"
         
-    msg += f"📍 **Dica de Deslocamento:** Localizada em {vaga.location}. Planeje com antecedência a rota para não ter preocupações de trânsito no dia da entrevista!\n\n"
-    msg += "💌 *'Você é extremamente competente, cuidadosa e dedicada. Confie no seu potencial, estou na torcida sempre!'* — Com amor, Thiago Zuza."
+    msg += f"📍 **Dica de Deslocamento:** A instituição fica em {vaga.location}. Simule a rota com antecedência para chegar calma e tranquila no dia da entrevista!\n\n"
+    msg += "💌 *'Você é uma profissional admirável, dedicada e competente. Confio 100% no seu brilho e estou torcendo por você!'* — Com amor, Thiago Zuza."
     return msg
 
-# --- ESTILIZAÇÃO CSS COM CONTRASTE TOTAL NAS ABAS E INPUTS ---
+# --- ESTILIZAÇÃO CSS DE ALTO CONTRASTE E TEMA HELLO KITTY ---
 st.markdown("""
 <style>
     .stApp {

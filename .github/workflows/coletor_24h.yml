@@ -1,0 +1,32 @@
+name: Coletor 24h de Vagas Saude
+
+on:
+  schedule:
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
+
+jobs:
+  coletar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar Codigo
+        uses: actions/checkout@v4
+      - name: Configurar Python
+        uses: actions/setup-python@v5 
+        with:
+          python-version: '3.11'
+
+      - name: Instalar Dependencias
+        run: |
+          pip install -r requirements.txt
+
+      - name: Executar Varredura 24h
+        run: |
+          python sync_worker.py
+
+      - name: Salvar e Persistir Novas Vagas no Repositorio
+        run: |
+          git config --global user.name 'Robo Thiago 24h'
+          git config --global user.email 'bot@thiagozuza.com'
+          git add vagas_enfermagem.db
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-sync 24h: novas vagas coletadas" && git push)

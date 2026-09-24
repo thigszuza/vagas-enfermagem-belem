@@ -1,0 +1,37 @@
+"""Script executado pelo GitHub Actions a cada 4 horas na nuvem."""
+
+from datetime import datetime, timedelta
+import random
+from models import Job
+from scrapers_belem import ScraperHospitaisBelem
+from sqlmodel import Session, SQLModel, create_engine, select
+
+sqlite_url = "sqlite:///vagas_enfermagem.db"
+engine = create_engine(sqlite_url, echo=False)
+SQLModel.metadata.create_all(engine)
+
+
+def rodar_coleta():
+  print(f"[{datetime.now()}] Iniciando coleta 24h na nuvem...")
+  scraper = ScraperHospitaisBelem()
+  novas = scraper.coletar_todas()
+
+  adicionadas = 0
+  with Session(engine) as session:
+    urls_existentes = {
+        j.url_apply for j in session.exec(select(Job.url_apply)).all()
+    }
+    for v in novas:
+      if v.get("url_apply") not in urls_existentes:
+        session.add(Job(**v))
+        adicionadas += 1
+    session.commit()
+
+  print(
+      f"Coleta concluída! {adicionadas} novas vagas adicionadas com sucesso."
+  )
+
+
+if __name__ == "__main__":
+  rodar_coleta()
+  
