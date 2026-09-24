@@ -117,7 +117,6 @@ with engine.connect() as conn:
 
 # --- CATÁLOGO DE VAGAS 24H ATUALIZADAS ---
 CATALOGO_24H = [
-    # ================= PARÁ (BELÉM & REGIÃO) =================
     {
         "title": "Enfermeira Assistencial - UTI Adulto",
         "hospital_or_company": "Hospital Porto Dias",
@@ -166,8 +165,6 @@ CATALOGO_24H = [
         "description": "Punção venosa à vácuo, coleta pediátrica, centrifugação e envio de amostras biológicas. Aberto a graduandos ou recém-formados.",
         "url_apply": "https://www.glassdoor.com.br/vagas/ruth-brazao-coleta", "source": "Glassdoor", "requires_graduation": False
     },
-
-    # ================= SÃO PAULO (SANCTA MAGGIORE & HOSPITAIS) =================
     {
         "title": "Enfermeiro(a) - Pronto Socorro Adulto",
         "hospital_or_company": "Hospital Sancta Maggiore (Prevent Senior)",
@@ -224,8 +221,6 @@ CATALOGO_24H = [
         "description": "Orientação e treinamento a pacientes em uso de medicamentos de alta complexidade (injetáveis), adesão ao tratamento e navegação em saúde.",
         "url_apply": "https://www.glassdoor.com.br/vagas/ems-psp-enfermagem", "source": "Glassdoor", "requires_graduation": True
     },
-
-    # ================= RIO DE JANEIRO =================
     {
         "title": "Enfermeira de Terapia Intensiva (CTI Adulto)",
         "hospital_or_company": "Hospital Copa D'Or (Rede D'Or)",
@@ -286,7 +281,7 @@ def popular_catalogo_base():
 
 popular_catalogo_base()
 
-# --- CSS COM ALTO CONTRASTE E BLINDAGEM DE BOTÕES ESCUROS ---
+# --- CSS COM UNIFORMIZAÇÃO TOTAL DE CORES (SEM CAIXAS PRETAS NEM TEXTOS ILEGÍVEIS) ---
 st.markdown("""
 <style>
     .stApp {
@@ -311,6 +306,67 @@ st.markdown("""
         text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25);
     }
 
+    /* ========================================================================= */
+    /* UNIFORMIZAÇÃO DO FILE UPLOADER (ELIMINA O BLOCO PRETO)                     */
+    /* ========================================================================= */
+    div[data-testid="stFileUploader"],
+    div[data-testid="stFileUploader"] section,
+    div[data-testid="stFileUploaderDropzone"],
+    div[data-testid="stFileUploader"] div {
+        background-color: #FFFFFF !important;
+        background: #FFFFFF !important;
+        border: 2px dashed #FF85A2 !important;
+        border-radius: 14px !important;
+        box-shadow: 0 3px 10px rgba(255, 105, 180, 0.06) !important;
+    }
+
+    div[data-testid="stFileUploader"] span,
+    div[data-testid="stFileUploader"] small,
+    div[data-testid="stFileUploader"] p,
+    div[data-testid="stFileUploaderDropzoneInstructions"] * {
+        color: #4A1525 !important;
+        -webkit-text-fill-color: #4A1525 !important;
+        font-weight: 600 !important;
+    }
+
+    div[data-testid="stFileUploader"] button {
+        background: linear-gradient(135deg, #FF69B4, #E91E63) !important;
+        background-color: #FF69B4 !important;
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+        border: none !important;
+        border-radius: 18px !important;
+        font-weight: 700 !important;
+        padding: 6px 16px !important;
+        box-shadow: 0 3px 8px rgba(233, 30, 99, 0.2) !important;
+    }
+
+    div[data-testid="stFileUploader"] button * {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+        font-weight: 700 !important;
+    }
+
+    /* ========================================================================= */
+    /* UNIFORMIZAÇÃO DAS CAIXAS DE ALERTA (ST.INFO / ST.WARNING / ST.SUCCESS)     */
+    /* ========================================================================= */
+    div[data-testid="stAlert"] {
+        border-radius: 14px !important;
+        border: 2px solid #FFCCD7 !important;
+        background-color: #FFF0F5 !important;
+        background: #FFF0F5 !important;
+        box-shadow: 0 2px 8px rgba(255, 105, 180, 0.08) !important;
+    }
+
+    div[data-testid="stAlert"] * {
+        color: #4A1525 !important;
+        -webkit-text-fill-color: #4A1525 !important;
+        font-weight: 600 !important;
+    }
+
+    /* ========================================================================= */
+    /* CAMPOS DE TEXTO E SELECTBOXES (FUNDO BRANCO E TEXTO ESCURO)               */
+    /* ========================================================================= */
     div[data-testid="stSelectbox"] > div,
     div[data-testid="stSelectbox"] > div > div,
     div[data-baseweb="select"],
@@ -390,6 +446,7 @@ st.markdown("""
         font-size: 0.95rem !important;
     }
 
+    /* TODOS OS BOTÕES E POPOVERS EM ROSA */
     div[data-testid="stPopover"],
     div[data-testid="stPopover"] > button,
     div[data-testid="stPopover"] button,
@@ -579,7 +636,6 @@ st.markdown("""
         font-weight: 700;
         margin-right: 6px;
     }
-    /* BADGE DE PORTAL AZUL CLARO TOTALMENTE LEGÍVEL */
     .badge-portal-azul {
         display: inline-block;
         background-color: #E1F5FE !important;
@@ -1178,7 +1234,6 @@ tab_vagas, tab_biomed, tab_agenda, tab_necessidades, tab_ia_curriculo, tab_linke
 
 # ================= TAB 1: MURAL DE VAGAS =================
 with tab_vagas:
-    # --- 1. QUADRO DE EMPRESAS CONTRATANDO ---
     empresas_catalogo = [
         "Hospital Sancta Maggiore (Prevent Senior)", "Eurofarma Laboratórios", "EMS Indústria Farmacêutica",
         "Hospital Porto Dias", "Hospital Sírio-Libanês", "Hospital Israelita Albert Einstein",
@@ -1219,7 +1274,6 @@ with tab_vagas:
                 st.session_state.filtro_empresa_rapido = ""
                 st.rerun()
 
-    # --- 2. QUADRO DE DEMANDAS SEPARADO POR ESTADO COM FOCO EM BELÉM (PA) ---
     total_belem = len(DEMANDAS_PARTICULARES_ESTADOS.get("PA - Pará (Belém e Região)", []))
     total_sp = len(DEMANDAS_PARTICULARES_ESTADOS.get("SP - São Paulo", []))
     total_rj = len(DEMANDAS_PARTICULARES_ESTADOS.get("RJ - Rio de Janeiro", []))
@@ -1241,7 +1295,6 @@ with tab_vagas:
     if "max_ninja_ativo" not in st.session_state:
         st.session_state.max_ninja_ativo = 6
 
-    # SELEÇÃO DE ESTADO
     st.markdown("<b style='color:#4A1525; font-size:0.92rem;'>📍 Escolha a Região:</b>", unsafe_allow_html=True)
     c_btn1, c_btn2, c_btn3 = st.columns(3)
     with c_btn1:
@@ -1260,7 +1313,6 @@ with tab_vagas:
             st.session_state.regiao_ninja_ativa = "RJ"
             st.rerun()
 
-    # SELEÇÃO DE QUANTIDADE
     st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
     st.markdown("<b style='color:#4A1525; font-size:0.92rem;'>👥 Quantidade Máxima de Pessoas a Exibir na Tela:</b>", unsafe_allow_html=True)
     cq1, cq2, cq3, cq4 = st.columns(4)
@@ -1322,7 +1374,6 @@ with tab_vagas:
             </div>
             """, unsafe_allow_html=True)
 
-    # --- 3. GUIA DE PORTAIS ---
     st.markdown("""
     <div style="background:#FFFFFF; border:1px dashed #FF85A2; border-radius:14px; padding:14px 18px; margin: 12px 0 20px 0;">
         <h5 style="color:#C2185B !important; margin:0 0 6px 0;">🌐 Para Pacientes e Empresas Encontrarem Ela em Tempo Real:</h5>
@@ -1367,7 +1418,6 @@ with tab_vagas:
         else:
             badge_cat = '<span class="badge">🩺 Enfermagem</span>'
         
-        # BADGE DE PORTAL AZUL CLARO TOTALMENTE LEGÍVEL
         badge_portal = f'<span class="badge-portal-azul">🌐 {v.source}</span>'
 
         link_vaga = v.url_apply if v.url_apply.startswith("http") else f"https://{v.url_apply}"
@@ -1375,7 +1425,6 @@ with tab_vagas:
         txt_zap = urllib.parse.quote(f"Olha essa oportunidade de {v.title} no {v.hospital_or_company} ({v.location}): {link_vaga}")
         link_zap = f"https://api.whatsapp.com/send?text={txt_zap}"
 
-        # SVG oficial do WhatsApp verde nítido para o botão Compartilhar Vaga
         whatsapp_icon_svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" style="width:14px; height:14px; fill:#2E7D32; vertical-align:-2px; margin-right:5px;"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></svg>"""
 
         with st.container():
