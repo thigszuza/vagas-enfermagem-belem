@@ -114,6 +114,51 @@ Candidata à Vaga de Enfermagem | Belém - PA"""
 # --- ESTILIZAÇÃO CSS COM TEXTO NÍTIDO NOS EXPANDERS ---
 st.markdown("""
 <style>
+/* Estilização para embranquecer campos de texto (input) */
+    div[data-baseweb="input"] > div {
+        background-color: #FFFFFF !important;
+        border: 2px solid #FFCCD7 !important;
+        border-radius: 12px !important;
+        color: #333333 !important;
+    }
+    div[data-baseweb="input"] input {
+        color: #4A1525 !important;
+        font-weight: 600 !important;
+        background-color: transparent !important;
+    }
+    div[data-baseweb="input"] input::placeholder {
+        color: #A06D7C !important;
+    }
+
+    /* Estilização para transformar os botões pretos em botões claros/rosados */
+    .stButton > button,
+    div[data-testid="stFormSubmitButton"] > button {
+        background: linear-gradient(135deg, #FF7597, #E91E63) !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        border-radius: 20px !important;
+        font-weight: 700 !important;
+        padding: 8px 20px !important;
+        box-shadow: 0 3px 8px rgba(233, 30, 99, 0.25) !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+
+    .stButton > button:hover,
+    div[data-testid="stFormSubmitButton"] > button:hover {
+        background: linear-gradient(135deg, #FF527B, #C2185B) !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 5px 12px rgba(233, 30, 99, 0.35) !important;
+    }
+
+    /* Remove o fundo preto do pequeno bloco de código ou reticências */
+    code {
+        background-color: #FFE6EE !important;
+        color: #C2185B !important;
+        font-weight: bold !important;
+        border-radius: 6px !important;
+        padding: 2px 6px !important;
+    }
+    
     .stApp {
         background-color: #FFF6F8;
     }
@@ -627,4 +672,3 @@ with col_rod2:
         
         *eu te amo ou eu te lobo <3*
         """)
-        
