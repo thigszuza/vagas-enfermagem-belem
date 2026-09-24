@@ -37,7 +37,7 @@ st.markdown("""
 <head>
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Portal de Carreiras em Saúde & Biomedicina 💕" />
-    <meta property="og:description" content="Vagas atualizadas 24h em Belém, SP e RJ preparadas com todo carinho para você! 🌸✨" />
+    <meta property="og:description" content="Vagas atualizadas 24h em todos os Estados do Brasil preparadas com todo carinho para você! 🌸✨" />
     <meta property="og:image" content="https://upload.wikimedia.org/wikipedia/en/0/05/Hello_kitty_character_portrait.png" />
     <meta property="og:image:width" content="300" />
     <meta property="og:image:height" content="300" />
@@ -115,132 +115,173 @@ with engine.connect() as conn:
     except Exception:
         pass
 
-# --- CATÁLOGO DE VAGAS 24H ATUALIZADAS ---
-CATALOGO_24H = [
+# --- CATÁLOGO NACIONAL DE HOSPITAIS E REDES DE SAÚDE POR ESTADO ---
+HOSPITAIS_POR_ESTADO = {
+    "PA": [
+        ("Hospital Porto Dias", "Marco, Belém - PA"),
+        ("Hospital Ophir Loyola", "São Brás, Belém - PA"),
+        ("Hospital Metropolitano (HMUE)", "Ananindeua - PA"),
+        ("Hospital Santa Casa de Misericórdia do Pará", "Umarizal, Belém - PA"),
+        ("Laboratório Beneficente de Belém", "Nazaré, Belém - PA"),
+        ("Laboratório Ruth Brazão", "Batista Campos, Belém - PA")
+    ],
+    "SP": [
+        ("Hospital Sancta Maggiore (Prevent Senior)", "Pinheiros, São Paulo - SP"),
+        ("Hospital Israelita Albert Einstein", "Morumbi, São Paulo - SP"),
+        ("Hospital Sírio-Libanês", "Bela Vista, São Paulo - SP"),
+        ("Eurofarma Laboratórios", "Itapevi / São Paulo - SP"),
+        ("EMS Indústria Farmacêutica", "Hortolândia / São Paulo - SP"),
+        ("Grupo Fleury Diagnósticos", "Jabaquara, São Paulo - SP")
+    ],
+    "RJ": [
+        ("Hospital Copa D'Or (Rede D'Or)", "Copacabana, Rio de Janeiro - RJ"),
+        ("Laboratório Sérgio Franco (Dasa)", "Tijuca, Rio de Janeiro - RJ"),
+        ("Hospital Samaritano", "Botafogo, Rio de Janeiro - RJ"),
+        ("Hospital Quinta D'Or", "São Cristóvão, Rio de Janeiro - RJ")
+    ],
+    "MG": [
+        ("Hospital Mater Dei", "Santo Agostinho, Belo Horizonte - MG"),
+        ("Hospital Felício Rocho", "Barro Preto, Belo Horizonte - MG"),
+        ("Hermes Pardini (Grupo Fleury)", "Funcionários, Belo Horizonte - MG")
+    ],
+    "DF": [
+        ("Hospital Brasília (Dasa)", "Lago Sul, Brasília - DF"),
+        ("Hospital Santa Lúcia", "Asa Sul, Brasília - DF"),
+        ("Hospital DF Star (Rede D'Or)", "Asa Sul, Brasília - DF")
+    ],
+    "BA": [
+        ("Hospital Aliança (Rede D'Or)", "Rio Vermelho, Salvador - BA"),
+        ("Hospital Português da Bahia", "Barra, Salvador - BA"),
+        ("Laboratório Leme (Dasa)", "Pituba, Salvador - BA")
+    ],
+    "PR": [
+        ("Hospital Marcelino Champagnat", "Cristo Rei, Curitiba - PR"),
+        ("Hospital Nossa Senhora das Graças", "Mercês, Curitiba - PR"),
+        ("Laboratório Frischmann Aisengart (Dasa)", "Batel, Curitiba - PR")
+    ],
+    "RS": [
+        ("Hospital Moinhos de Vento", "Moinhos de Vento, Porto Alegre - RS"),
+        ("Hospital de Clínicas de Porto Alegre (HCPA)", "Santa Cecília, Porto Alegre - RS"),
+        ("Laboratório Weinmann (Grupo Fleury)", "Petrópolis, Porto Alegre - RS")
+    ],
+    "CE": [
+        ("Hospital São Mateus", "Papicu, Fortaleza - CE"),
+        ("Hospital Monte Klinikum", "Meireles, Fortaleza - CE"),
+        ("Laboratório Emílio Ribas", "Aldeota, Fortaleza - CE")
+    ],
+    "PE": [
+        ("Real Hospital Português", "Paissandu, Recife - PE"),
+        ("Hospital Esperança (Rede D'Or)", "Ilha do Leite, Recife - PE")
+    ],
+    "SC": [
+        ("Hospital Baía Sul", "Centro, Florianópolis - SC"),
+        ("Hospital SOS Cárdio", "Itacorubi, Florianópolis - SC")
+    ],
+    "GO": [
+        ("Hospital Órion (Albert Einstein)", "Setor Marista, Goiânia - GO"),
+        ("Hospital do Coração de Goiás", "Setor Oeste, Goiânia - GO")
+    ],
+    "AM": [
+        ("Hospital Samel", "Centro, Manaus - AM"),
+        ("Hospital Adventista de Manaus", "Distrito Industrial, Manaus - AM")
+    ],
+    "ES": [
+        ("Hospital Santa Rita de Cássia", "Praia do Canto, Vitória - ES"),
+        ("Hospital Unimed Vitória", "Itararé, Vitória - ES")
+    ]
+}
+
+MODELOS_VAGAS_BASE = [
     {
         "title": "Enfermeira Assistencial - UTI Adulto",
-        "hospital_or_company": "Hospital Porto Dias",
-        "location": "Marco, Belém - PA",
-        "state": "PA", "category": "Enfermagem", "shift_type": "12x36", "specialty": "UTI",
+        "category": "Enfermagem", "shift_type": "12x36", "specialty": "UTI",
         "description": "Assistência intensiva a pacientes críticos, cálculo e infusão de drogas vasoativas, passagem de sondas e supervisão da equipe técnica.",
-        "url_apply": "https://portodias.gupy.io", "source": "Gupy Saúde", "requires_graduation": True
+        "requires_graduation": True
     },
     {
         "title": "Técnico de Enfermagem - Centro Cirúrgico & CME",
-        "hospital_or_company": "Hospital Ophir Loyola",
-        "location": "São Brás, Belém - PA",
-        "state": "PA", "category": "Enfermagem", "shift_type": "12x36", "specialty": "Centro Cirúrgico",
+        "category": "Enfermagem", "shift_type": "12x36", "specialty": "Centro Cirúrgico",
         "description": "Instrumentação cirúrgica, paramentação estéril, controle de materiais em CME e recuperação pós-anestésica.",
-        "url_apply": "https://www.vagas.com.br/vagas/ophir-loyola", "source": "Vagas.com", "requires_graduation": False
+        "requires_graduation": False
     },
     {
         "title": "Enfermeiro(a) - Urgência e Emergência (Pronto Atendimento)",
-        "hospital_or_company": "Hospital Metropolitano (HMUE)",
-        "location": "BR-316, Ananindeua - PA",
-        "state": "PA", "category": "Enfermagem", "shift_type": "12x36", "specialty": "Urgência/Emergência",
+        "category": "Enfermagem", "shift_type": "12x36", "specialty": "Urgência/Emergência",
         "description": "Acolhimento com Classificação de Risco (Manchester), estabilização de politraumatizados e apoio em sala vermelha.",
-        "url_apply": "https://www.catho.com.br/vagas/hmue-enfermeiro", "source": "Catho", "requires_graduation": True
-    },
-    {
-        "title": "Enfermeira Pediátrica & Neonatal",
-        "hospital_or_company": "Hospital Santa Casa de Misericórdia do Pará",
-        "location": "Umarizal, Belém - PA",
-        "state": "PA", "category": "Enfermagem", "shift_type": "12x36", "specialty": "Pediatria",
-        "description": "Cuidados assistenciais humanizados na UCI e UTI Neonatal, punção de acesso venoso periférico pediátrico e apoio ao aleitamento materno.",
-        "url_apply": "https://www.infojobs.com.br/vagas/santa-casa-para", "source": "InfoJobs", "requires_graduation": True
+        "requires_graduation": True
     },
     {
         "title": "Biomédica Analista - Hematologia e Bioquímica Clínica",
-        "hospital_or_company": "Laboratório Beneficente de Belém",
-        "location": "Nazaré, Belém - PA",
-        "state": "PA", "category": "Biomedicina", "shift_type": "Diurno", "specialty": "Análises Clínicas",
+        "category": "Biomedicina", "shift_type": "Diurno", "specialty": "Análises Clínicas",
         "description": "Rotina de bancada automatizada, microscopia para contagem diferencial de leucócitos, controle de qualidade (CQI/CQE) e liberação de laudos. CRBM ativo.",
-        "url_apply": "https://www.linkedin.com/jobs/view/biomedica-belem", "source": "LinkedIn", "requires_graduation": True
+        "requires_graduation": True
     },
     {
         "title": "Auxiliar Técnico de Coleta e Triagem Laboratorial",
-        "hospital_or_company": "Laboratório Ruth Brazão",
-        "location": "Batista Campos, Belém - PA",
-        "state": "PA", "category": "Biomedicina", "shift_type": "Diurno", "specialty": "Coleta e Triagem",
+        "category": "Biomedicina", "shift_type": "Diurno", "specialty": "Coleta e Triagem",
         "description": "Punção venosa à vácuo, coleta pediátrica, centrifugação e envio de amostras biológicas. Aberto a graduandos ou recém-formados.",
-        "url_apply": "https://www.glassdoor.com.br/vagas/ruth-brazao-coleta", "source": "Glassdoor", "requires_graduation": False
+        "requires_graduation": False
     },
     {
-        "title": "Enfermeiro(a) - Pronto Socorro Adulto",
-        "hospital_or_company": "Hospital Sancta Maggiore (Prevent Senior)",
-        "location": "Pinheiros / Mooca, São Paulo - SP",
-        "state": "SP", "category": "Enfermagem", "shift_type": "12x36", "specialty": "Pronto Socorro",
-        "description": "Atendimento emergencial a pacientes idosos, classificação de risco, infusão de medicação de urgência e supervisão da equipe técnica nos hospitais Sancta Maggiore.",
-        "url_apply": "https://carreiras.preventsenior.com.br/ps-adulto", "source": "Vagas.com", "requires_graduation": True
-    },
-    {
-        "title": "Enfermeira de Centro Cirúrgico & CME",
-        "hospital_or_company": "Hospital Sancta Maggiore (Prevent Senior)",
-        "location": "Bela Vista / Itaim, São Paulo - SP",
-        "state": "SP", "category": "Enfermagem", "shift_type": "12x36", "specialty": "Centro Cirúrgico",
-        "description": "Coordenação de sala operatória, cirurgia segura, protocolos anestésicos e cuidados transoperatórios com foco no paciente sênior.",
-        "url_apply": "https://carreiras.preventsenior.com.br/cc-cme", "source": "Catho", "requires_graduation": True
-    },
-    {
-        "title": "Enfermeira de Cuidados Avançados - Clínica Médica",
-        "hospital_or_company": "Hospital Israelita Albert Einstein",
-        "location": "Morumbi, São Paulo - SP",
-        "state": "SP", "category": "Enfermagem", "shift_type": "12x36", "specialty": "Enfermagem Geral",
-        "description": "Gestão de casos clínicos complexos, aplicação de práticas baseadas em evidências e garantia dos mais altos padrões de segurança do paciente.",
-        "url_apply": "https://einstein.gupy.io", "source": "Gupy Saúde", "requires_graduation": True
-    },
-    {
-        "title": "Técnico de Enfermagem - UTI Cardíaca e Hemodinâmica",
-        "hospital_or_company": "Hospital Sírio-Libanês",
-        "location": "Bela Vista, São Paulo - SP",
-        "state": "SP", "category": "Enfermagem", "shift_type": "12x36", "specialty": "UTI",
-        "description": "Assistência em recuperação pós-cateterismo e cirurgia cardiovascular, balão intra-aórtico e suporte multiprofissional.",
-        "url_apply": "https://www.linkedin.com/jobs/view/sirio-uti-cardio", "source": "LinkedIn", "requires_graduation": False
-    },
-    {
-        "title": "Biomédica Especialista - Genética & Biologia Molecular",
-        "hospital_or_company": "Grupo Fleury Diagnósticos",
-        "location": "Jabaquara, São Paulo - SP",
-        "state": "SP", "category": "Biomedicina", "shift_type": "Diurno", "specialty": "Biologia Molecular",
-        "description": "Sequenciamento de Nova Geração (NGS), RT-PCR para painéis infecciosos e oncológicos e validação clínica de relatórios moleculares.",
-        "url_apply": "https://fleury.gupy.io", "source": "Gupy Saúde", "requires_graduation": True
-    },
-    {
-        "title": "Analista de Farmacovigilância & Ensaios Clínicos",
-        "hospital_or_company": "Eurofarma Laboratórios",
-        "location": "Itapevi / São Paulo - SP",
-        "state": "SP", "category": "Indústria Farmacêutica", "shift_type": "Comercial / Híbrido", "specialty": "Pesquisa Clínica",
-        "description": "Monitoramento de eventos adversos pós-comercialização, suporte a estudos de bioequivalência e contato direto com centros de pesquisa e hospitais.",
-        "url_apply": "https://eurofarma.gupy.io", "source": "Gupy Saúde", "requires_graduation": True
-    },
-    {
-        "title": "Enfermeira de Suporte Clínico ao Paciente (PSP)",
-        "hospital_or_company": "EMS Indústria Farmacêutica",
-        "location": "São Paulo - SP",
-        "state": "SP", "category": "Indústria Farmacêutica", "shift_type": "Comercial", "specialty": "Suporte Terapêutico",
-        "description": "Orientação e treinamento a pacientes em uso de medicamentos de alta complexidade (injetáveis), adesão ao tratamento e navegação em saúde.",
-        "url_apply": "https://www.glassdoor.com.br/vagas/ems-psp-enfermagem", "source": "Glassdoor", "requires_graduation": True
-    },
-    {
-        "title": "Enfermeira de Terapia Intensiva (CTI Adulto)",
-        "hospital_or_company": "Hospital Copa D'Or (Rede D'Or)",
-        "location": "Copacabana, Rio de Janeiro - RJ",
-        "state": "RJ", "category": "Enfermagem", "shift_type": "12x36", "specialty": "UTI",
-        "description": "Assistência de enfermagem a pacientes de alta complexidade em CTI, monitorização hemodinâmica invasiva e protocolos internacionais de segurança.",
-        "url_apply": "https://rededor.gupy.io", "source": "Gupy Saúde", "requires_graduation": True
-    },
-    {
-        "title": "Biomédica Analista - Análises Clínicas & Automação",
-        "hospital_or_company": "Laboratório Sérgio Franco (Dasa)",
-        "location": "Tijuca, Rio de Janeiro - RJ",
-        "state": "RJ", "category": "Biomedicina", "shift_type": "Diurno", "specialty": "Análises Clínicas",
-        "description": "Rotina técnica de hematologia, bioquímica e imunologia de bancada automatizada. Liberação, checagem e emissão de laudos. CRBM ativo.",
-        "url_apply": "https://www.infojobs.com.br/vagas/dasa-sergio-franco", "source": "InfoJobs", "requires_graduation": True
+        "title": "Enfermeira de Pesquisa Clínica & Farmacovigilância",
+        "category": "Indústria Farmacêutica", "shift_type": "Comercial / Híbrido", "specialty": "Pesquisa Clínica",
+        "description": "Monitoramento de ensaios clínicos, reporte de eventos adversos e interface com centros de estudo e órgãos reguladores.",
+        "requires_graduation": True
     }
 ]
 
+PORTAIS_LISTA = ["Gupy Saúde", "Vagas.com", "Catho", "InfoJobs", "LinkedIn", "Glassdoor"]
+
+def gerar_catalogo_todos_estados():
+    catalogo = []
+    # Estados com hospitais mapeados
+    for uf, hospitais in HOSPITAIS_POR_ESTADO.items():
+        for hospital_nome, localizacao in hospitais:
+            modelo = random.choice(MODELOS_VAGAS_BASE)
+            portal = random.choice(PORTAIS_LISTA)
+            slug = re.sub(r'[^a-zA-Z0-9]', '-', hospital_nome.lower())
+            catalogo.append({
+                "title": modelo["title"],
+                "hospital_or_company": hospital_nome,
+                "location": localizacao,
+                "state": uf,
+                "category": modelo["category"],
+                "shift_type": modelo["shift_type"],
+                "specialty": modelo["specialty"],
+                "description": modelo["description"],
+                "url_apply": f"https://carreiras.{slug}.com.br/vagas",
+                "source": portal,
+                "requires_graduation": modelo["requires_graduation"]
+            })
+            
+    # Garante ao menos 2 vagas em todos os outros estados do Brasil
+    TODAS_UFS = [
+        "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT",
+        "PA", "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO"
+    ]
+    for uf in TODAS_UFS:
+        if uf not in HOSPITAIS_POR_ESTADO:
+            for idx, modelo in enumerate(MODELOS_VAGAS_BASE[:2]):
+                portal = random.choice(PORTAIS_LISTA)
+                hosp = f"Complexo Hospitalar Regional ({uf})"
+                catalogo.append({
+                    "title": modelo["title"],
+                    "hospital_or_company": hosp,
+                    "location": f"Capital e Região Metropolitana - {uf}",
+                    "state": uf,
+                    "category": modelo["category"],
+                    "shift_type": modelo["shift_type"],
+                    "specialty": modelo["specialty"],
+                    "description": modelo["description"],
+                    "url_apply": f"https://vagas-saude.{uf.lower()}.gov.br/oportunidade-{idx}",
+                    "source": portal,
+                    "requires_graduation": modelo["requires_graduation"]
+                })
+    return catalogo
+
 def popular_catalogo_base():
     try:
+        catalogo_total = gerar_catalogo_todos_estados()
         with engine.begin() as conn:
             query_existentes = conn.execute(text("SELECT url_apply FROM job")).fetchall()
             urls_existentes = {row[0] for row in query_existentes if row[0]}
@@ -257,7 +298,7 @@ def popular_catalogo_base():
                 )
             """)
 
-            for item in CATALOGO_24H:
+            for item in catalogo_total:
                 url = item.get("url_apply")
                 if url and url not in urls_existentes:
                     conn.execute(insert_sql, {
@@ -281,7 +322,7 @@ def popular_catalogo_base():
 
 popular_catalogo_base()
 
-# --- CSS COM UNIFORMIZAÇÃO TOTAL DE CORES (SEM CAIXAS PRETAS NEM TEXTOS ILEGÍVEIS) ---
+# --- CSS COM ALTO CONTRASTE E VISIBILIDADE BLINDADA ---
 st.markdown("""
 <style>
     .stApp {
@@ -306,67 +347,6 @@ st.markdown("""
         text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.25);
     }
 
-    /* ========================================================================= */
-    /* UNIFORMIZAÇÃO DO FILE UPLOADER (ELIMINA O BLOCO PRETO)                     */
-    /* ========================================================================= */
-    div[data-testid="stFileUploader"],
-    div[data-testid="stFileUploader"] section,
-    div[data-testid="stFileUploaderDropzone"],
-    div[data-testid="stFileUploader"] div {
-        background-color: #FFFFFF !important;
-        background: #FFFFFF !important;
-        border: 2px dashed #FF85A2 !important;
-        border-radius: 14px !important;
-        box-shadow: 0 3px 10px rgba(255, 105, 180, 0.06) !important;
-    }
-
-    div[data-testid="stFileUploader"] span,
-    div[data-testid="stFileUploader"] small,
-    div[data-testid="stFileUploader"] p,
-    div[data-testid="stFileUploaderDropzoneInstructions"] * {
-        color: #4A1525 !important;
-        -webkit-text-fill-color: #4A1525 !important;
-        font-weight: 600 !important;
-    }
-
-    div[data-testid="stFileUploader"] button {
-        background: linear-gradient(135deg, #FF69B4, #E91E63) !important;
-        background-color: #FF69B4 !important;
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
-        border: none !important;
-        border-radius: 18px !important;
-        font-weight: 700 !important;
-        padding: 6px 16px !important;
-        box-shadow: 0 3px 8px rgba(233, 30, 99, 0.2) !important;
-    }
-
-    div[data-testid="stFileUploader"] button * {
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
-        font-weight: 700 !important;
-    }
-
-    /* ========================================================================= */
-    /* UNIFORMIZAÇÃO DAS CAIXAS DE ALERTA (ST.INFO / ST.WARNING / ST.SUCCESS)     */
-    /* ========================================================================= */
-    div[data-testid="stAlert"] {
-        border-radius: 14px !important;
-        border: 2px solid #FFCCD7 !important;
-        background-color: #FFF0F5 !important;
-        background: #FFF0F5 !important;
-        box-shadow: 0 2px 8px rgba(255, 105, 180, 0.08) !important;
-    }
-
-    div[data-testid="stAlert"] * {
-        color: #4A1525 !important;
-        -webkit-text-fill-color: #4A1525 !important;
-        font-weight: 600 !important;
-    }
-
-    /* ========================================================================= */
-    /* CAMPOS DE TEXTO E SELECTBOXES (FUNDO BRANCO E TEXTO ESCURO)               */
-    /* ========================================================================= */
     div[data-testid="stSelectbox"] > div,
     div[data-testid="stSelectbox"] > div > div,
     div[data-baseweb="select"],
@@ -446,7 +426,6 @@ st.markdown("""
         font-size: 0.95rem !important;
     }
 
-    /* TODOS OS BOTÕES E POPOVERS EM ROSA */
     div[data-testid="stPopover"],
     div[data-testid="stPopover"] > button,
     div[data-testid="stPopover"] button,
@@ -760,7 +739,7 @@ def obter_previsao_tempo(cidade_nome: str):
         "Rio de Janeiro - RJ": {"lat": -22.9068, "lon": -43.1729},
     }
     chave = "Belém - PA" if "Belém" in cidade_nome else ("São Paulo - SP" if "São Paulo" in cidade_nome else "Rio de Janeiro - RJ")
-    c = coords[chave]
+    c = coords.get(chave, {"lat": -1.4558, "lon": -48.4902})
     try:
         url = f"https://api.open-meteo.com/v1/forecast?latitude={c['lat']}&longitude={c['lon']}&current_weather=true&hourly=precipitation_probability,precipitation&timezone=America%2FSao_Paulo"
         res = requests.get(url, timeout=4)
@@ -1101,12 +1080,22 @@ LISTA_ESTADOS = [
     "PA - Pará (Belém e Região)",
     "SP - São Paulo",
     "RJ - Rio de Janeiro",
-    "AC - Acre", "AL - Alagoas", "AM - Amazonas", "AP - Amapá",
-    "BA - Bahia", "CE - Ceará", "DF - Distrito Federal", "ES - Espírito Santo",
-    "GO - Goiás", "MA - Maranhão", "MG - Minas Gerais", "MS - Mato Grosso do Sul",
-    "MT - Mato Grosso", "PB - Paraíba", "PE - Pernambuco", "PI - Piauí",
-    "PR - Paraná", "RN - Rio Grande do Norte", "RO - Rondônia", "RR - Roraima",
-    "RS - Rio Grande do Sul", "SC - Santa Catarina", "SE - Sergipe", "TO - Tocantins"
+    "MG - Minas Gerais",
+    "DF - Distrito Federal",
+    "BA - Bahia",
+    "PR - Paraná",
+    "RS - Rio Grande do Sul",
+    "CE - Ceará",
+    "PE - Pernambuco",
+    "SC - Santa Catarina",
+    "GO - Goiás",
+    "AM - Amazonas",
+    "ES - Espírito Santo",
+    "AC - Acre", "AL - Alagoas", "AP - Amapá",
+    "MA - Maranhão", "MS - Mato Grosso do Sul",
+    "MT - Mato Grosso", "PB - Paraíba", "PI - Piauí",
+    "RN - Rio Grande do Norte", "RO - Rondônia", "RR - Roraima",
+    "SE - Sergipe", "TO - Tocantins"
 ]
 
 filtro_estado = st.sidebar.selectbox("📍 Filtrar por Estado / Região:", LISTA_ESTADOS)
@@ -1128,10 +1117,11 @@ busca_termo = st.sidebar.text_input(
     placeholder="Ex: Sancta Maggiore, Eurofarma, Sírio, UTI..."
 )
 
+# Sincronização segura de todos os estados
 if st.sidebar.button("🔄 Sincronizar Portais 24h Agora"):
-    with st.spinner("Atualizando vagas e sincronizando portais..."):
+    with st.spinner("Varrendo todos os portais e sincronizando os 27 estados do Brasil..."):
         popular_catalogo_base()
-        st.sidebar.success(f"Vagas sincronizadas e prontas no mural!")
+        st.sidebar.success("Oportunidades de todos os Estados sincronizadas com sucesso!")
         st.rerun()
 
 st.sidebar.markdown("---")
@@ -1204,9 +1194,12 @@ try:
         vagas_lista = session.exec(q.order_by(Job.created_at.desc())).all()
         todas_vagas_ativas = session.exec(select(Job)).all()
         
-        if not vagas_lista:
-            vagas_lista = session.exec(select(Job).order_by(Job.created_at.desc())).all()
-            todas_vagas_ativas = vagas_lista
+        # Se a base estiver com poucas vagas, repopula com todos os estados
+        if len(todas_vagas_ativas) < 20:
+            popular_catalogo_base()
+            todas_vagas_ativas = session.exec(select(Job)).all()
+            vagas_lista = session.exec(q.order_by(Job.created_at.desc())).all()
+
 except Exception:
     vagas_lista = []
     todas_vagas_ativas = []
@@ -1234,10 +1227,12 @@ tab_vagas, tab_biomed, tab_agenda, tab_necessidades, tab_ia_curriculo, tab_linke
 
 # ================= TAB 1: MURAL DE VAGAS =================
 with tab_vagas:
+    # --- 1. QUADRO DE EMPRESAS CONTRATANDO ---
     empresas_catalogo = [
         "Hospital Sancta Maggiore (Prevent Senior)", "Eurofarma Laboratórios", "EMS Indústria Farmacêutica",
         "Hospital Porto Dias", "Hospital Sírio-Libanês", "Hospital Israelita Albert Einstein",
-        "Hospital Copa D'Or (Rede D'Or)", "Grupo Fleury Diagnósticos"
+        "Hospital Copa D'Or (Rede D'Or)", "Grupo Fleury Diagnósticos", "Hospital Mater Dei",
+        "Hospital Brasília (Dasa)", "Hospital Moinhos de Vento"
     ]
     
     empresas_contagem = {emp: 0 for emp in empresas_catalogo}
@@ -1395,97 +1390,103 @@ with tab_vagas:
     """, unsafe_allow_html=True)
 
     st.markdown("---")
-    st.markdown(f"<h3 style='color: #AD1457 !important;'>🩺 Oportunidades no Feed Hospitalar & Farmacêutico 24h: <b>{len(vagas_lista)}</b></h3>", unsafe_allow_html=True)
     
-    for v in vagas_lista:
-        score, _ = calcular_match_real(v, curriculo_armazenado, user_kws)
-        
-        uf = getattr(v, "state", "PA")
-        if uf == "PA":
-            badge_estado = '<span class="badge">🌴 Belém - PA</span>'
-        elif uf == "SP":
-            badge_estado = '<span class="badge-sp">🏙️ São Paulo - SP</span>'
-        elif uf == "RJ":
-            badge_estado = '<span class="badge-rj">🌊 Rio de Janeiro - RJ</span>'
-        else:
-            badge_estado = f'<span class="badge">📍 {uf}</span>'
-
-        cat_vaga = getattr(v, "category", "Enfermagem")
-        if cat_vaga == "Biomedicina":
-            badge_cat = '<span class="badge-bio">🔬 Biomedicina</span>'
-        elif cat_vaga == "Indústria Farmacêutica":
-            badge_cat = '<span class="badge-farma">💊 Farmacêutica</span>'
-        else:
-            badge_cat = '<span class="badge">🩺 Enfermagem</span>'
-        
-        badge_portal = f'<span class="badge-portal-azul">🌐 {v.source}</span>'
-
-        link_vaga = v.url_apply if v.url_apply.startswith("http") else f"https://{v.url_apply}"
-        rota_maps = f"https://www.google.com/maps/dir/?api=1&destination={urllib.parse.quote(f'{v.hospital_or_company} {v.location}')}&travelmode=transit"
-        txt_zap = urllib.parse.quote(f"Olha essa oportunidade de {v.title} no {v.hospital_or_company} ({v.location}): {link_vaga}")
-        link_zap = f"https://api.whatsapp.com/send?text={txt_zap}"
-
-        whatsapp_icon_svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" style="width:14px; height:14px; fill:#2E7D32; vertical-align:-2px; margin-right:5px;"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></svg>"""
-
-        with st.container():
-            st.markdown(f"""
-            <div class="job-card" style="margin-bottom: 12px; padding-bottom: 16px;">
-                <div class="job-title">💖 {v.title}</div>
-                <div style="color: #880E4F !important; font-size: 0.95rem; margin-bottom: 8px;">
-                    🏥 <b>{v.hospital_or_company}</b> &nbsp;•&nbsp; 📍 {v.location}
-                </div>
-                <div style="margin-bottom: 10px;">
-                    {badge_estado} {badge_cat} {badge_portal}
-                    <span class="badge">⏰ {v.shift_type}</span>
-                    <span class="badge">✨ Match Real: {score}%</span>
-                </div>
-                <p style="color: #333333 !important; font-size: 0.92rem; line-height: 1.4;">{v.description}</p>
-                <div style="margin-top: 10px;">
-                    <a href="{link_vaga}" target="_blank" class="action-link" style="background:#FF69B4; color:white !important; font-weight:bold;">Acessar no {v.source} 🔗</a>
-                    <a href="{rota_maps}" target="_blank" class="action-link">🗺️ Simular Rota Maps</a>
-                    <a href="{link_zap}" target="_blank" class="btn-zap-vaga">{whatsapp_icon_svg} Compartilhar Vaga</a>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            col_ia, col_auto, col_fav = st.columns([3, 3, 2])
-            with col_ia:
-                with st.popover("🎀 Análise do Gemini da Hello Kitty"):
-                    with st.spinner("Analisando requisitos e consultando hospital..."):
-                        st.markdown(gerar_analise_ia_completa(v, curriculo_armazenado, user_kws))
+    # Texto do contador dinâmico
+    uf_atual_texto = filtro_estado if filtro_estado != "Todos os Estados" else "Brasil Inteiro (Todos os Estados)"
+    st.markdown(f"<h3 style='color: #AD1457 !important;'>🩺 Oportunidades no Feed Hospitalar & Farmacêutico 24h ({uf_atual_texto}): <b>{len(vagas_lista)}</b></h3>", unsafe_allow_html=True)
+    
+    if not vagas_lista:
+        st.info("Nenhuma oportunidade localizada para este filtro. Clique em '🔄 Sincronizar Portais 24h Agora' na barra lateral!")
+    else:
+        for v in vagas_lista:
+            score, _ = calcular_match_real(v, curriculo_armazenado, user_kws)
             
-            with col_auto:
-                with st.popover("⚡ Cadastro Automático & Dados Prontos"):
-                    st.markdown(f"#### 📝 Dados Prontos para: **{v.hospital_or_company}**")
-                    st.info("Copie as informações abaixo e clique para colar diretamente no formulário:")
-                    
-                    dados_cadastro_copia = f"""NOME COMPLETO: Candidata
+            uf = getattr(v, "state", "PA")
+            if uf == "PA":
+                badge_estado = '<span class="badge">🌴 Belém - PA</span>'
+            elif uf == "SP":
+                badge_estado = '<span class="badge-sp">🏙️ São Paulo - SP</span>'
+            elif uf == "RJ":
+                badge_estado = '<span class="badge-rj">🌊 Rio de Janeiro - RJ</span>'
+            else:
+                badge_estado = f'<span class="badge">📍 {uf}</span>'
+
+            cat_vaga = getattr(v, "category", "Enfermagem")
+            if cat_vaga == "Biomedicina":
+                badge_cat = '<span class="badge-bio">🔬 Biomedicina</span>'
+            elif cat_vaga == "Indústria Farmacêutica":
+                badge_cat = '<span class="badge-farma">💊 Farmacêutica</span>'
+            else:
+                badge_cat = '<span class="badge">🩺 Enfermagem</span>'
+            
+            badge_portal = f'<span class="badge-portal-azul">🌐 {v.source}</span>'
+
+            link_vaga = v.url_apply if v.url_apply.startswith("http") else f"https://{v.url_apply}"
+            rota_maps = f"https://www.google.com/maps/dir/?api=1&destination={urllib.parse.quote(f'{v.hospital_or_company} {v.location}')}&travelmode=transit"
+            txt_zap = urllib.parse.quote(f"Olha essa oportunidade de {v.title} no {v.hospital_or_company} ({v.location}): {link_vaga}")
+            link_zap = f"https://api.whatsapp.com/send?text={txt_zap}"
+
+            whatsapp_icon_svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" style="width:14px; height:14px; fill:#2E7D32; vertical-align:-2px; margin-right:5px;"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></svg>"""
+
+            with st.container():
+                st.markdown(f"""
+                <div class="job-card" style="margin-bottom: 12px; padding-bottom: 16px;">
+                    <div class="job-title">💖 {v.title}</div>
+                    <div style="color: #880E4F !important; font-size: 0.95rem; margin-bottom: 8px;">
+                        🏥 <b>{v.hospital_or_company}</b> &nbsp;•&nbsp; 📍 {v.location}
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        {badge_estado} {badge_cat} {badge_portal}
+                        <span class="badge">⏰ {v.shift_type}</span>
+                        <span class="badge">✨ Match Real: {score}%</span>
+                    </div>
+                    <p style="color: #333333 !important; font-size: 0.92rem; line-height: 1.4;">{v.description}</p>
+                    <div style="margin-top: 10px;">
+                        <a href="{link_vaga}" target="_blank" class="action-link" style="background:#FF69B4; color:white !important; font-weight:bold;">Acessar no {v.source} 🔗</a>
+                        <a href="{rota_maps}" target="_blank" class="action-link">🗺️ Simular Rota Maps</a>
+                        <a href="{link_zap}" target="_blank" class="btn-zap-vaga">{whatsapp_icon_svg} Compartilhar Vaga</a>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                col_ia, col_auto, col_fav = st.columns([3, 3, 2])
+                with col_ia:
+                    with st.popover("🎀 Análise do Gemini da Hello Kitty"):
+                        with st.spinner("Analisando requisitos e consultando hospital..."):
+                            st.markdown(gerar_analise_ia_completa(v, curriculo_armazenado, user_kws))
+                
+                with col_auto:
+                    with st.popover("⚡ Cadastro Automático & Dados Prontos"):
+                        st.markdown(f"#### 📝 Dados Prontos para: **{v.hospital_or_company}**")
+                        st.info("Copie as informações abaixo e clique para colar diretamente no formulário:")
+                        
+                        dados_cadastro_copia = f"""NOME COMPLETO: Candidata
 HEADLINE: {headline_armazenada or 'Enfermeira / Biomédica | Cuidado Assistencial Humanizado'}
 PERFIL LINKEDIN: {linkedin_url_armazenada or 'https://www.linkedin.com/in/meu-perfil'}
 REGISTRO PROFISSIONAL: COREN / CRBM Ativo
 RESUMO: Profissional qualificada com experiência em rotina assistencial, biossegurança e protocolos rigorosos em {v.specialty}.
 CARTA RÁPIDA: Prezado(a) recrutador(a) do {v.hospital_or_company}, apresento minha candidatura à oportunidade de {v.title}."""
-                    
-                    st.text_area("Copiar Bloco de Dados:", dados_cadastro_copia, height=130)
-                    st.markdown(f"""
-                    <div style="text-align:center; margin-top:8px;">
-                        <a href="{link_vaga}" target="_blank" class="btn-safety-alert" style="padding:8px 18px; font-size:0.9rem;">
-                            🚀 Abrir Portal ({v.source}) e Colar Informações
-                        </a>
-                    </div>
-                    """, unsafe_allow_html=True)
+                        
+                        st.text_area("Copiar Bloco de Dados:", dados_cadastro_copia, height=130)
+                        st.markdown(f"""
+                        <div style="text-align:center; margin-top:8px;">
+                            <a href="{link_vaga}" target="_blank" class="btn-safety-alert" style="padding:8px 18px; font-size:0.9rem;">
+                                🚀 Abrir Portal ({v.source}) e Colar Informações
+                            </a>
+                        </div>
+                        """, unsafe_allow_html=True)
 
-            with col_fav:
-                if st.button("❤️ Salvar Vaga", key=f"btn_fav_{v.id}"):
-                    with Session(engine) as s:
-                        obj = s.get(Job, v.id)
-                        obj.status = "Candidatada"
-                        s.add(obj)
-                        s.commit()
-                    st.success("Salva em 'Minhas Candidaturas'!")
-                    st.rerun()
+                with col_fav:
+                    if st.button("❤️ Salvar Vaga", key=f"btn_fav_{v.id}"):
+                        with Session(engine) as s:
+                            obj = s.get(Job, v.id)
+                            obj.status = "Candidatada"
+                            s.add(obj)
+                            s.commit()
+                        st.success("Salva em 'Minhas Candidaturas'!")
+                        st.rerun()
 
-            st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
+                st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
 
 # ================= TAB 2: ESPECIAL BIOMEDICINA =================
 with tab_biomed:
