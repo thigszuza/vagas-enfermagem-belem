@@ -245,7 +245,7 @@ def popular_catalogo_base():
 
 popular_catalogo_base()
 
-# --- CSS COM ALTO CONTRASTE E CORREÇÃO RIGOROSA DE TODOS OS SELECTBOXES ---
+# --- CSS COM ALTO CONTRASTE E CORREÇÃO RIGOROSA DE VISIBILIDADE ---
 st.markdown("""
 <style>
     .stApp {
@@ -271,26 +271,28 @@ st.markdown("""
     }
 
     /* ========================================================================= */
-    /* BLINDAGEM TOTAL DO SELECTBOX: FUNDO BRANCO E TEXTO ESCURO NÍTIDO          */
+    /* CORREÇÃO DO SELECTBOX: FUNDO BRANCO E TEXTO ESCURO NÍTIDO (NUNCA BRANCO)  */
     /* ========================================================================= */
+    div[data-testid="stSelectbox"] > div,
+    div[data-testid="stSelectbox"] > div > div,
     div[data-baseweb="select"],
-    div[data-baseweb="select"] > div,
-    [data-testid="stSelectbox"] > div > div {
+    div[data-baseweb="select"] > div {
         background-color: #FFFFFF !important;
         background: #FFFFFF !important;
         border: 2px solid #FFCCD7 !important;
         border-radius: 12px !important;
     }
 
-    /* Garante que o texto dentro da caixinha fechada NUNCA fique branco ou invisível */
-    div[data-baseweb="select"] * {
-        color: #33101E !important;
-        -webkit-text-fill-color: #33101E !important;
+    /* FORÇA O TEXTO INTERNO DA CAIXA SELECIONADA A FICAR TOTALMENTE VISÍVEL */
+    div[data-testid="stSelectbox"] * {
+        color: #111111 !important;
+        -webkit-text-fill-color: #111111 !important;
         font-weight: 700 !important;
-        text-shadow: none !important;
+        font-size: 0.95rem !important;
+        opacity: 1 !important;
     }
 
-    /* O menu flutuante / dropdown aberto com fundo branco */
+    /* DROPDOWN / MENU SUSPENSO QUANDO CLICA */
     div[data-baseweb="popover"],
     div[data-baseweb="popover"] > div,
     ul[data-baseweb="menu"],
@@ -302,16 +304,16 @@ st.markdown("""
         box-shadow: 0 8px 24px rgba(255, 105, 180, 0.2) !important;
     }
 
-    /* Itens dentro da lista suspensa */
     li[role="option"],
-    ul[data-baseweb="menu"] li {
+    ul[data-baseweb="menu"] li,
+    ul[data-baseweb="menu"] li div,
+    ul[data-baseweb="menu"] li span {
         background-color: #FFFFFF !important;
         background: #FFFFFF !important;
-        color: #33101E !important;
-        -webkit-text-fill-color: #33101E !important;
+        color: #111111 !important;
+        -webkit-text-fill-color: #111111 !important;
         font-weight: 600 !important;
         font-size: 0.95rem !important;
-        padding: 10px 14px !important;
     }
 
     li[role="option"]:hover,
@@ -321,7 +323,7 @@ st.markdown("""
         background: #FFE6EE !important;
         color: #C2185B !important;
         -webkit-text-fill-color: #C2185B !important;
-        font-weight: 700 !important;
+        font-weight: 800 !important;
     }
 
     /* INPUTS GERAIS */
@@ -777,7 +779,7 @@ INFO_EMPRESAS_SAUDE = {
     }
 }
 
-# --- DEMANDAS PARTICULARES SEPARADAS POR ESTADO ---
+# --- BANCO DE DEMANDAS PARTICULARES SEPARADO POR ESTADO COM FOCO EM BELÉM (PA) ---
 DEMANDAS_PARTICULARES_ESTADOS = {
     "PA - Pará (Belém e Região)": [
         {
@@ -1174,45 +1176,74 @@ with tab_vagas:
             <span class="badge-ninja">🌴 Belém em Destaque: {total_belem} solicitações ativas</span>
         </div>
         <p style="color:#4A1525; font-size:0.88rem; margin:6px 0 10px 0;">
-            Selecione o Estado e veja o número de famílias e clínicas precisando de atendimento particular imediato:
+            Selecione a região e o número de pessoas que deseja visualizar com fundo de alto contraste e legibilidade imediata:
         </p>
     </div>
     """, unsafe_allow_html=True)
 
-    col_est_sel, col_max_qtd = st.columns([3, 2])
-    with col_est_sel:
-        estado_ninja_sel = st.selectbox(
-            "📍 Escolha a Região para Ver as Pessoas Solicitando:",
-            [
-                f"PA - Pará (Belém e Região) — 🔥 {total_belem} Pessoas",
-                f"SP - São Paulo — {total_sp} Pessoas",
-                f"RJ - Rio de Janeiro — {total_rj} Pessoas"
-            ],
-            index=0
-        )
-    with col_max_qtd:
-        max_pessoas_mostrar = st.selectbox(
-            "👥 Número Máximo de Pessoas na Tela:",
-            [2, 4, 6, "Todas"],
-            index=2
-        )
+    # Estado de controle na sessão para visualização cristalina
+    if "regiao_ninja_ativa" not in st.session_state:
+        st.session_state.regiao_ninja_ativa = "PA"
+    if "max_ninja_ativo" not in st.session_state:
+        st.session_state.max_ninja_ativo = 6
 
-    # Identifica chave do estado selecionado
-    if "PA" in estado_ninja_sel:
+    # SELEÇÃO DE ESTADO COM BOTÕES CLAROS (SEM FALHA DE TEXTO INVISÍVEL)
+    st.markdown("<b style='color:#4A1525; font-size:0.92rem;'>📍 Escolha a Região:</b>", unsafe_allow_html=True)
+    c_btn1, c_btn2, c_btn3 = st.columns(3)
+    with c_btn1:
+        btn_pa_label = f"🌴 Belém e Região ({total_belem} Pessoas)"
+        if st.button(btn_pa_label, use_container_width=True, type="primary" if st.session_state.regiao_ninja_ativa == "PA" else "secondary"):
+            st.session_state.regiao_ninja_ativa = "PA"
+            st.rerun()
+    with c_btn2:
+        btn_sp_label = f"🏙️ São Paulo ({total_sp} Pessoas)"
+        if st.button(btn_sp_label, use_container_width=True, type="primary" if st.session_state.regiao_ninja_ativa == "SP" else "secondary"):
+            st.session_state.regiao_ninja_ativa = "SP"
+            st.rerun()
+    with c_btn3:
+        btn_rj_label = f"🌊 Rio de Janeiro ({total_rj} Pessoas)"
+        if st.button(btn_rj_label, use_container_width=True, type="primary" if st.session_state.regiao_ninja_ativa == "RJ" else "secondary"):
+            st.session_state.regiao_ninja_ativa = "RJ"
+            st.rerun()
+
+    # SELEÇÃO DE QUANTIDADE MÁXIMA EM BOTÕES SEGMENTADOS COM ALTO CONTRASTE
+    st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
+    st.markdown("<b style='color:#4A1525; font-size:0.92rem;'>👥 Quantidade Máxima de Pessoas a Exibir na Tela:</b>", unsafe_allow_html=True)
+    cq1, cq2, cq3, cq4 = st.columns(4)
+    with cq1:
+        if st.button("2 Pessoas", use_container_width=True, type="primary" if st.session_state.max_ninja_ativo == 2 else "secondary"):
+            st.session_state.max_ninja_ativo = 2
+            st.rerun()
+    with cq2:
+        if st.button("4 Pessoas", use_container_width=True, type="primary" if st.session_state.max_ninja_ativo == 4 else "secondary"):
+            st.session_state.max_ninja_ativo = 4
+            st.rerun()
+    with cq3:
+        if st.button("6 Pessoas", use_container_width=True, type="primary" if st.session_state.max_ninja_ativo == 6 else "secondary"):
+            st.session_state.max_ninja_ativo = 6
+            st.rerun()
+    with cq4:
+        if st.button("Todas", use_container_width=True, type="primary" if st.session_state.max_ninja_ativo == "Todas" else "secondary"):
+            st.session_state.max_ninja_ativo = "Todas"
+            st.rerun()
+
+    # Mapeamento do estado ativo
+    if st.session_state.regiao_ninja_ativa == "PA":
         chave_estado_ninja = "PA - Pará (Belém e Região)"
-    elif "SP" in estado_ninja_sel:
+    elif st.session_state.regiao_ninja_ativa == "SP":
         chave_estado_ninja = "SP - São Paulo"
     else:
         chave_estado_ninja = "RJ - Rio de Janeiro"
 
     lista_demandas_estado = DEMANDAS_PARTICULARES_ESTADOS.get(chave_estado_ninja, [])
     
-    if max_pessoas_mostrar != "Todas":
-        demandas_exibir = lista_demandas_estado[:int(max_pessoas_mostrar)]
+    # Aplica o limite
+    if st.session_state.max_ninja_ativo != "Todas":
+        demandas_exibir = lista_demandas_estado[:int(st.session_state.max_ninja_ativo)]
     else:
         demandas_exibir = lista_demandas_estado
 
-    st.markdown(f"<p style='color:#880E4F; font-weight:700; font-size:0.92rem; margin:4px 0 10px 0;'>Exibindo {len(demandas_exibir)} de {len(lista_demandas_estado)} pessoas precisando de atendimento em {chave_estado_ninja.split('—')[0].strip()}:</p>", unsafe_allow_html=True)
+    st.markdown(f"<div style='background:#FFFFFF; border:1px solid #FFCCD7; border-radius:10px; padding:8px 14px; margin:12px 0 10px 0;'><b style='color:#C2185B;'>✨ Exibindo {len(demandas_exibir)} de {len(lista_demandas_estado)} pessoas precisando de atendimento em {chave_estado_ninja}:</b></div>", unsafe_allow_html=True)
 
     col_nj1, col_nj2 = st.columns(2)
     for idx_d, d in enumerate(demandas_exibir):
