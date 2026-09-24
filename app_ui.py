@@ -5,14 +5,15 @@ import re
 import unicodedata
 import urllib.parse
 import xml.etree.ElementTree as ET
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
+import pandas as pd
 import requests
 import streamlit as st
 import streamlit.components.v1 as components
 from pypdf import PdfReader
 from sqlalchemy import text
-from sqlmodel import Session, SQLModel, create_engine, select
+from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from models import Job, UserProfile, UserSubscription
 from scrapers_belem import ScraperHospitaisBelem
@@ -44,6 +45,30 @@ st.markdown("""
     <meta name="description" content="Oportunidades em Enfermagem e Biomedicina selecionadas com carinho 💕" />
 </head>
 """, unsafe_allow_html=True)
+
+# --- MODELOS ADICIONAIS DE BANCO ---
+class MedicalAppointment(SQLModel, table=True):
+    __table_args__ = {"extend_existing": True}
+    id: int | None = Field(default=None, primary_key=True)
+    title: str
+    appointment_type: str
+    location: str
+    scheduled_date: str
+    scheduled_time: str
+    notes: str = ""
+    is_completed: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class MonthlyNeed(SQLModel, table=True):
+    __table_args__ = {"extend_existing": True}
+    id: int | None = Field(default=None, primary_key=True)
+    item_name: str
+    category: str  # "Medicamento Contínuo", "Suplemento / Vitamina", "Mercado & Essenciais", "Cuidados Pessoais"
+    quantity: int = 1
+    estimated_cost: float = 0.0
+    month_reference: str  # "YYYY-MM"
+    is_purchased: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 # --- INICIALIZAÇÃO DO BANCO E AUTO-MIGRAÇÃO ---
 sqlite_url = "sqlite:///vagas_enfermagem.db"
@@ -376,9 +401,6 @@ st.markdown("""
         border-radius: 16px !important;
         font-weight: 700 !important;
     }
-    [data-testid="stFileUploader"] button * {
-        color: #C2185B !important;
-    }
 
     .doc-display-box {
         background-color: #FFFFFF !important;
@@ -406,6 +428,37 @@ st.markdown("""
         box-shadow: 0 3px 10px rgba(255, 105, 180, 0.08) !important;
     }
 
+    .wellness-card {
+        background: #FFFFFF !important;
+        border: 2px solid #FFCCD7 !important;
+        border-left: 6px solid #FF69B4 !important;
+        border-radius: 16px !important;
+        padding: 20px !important;
+        margin-bottom: 20px !important;
+        box-shadow: 0 4px 14px rgba(255, 105, 180, 0.1) !important;
+    }
+
+    .appointment-card {
+        background: #FFFFFF !important;
+        border: 2px solid #FFCCD7 !important;
+        border-radius: 14px !important;
+        padding: 16px !important;
+        margin-bottom: 12px !important;
+        box-shadow: 0 3px 8px rgba(255, 105, 180, 0.07) !important;
+    }
+
+    .reminder-hk-card {
+        background: linear-gradient(135deg, #FFFFFF, #FFF0F5) !important;
+        border: 2px dashed #FF69B4 !important;
+        border-radius: 18px !important;
+        padding: 18px !important;
+        margin-bottom: 20px !important;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: 0 4px 12px rgba(255, 105, 180, 0.12) !important;
+    }
+
     [data-testid="stAlert"] {
         border-radius: 12px !important;
         border: 1px solid #FFB6C1 !important;
@@ -418,7 +471,9 @@ st.markdown("""
 
     [data-testid="stRadio"] label,
     [data-testid="stRadio"] p,
-    [data-testid="stRadio"] span {
+    [data-testid="stRadio"] span,
+    [data-testid="stCheckbox"] label,
+    [data-testid="stCheckbox"] span {
         color: #4A1525 !important;
         font-weight: 700 !important;
     }
@@ -646,7 +701,6 @@ def obter_noticias_reais_saude():
     noticias_bio = []
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 
-    # 1. Feed Oficial do Cofen (Enfermagem)
     try:
         r_enf = requests.get("https://www.cofen.gov.br/feed/", headers=headers, timeout=6)
         if r_enf.status_code == 200:
@@ -659,7 +713,6 @@ def obter_noticias_reais_saude():
     except Exception:
         pass
 
-    # 2. Feed Oficial do CFBM (Biomedicina)
     try:
         r_bio = requests.get("https://cfbm.gov.br/feed/", headers=headers, timeout=6)
         if r_bio.status_code == 200:
@@ -959,9 +1012,11 @@ with Session(engine) as session:
     curriculo_armazenado = getattr(perfil_user, "resume_raw_text", "") or ""
 
 # --- ABAS PRINCIPAIS ---
-tab_vagas, tab_biomed, tab_ia_curriculo, tab_linkedin, tab_rotas_emerg, tab_candidaturas = st.tabs([
+tab_vagas, tab_biomed, tab_agenda, tab_necessidades, tab_ia_curriculo, tab_linkedin, tab_rotas_emerg, tab_candidaturas = st.tabs([
     "🌸 Mural Geral de Vagas",
     "🔬 Especial Biomedicina",
+    "📅 Agenda Médica & Compromissos",
+    "💊 Necessidades & Custos Mensais",
     "🤖 Central IA: Análise de Currículo",
     "💼 Perfil Campeão LinkedIn",
     "🗺️ Trajeto, Uber & Notícias 24h",
@@ -1117,7 +1172,304 @@ Biomédica | Contato WhatsApp"""
             use_container_width=True
         )
 
-# ================= TAB 3: ANÁLISE IA DO CURRÍCULO =================
+# ================= TAB 3: AGENDA MÉDICA & COMPROMISSOS 24H =================
+with tab_agenda:
+    st.markdown("<h2 style='color: #AD1457 !important;'>📅 Agenda Médica & Compromissos de Saúde 24h</h2>", unsafe_allow_html=True)
+    st.markdown("Acompanhamento contínuo dos exames a realizar, exames já feitos e consultas médicas com notificações diretas. 💕")
+
+    hoje_str = date.today().strftime("%Y-%m-%d")
+    hoje_formatada = date.today().strftime("%d/%m/%Y")
+
+    with Session(engine) as session:
+        compromissos_hoje = session.exec(
+            select(MedicalAppointment).where(MedicalAppointment.scheduled_date == hoje_str).order_by(MedicalAppointment.scheduled_time)
+        ).all()
+        todos_compromissos = session.exec(
+            select(MedicalAppointment).order_by(MedicalAppointment.scheduled_date.desc(), MedicalAppointment.scheduled_time)
+        ).all()
+
+    st.markdown(f"### 🔔 Compromissos & Exames de Hoje ({hoje_formatada})")
+
+    if compromissos_hoje:
+        itens_zap = []
+        for comp in compromissos_hoje:
+            status_icone = "✅ [Realizado]" if comp.is_completed else "⏰ [Pendente]"
+            st.markdown(f"""
+            <div class="appointment-card" style="border-left: 6px solid {'#4CAF50' if comp.is_completed else '#FF6584'};">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h4 style="margin:0; color:#C2185B;">{comp.appointment_type}: {comp.title}</h4>
+                    <span style="font-weight:700; color:{'#2E7D32' if comp.is_completed else '#C2185B'};">{status_icone} às {comp.scheduled_time}</span>
+                </div>
+                <p style="margin:6px 0; color:#333;">📍 <b>Local:</b> {comp.location}</p>
+                {f'<p style="margin:4px 0; color:#666; font-size:0.9rem;">📝 <i>Obs: {comp.notes}</i></p>' if comp.notes else ''}
+            </div>
+            """, unsafe_allow_html=True)
+
+            itens_zap.append(f"• {comp.scheduled_time} - {comp.title} ({comp.location}) [{'Realizado' if comp.is_completed else 'Pendente'}]")
+
+            col_chk, _ = st.columns([2, 5])
+            with col_chk:
+                if not comp.is_completed:
+                    if st.button("Marcar como Feito ✅", key=f"btn_chk_{comp.id}"):
+                        with Session(engine) as s:
+                            item = s.get(MedicalAppointment, comp.id)
+                            item.is_completed = True
+                            s.add(item)
+                            s.commit()
+                        st.rerun()
+
+        txt_notif_agenda = f"Oi, amor! Meus exames/compromissos de hoje ({hoje_formatada}) são:\n\n" + "\n".join(itens_zap) + "\n\nTe amo! 💕"
+        link_zap_agenda = f"https://api.whatsapp.com/send?phone=5511913129697&text={urllib.parse.quote(txt_notif_agenda)}"
+        st.markdown(f"""
+        <div style="margin-top:10px;">
+            <a href="{link_zap_agenda}" target="_blank" class="btn-safety-alert" style="padding:10px 22px;">
+                📲 Enviar Resumo da Minha Agenda de Hoje p/ Thiago
+            </a>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.success(f"✨ Nenhum exame ou compromisso médico agendado para hoje ({hoje_formatada})! Dia livre para descanso ou estudos. 💕")
+
+    st.markdown("---")
+
+    col_cad1, col_cad2 = st.columns([1, 1])
+    with col_cad1:
+        st.markdown("#### ➕ Agendar Novo Exame ou Consulta")
+        with st.form("form_novo_compromisso"):
+            novo_tipo = st.selectbox(
+                "Tipo de Registro:",
+                ["Exame a Realizar", "Exame Feito / Resultado", "Consulta Médica", "Retorno / Procedimento", "Compromisso Geral"]
+            )
+            novo_titulo = st.text_input("Nome do Exame ou Consulta:", placeholder="Ex: Hemograma Completo, Ultrassom, Consulta Gineco...")
+            novo_local = st.text_input("Local / Laboratório / Hospital:", placeholder="Ex: Lavoisier, Fleury, Hospital Porto Dias, UBS...")
+            nova_data = st.date_input("Data do Compromisso:", value=date.today())
+            nova_hora = st.time_input("Horário:", value=datetime.now().time())
+            novas_obs = st.text_input("Instruções / Preparo:", placeholder="Ex: Jejum de 8h, levar pedido médico, retirar na recepção...")
+            
+            btn_salvar_comp = st.form_submit_button("💾 Salvar na Agenda")
+
+            if btn_salvar_comp:
+                if not novo_titulo.strip():
+                    st.error("Por favor, preencha o nome do exame ou consulta.")
+                else:
+                    with Session(engine) as s:
+                        novo_item = MedicalAppointment(
+                            title=novo_titulo.strip(),
+                            appointment_type=novo_tipo,
+                            location=novo_local.strip() or "A definir",
+                            scheduled_date=nova_data.strftime("%Y-%m-%d"),
+                            scheduled_time=nova_hora.strftime("%H:%M"),
+                            notes=novas_obs.strip(),
+                            is_completed=("Exame Feito" in novo_tipo)
+                        )
+                        s.add(novo_item)
+                        s.commit()
+                    st.success("Compromisso salvo na agenda médica com sucesso!")
+                    st.rerun()
+
+    with col_cad2:
+        st.markdown("#### 📋 Todos os Agendamentos & Histórico:")
+        if todos_compromissos:
+            for item in todos_compromissos:
+                dataFormat = datetime.strptime(item.scheduled_date, "%Y-%m-%d").strftime("%d/%m/%Y")
+                cor_borda = "#4CAF50" if item.is_completed else ("#FF9800" if item.scheduled_date == hoje_str else "#FFB6C1")
+                st.markdown(f"""
+                <div class="appointment-card" style="border-left: 5px solid {cor_borda}; padding:10px 14px;">
+                    <b style="color:#C2185B;">{item.appointment_type}: {item.title}</b><br>
+                    <span style="font-size:0.85rem; color:#444;">📅 {dataFormat} às {item.scheduled_time} &nbsp;|&nbsp; 📍 {item.location}</span><br>
+                    <span style="font-size:0.8rem; font-weight:700; color:{'#2E7D32' if item.is_completed else '#C2185B'};">Status: {'Concluído / Feito' if item.is_completed else 'A realizar'}</span>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                col_btn_rm, _ = st.columns([1, 4])
+                with col_btn_rm:
+                    if st.button("Remover", key=f"rm_comp_{item.id}"):
+                        with Session(engine) as s:
+                            alvo = s.get(MedicalAppointment, item.id)
+                            s.delete(alvo)
+                            s.commit()
+                        st.rerun()
+        else:
+            st.info("Nenhum registro encontrado na agenda médica.")
+
+# ================= TAB 4: NECESSIDADES & CUSTOS MENSAIS (NOVA) =================
+with tab_necessidades:
+    st.markdown("<h2 style='color: #AD1457 !important;'>💊 Necessidades & Custos Mensais Tabelados</h2>", unsafe_allow_html=True)
+    st.markdown("Controle prático em tabela estilo Excel de remédios, vitaminas e gastos essenciais com histórico mensal e notificação direta. 💕")
+
+    # LEMBRETE CARINHOSO DA HELLO KITTY
+    st.markdown("""
+    <div class="reminder-hk-card">
+        <img src="https://upload.wikimedia.org/wikipedia/en/0/05/Hello_kitty_character_portrait.png" style="width:70px; height:auto; border-radius:10px;">
+        <div>
+            <h4 style="color:#C2185B !important; margin:0 0 4px 0;">🎀 Lembrete da Hello Kitty:</h4>
+            <p style="color:#33101E; font-size:0.95rem; margin:0; line-height:1.4;">
+                <i>"Meu bem, não se esqueça de checar seus remédios, vitaminas e coisinhas essenciais do mês. Já organizou tudo por aqui ou é só isso mesmo? Qualquer coisa avise o Thiago!"</i> 💕 ✨
+            </p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    mes_atual_padrao = date.today().strftime("%Y-%m")
+
+    # CONSULTA DOS DADOS DO BANCO
+    with Session(engine) as session:
+        meses_disponiveis = session.exec(select(MonthlyNeed.month_reference).distinct()).all()
+        if not meses_disponiveis or mes_atual_padrao not in meses_disponiveis:
+            lista_meses = sorted(list(set(list(meses_disponiveis) + [mes_atual_padrao])), reverse=True)
+        else:
+            lista_meses = sorted(list(set(meses_disponiveis)), reverse=True)
+
+        col_filtro_m, _ = st.columns([2, 3])
+        with col_filtro_m:
+            mes_selecionado = st.selectbox("📅 Selecione o Mês de Referência:", lista_meses, index=0)
+
+        itens_mes = session.exec(
+            select(MonthlyNeed).where(MonthlyNeed.month_reference == mes_selecionado).order_by(MonthlyNeed.category, MonthlyNeed.item_name)
+        ).all()
+
+    # MÉTRICAS TOTAIS DO MÊS
+    total_geral = sum(item.estimated_cost * item.quantity for item in itens_mes)
+    total_pendente = sum(item.estimated_cost * item.quantity for item in itens_mes if not item.is_purchased)
+    total_comprado = sum(item.estimated_cost * item.quantity for item in itens_mes if item.is_purchased)
+
+    col_m1, col_m2, col_m3 = st.columns(3)
+    with col_m1:
+        st.markdown(f"""
+        <div style="background:#FFFFFF; border:2px solid #FFCCD7; border-radius:14px; padding:14px; text-align:center;">
+            <span style="font-size:0.85rem; color:#880E4F; font-weight:700;">Gasto Mensal Estimado:</span>
+            <h3 style="color:#C2185B; margin:4px 0 0 0;">R$ {total_geral:.2f}</h3>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_m2:
+        st.markdown(f"""
+        <div style="background:#FFFFFF; border:2px solid #FFCCD7; border-radius:14px; padding:14px; text-align:center;">
+            <span style="font-size:0.85rem; color:#880E4F; font-weight:700;">Itens Já Comprados / OK:</span>
+            <h3 style="color:#2E7D32; margin:4px 0 0 0;">R$ {total_comprado:.2f}</h3>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_m3:
+        st.markdown(f"""
+        <div style="background:#FFFFFF; border:2px solid #FFCCD7; border-radius:14px; padding:14px; text-align:center;">
+            <span style="font-size:0.85rem; color:#880E4F; font-weight:700;">Pendente / Falta Comprar:</span>
+            <h3 style="color:#E65100; margin:4px 0 0 0;">R$ {total_pendente:.2f}</h3>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # TABELA ESTILO EXCEL (PANDAS DATAFRAME)
+    if itens_mes:
+        st.markdown("### 📊 Tabela de Custos & Medicamentos (Estilo Planilha)")
+        dados_tabela = []
+        for i in itens_mes:
+            subtotal = i.estimated_cost * i.quantity
+            dados_tabela.append({
+                "Item / Remédio": i.item_name,
+                "Categoria": i.category,
+                "Quantidade": i.quantity,
+                "Valor Unit. (R$)": f"R$ {i.estimated_cost:.2f}",
+                "Subtotal (R$)": f"R$ {subtotal:.2f}",
+                "Status": "✅ Comprado" if i.is_purchased else "⏳ Pendente"
+            })
+        
+        df_display = pd.DataFrame(dados_tabela)
+        st.dataframe(df_display, use_container_width=True, hide_index=True)
+
+        # MENSAGEM FORMATADA PARA NOTIFICAR O THIAGO NO WHATSAPP
+        resumo_itens_txt = []
+        for i in itens_mes:
+            subtotal = i.estimated_cost * i.quantity
+            status_txt = "OK" if i.is_purchased else "Falta comprar"
+            resumo_itens_txt.append(f"• {i.item_name} ({i.category}): {i.quantity}x de R${i.estimated_cost:.2f} = R${subtotal:.2f} [{status_txt}]")
+
+        msg_necessidades = (
+            f"Oi, amor! Segue meu resumo de necessidades e remédios de {mes_selecionado}:\n\n"
+            + "\n".join(resumo_itens_txt)
+            + f"\n\n💰 Total Estimado: R$ {total_geral:.2f} (Pendente: R$ {total_pendente:.2f})\n"
+            f"É só isso por enquanto! Te amo! 💕"
+        )
+        link_zap_nec = f"https://api.whatsapp.com/send?phone=5511913129697&text={urllib.parse.quote(msg_necessidades)}"
+
+        st.markdown(f"""
+        <div style="margin: 16px 0;">
+            <a href="{link_zap_nec}" target="_blank" class="btn-safety-alert" style="padding:10px 24px;">
+                📲 Enviar Lista de Necessidades/Remédios p/ Thiago
+            </a>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.info(f"Nenhum item cadastrado para o mês de {mes_selecionado}. Cadastre no formulário abaixo!")
+
+    st.markdown("---")
+
+    # FORMULÁRIO PARA ADICIONAR NOVO ITEM / REMÉDIO
+    col_nec1, col_nec2 = st.columns([1, 1])
+    with col_nec1:
+        st.markdown("#### ➕ Adicionar Item / Remédio / Custo")
+        with st.form("form_nova_necessidade"):
+            novo_item_nome = st.text_input("Nome do Item / Medicamento:", placeholder="Ex: Antialérgico, Vitamina D, Remédio de uso contínuo...")
+            nova_cat = st.selectbox(
+                "Categoria:",
+                ["Medicamento Contínuo", "Suplemento / Vitamina", "Mercado & Essenciais", "Cuidados Pessoais", "Outros"]
+            )
+            col_qtd, col_val = st.columns(2)
+            with col_qtd:
+                nova_qtd = st.number_input("Quantidade:", min_value=1, value=1, step=1)
+            with col_val:
+                novo_preco = st.number_input("Valor Estimado Unitário (R$):", min_value=0.0, value=0.0, step=1.0, format="%.2f")
+            
+            mes_item_input = st.text_input("Mês de Referência (YYYY-MM):", value=mes_selecionado)
+            comprado_check = st.checkbox("Item já comprado?", value=False)
+
+            btn_salvar_nec = st.form_submit_button("💾 Salvar na Planilha")
+
+            if btn_salvar_nec:
+                if not novo_item_nome.strip():
+                    st.error("Informe o nome do item ou medicamento.")
+                else:
+                    with Session(engine) as s:
+                        item_db = MonthlyNeed(
+                            item_name=novo_item_nome.strip(),
+                            category=nova_cat,
+                            quantity=nova_qtd,
+                            estimated_cost=novo_preco,
+                            month_reference=mes_item_input.strip() or mes_selecionado,
+                            is_purchased=comprado_check
+                        )
+                        s.add(item_db)
+                        s.commit()
+                    st.success("Item adicionado com sucesso à tabela de necessidades!")
+                    st.rerun()
+
+    with col_nec2:
+        st.markdown("#### ✏️ Alterar Status ou Remover Itens:")
+        if itens_mes:
+            for item in itens_mes:
+                sub = item.estimated_cost * item.quantity
+                col_info, col_act = st.columns([3, 2])
+                with col_info:
+                    st.markdown(f"**{item.item_name}** ({item.quantity}x) — R$ {sub:.2f}")
+                with col_act:
+                    txt_btn_status = "Marcar Comprado" if not item.is_purchased else "Desmarcar"
+                    if st.button(txt_btn_status, key=f"tgl_st_{item.id}"):
+                        with Session(engine) as s:
+                            obj = s.get(MonthlyNeed, item.id)
+                            obj.is_purchased = not obj.is_purchased
+                            s.add(obj)
+                            s.commit()
+                        st.rerun()
+                    if st.button("Excluir", key=f"del_nec_{item.id}"):
+                        with Session(engine) as s:
+                            obj = s.get(MonthlyNeed, item.id)
+                            s.delete(obj)
+                            s.commit()
+                        st.rerun()
+                st.divider()
+        else:
+            st.info("Nenhum item para gerenciar neste mês.")
+
+# ================= TAB 5: ANÁLISE IA DO CURRÍCULO =================
 with tab_ia_curriculo:
     st.markdown("<h2 style='color: #AD1457 !important;'>🤖 Central IA: Análise de Currículo & Raio-X de Empresas</h2>", unsafe_allow_html=True)
     st.markdown("Suba o currículo dela para que a IA analise a compatibilidade real em cada vaga, dê opiniões diretas sobre os hospitais e prepare para as entrevistas! 💕")
@@ -1166,7 +1518,7 @@ with tab_ia_curriculo:
     else:
         st.info("Nenhum currículo em PDF carregado ainda. Você pode enviar acima ou colar um texto diretamente na aba de Biomedicina!")
 
-# ================= TAB 4: PERFIL CAMPEÃO LINKEDIN =================
+# ================= TAB 6: PERFIL CAMPEÃO LINKEDIN =================
 with tab_linkedin:
     st.markdown("<h2 style='color: #0077B5 !important;'>💼 Seu Perfil Campeão no LinkedIn</h2>", unsafe_allow_html=True)
     st.markdown("""
@@ -1245,19 +1597,78 @@ Busco oportunidades em laboratórios de análises clínicas, hospitais e centros
             use_container_width=True
         )
 
-# ================= TAB 5: TRAJETO, TARIFAS, UBER & NOTÍCIAS 24H =================
+# ================= TAB 7: TRAJETO, UBER, NOTÍCIAS & BEM-ESTAR =================
 with tab_rotas_emerg:
-    st.markdown("<h2 style='color: #AD1457 !important;'>🗺️ Simulação de Trajeto, Uber, Chuvas & Notícias Oficiais</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #AD1457 !important;'>🗺️ Trajeto, Uber, Notícias & Cuidado com Você 💕</h2>", unsafe_allow_html=True)
+
+    SEU_WHATSAPP = "5511913129697"
+
+    # PAINEL DE BEM-ESTAR & MOOD
+    st.markdown(f"""
+    <div class="wellness-card">
+        <h3 style="color:#C2185B !important; margin:0 0 10px 0;">🌸 Como você está agora, meu amor? (Check-in de Saúde & Humor)</h3>
+        <p style="color:#4A1525; font-size:0.95rem; margin-bottom:14px;">
+            Plantões e rotina de estudos são intensos. Cuide de você a cada etapa! Atualize seu status e envie direto para o Thiago saber como você está:
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col_check1, col_check2 = st.columns([1, 1])
+    with col_check1:
+        st.markdown("#### 📋 Check-list de Saúde Física:")
+        bebeu_agua = st.checkbox("💧 Beba pelo menos 500ml de água agora", value=False)
+        alimentou = st.checkbox("🥗 Conseguiu fazer uma refeição adequada?", value=False)
+        descansou = st.checkbox("💺 Descansou as pernas / sentou um pouco no intervalo?", value=False)
+        dor = st.checkbox("💊 Sem dor nas costas ou dor de cabeça?", value=True)
+
+    with col_check2:
+        st.markdown("#### 🎭 Humor & Energia Atual (Mood):")
+        mood_atual = st.radio(
+            "Seu estado de espírito agora:",
+            [
+                "✨ Radiante, motivada e tranquila!",
+                "🧸 Cansadinha da rotina, mas em paz",
+                "😴 Exausta do plantão/faculdade (preciso da minha caminha)",
+                "🤯 Estressada / Correria pesada hoje",
+                "🥺 Com saudades do meu amor"
+            ],
+            index=1
+        )
+
+    status_agua = "Tomou água: Sim" if bebeu_agua else "Tomou água: Ainda não"
+    status_comida = "Alimentada: Sim" if alimentou else "Alimentada: Ainda não"
+    status_descanso = "Descansou: Sim" if descansou else "Descansou: Não"
+    
+    txt_mood_notif = (
+        f"Oi, amor! Passando para te atualizar sobre mim agora:\n\n"
+        f"• Meu Humor/Energia: {mood_atual}\n"
+        f"• Saúde Física: {status_agua} | {status_comida} | {status_descanso}\n\n"
+        f"Te amo muito! 💕"
+    )
+    link_zap_mood = f"https://api.whatsapp.com/send?phone={SEU_WHATSAPP}&text={urllib.parse.quote(txt_mood_notif)}"
+
+    st.markdown(f"""
+    <div style="text-align:center; margin:16px 0 24px 0;">
+        <a href="{link_zap_mood}" target="_blank" class="btn-safety-alert" style="padding:12px 28px; font-size:1rem;">
+            💌 Enviar Meu Check-in de Humor & Saúde p/ Thiago
+        </a>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("---")
 
     col_rot1, col_rot2 = st.columns(2)
     with col_rot1:
-        st.markdown("""
+        msg_saida_plantao = "Oi, amor! Estou saindo do plantão agora e já a caminho de casa. Te aviso assim que chegar!"
+        link_aviso_thiago = f"https://api.whatsapp.com/send?phone={SEU_WHATSAPP}&text={urllib.parse.quote(msg_saida_plantao)}"
+
+        st.markdown(f"""
         <div class="emergency-card">
             <h4 style="color:#C2185B !important; margin:0 0 10px 0;">🚨 Botão de Segurança p/ Voltar de Plantão</h4>
             <p style="color:#333333 !important; font-size:0.92rem; line-height:1.4; margin-bottom:16px;">
-                Saindo de noite ou de madrugada? Clique para mandar mensagem instantânea com aviso de trajeto direto para o Thiago:
+                Saindo de noite ou de madrugada? Clique para mandar mensagem instantânea direta no WhatsApp do Thiago:
             </p>
-            <a href="https://api.whatsapp.com/send?text=Oi%20amor!%20Estou%20saindo%20do%20plant%C3%A3o%20agora%20e%20j%C3%A1%20a%20caminho%20de%20casa.%20Te%20aviso%20assim%20que%20chegar!%20%F0%9F%92%95" target="_blank" class="btn-safety-alert">
+            <a href="{link_aviso_thiago}" target="_blank" class="btn-safety-alert">
                 📲 Mandar Aviso de Saída de Plantão p/ Thiago
             </a>
         </div>
@@ -1377,7 +1788,7 @@ with tab_rotas_emerg:
 
     st.markdown("---")
 
-    # --- RADAR DE NOTÍCIAS 24H (CONECTADO AOS CONSELHOS EM TEMPO REAL) ---
+    # --- RADAR DE NOTÍCIAS 24H (COFEN & CFBM) ---
     st.markdown("<h3 style='color: #880E4F !important;'>📰 Notícias & Acontecimentos Oficiais 24h (Cofen & CFBM)</h3>", unsafe_allow_html=True)
     
     noticias_enf, noticias_bio = obter_noticias_reais_saude()
@@ -1399,7 +1810,7 @@ with tab_rotas_emerg:
             <div class="news-card">
                 <h5 style="color:#C2185B !important; margin:0 0 6px 0;">Piso Salarial e Novas Contratações Hospitalares</h5>
                 <p style="color:#222; font-size:0.9rem;">Repasses e editais de hospitais filantrópicos e privados em andamento pelo Brasil.</p>
-                <a href="https://www.cofen.gov.br" target="_blank" style="color:#E91E63; font-weight:bold;">Aceder ao Portal Cofen 🔗</a>
+                <a href="https://www.cofen.gov.br" target="_blank" style="color:#E91E63; font-weight:bold;">Acessar Portal Cofen 🔗</a>
             </div>
             """, unsafe_allow_html=True)
 
@@ -1418,12 +1829,12 @@ with tab_rotas_emerg:
             st.markdown("""
             <div class="news-card">
                 <h5 style="color:#00695C !important; margin:0 0 6px 0;">Diagnóstico Molecular e Habilitações Clínicas</h5>
-                <p style="color:#222; font-size:0.9rem;">Resoluções atualizadas para actuação em análises clínicas laboratoriais e genética.</p>
-                <a href="https://cfbm.gov.br" target="_blank" style="color:#00695C; font-weight:bold;">Aceder ao Portal CFBM 🔗</a>
+                <p style="color:#222; font-size:0.9rem;">Resoluções atualizadas para atuação em análises clínicas laboratoriais e genética.</p>
+                <a href="https://cfbm.gov.br" target="_blank" style="color:#00695C; font-weight:bold;">Acessar Portal CFBM 🔗</a>
             </div>
             """, unsafe_allow_html=True)
 
-# ================= TAB 6: CANDIDATURAS =================
+# ================= TAB 8: CANDIDATURAS =================
 with tab_candidaturas:
     st.markdown("<h2 style='color: #AD1457 !important;'>📋 Painel de Acompanhamento</h2>", unsafe_allow_html=True)
     with Session(engine) as session:
