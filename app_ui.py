@@ -210,40 +210,47 @@ PORTAIS_LISTA = ["Gupy Saúde", "Vagas.com", "Catho", "InfoJobs", "LinkedIn", "G
 
 def gerar_catalogo_dinamico_nacional():
     catalogo = []
+
     for uf, hospitais in HOSPITAIS_POR_ESTADO.items():
         for hospital_nome, localizacao in hospitais:
             modelo = random.choice(MODELOS_VAGAS_BASE)
             portal = random.choice(PORTAIS_LISTA)
-            
-            # Limpeza do slug da empresa
-            nome_limpo = re.sub(r'[^a-zA-Z0-9]+', '-', hospital_nome.lower()).strip('-')
-            slug = re.sub(r'-+', '-', nome_limpo)
-            
-            # Identificador simulado/único para dar robustez à vaga específica
-            id_vaga_hash = random.randint(100000, 999999)
-            
-            # URLs específicas por portal apontando diretamente para a vaga ou listagem isolada
+
             if portal == "LinkedIn":
-                # Link direto de busca filtrada exata para o cargo e empresa no LinkedIn
-                query_li = urllib.parse.quote(f"{modelo['title']} {hospital_nome}")
-                url_apply = f"https://www.linkedin.com/jobs/search/?keywords={query_li}"
-                
+                query = urllib.parse.quote(
+                    f"{modelo['title']} {hospital_nome}"
+                )
+                url_apply = (
+                    f"https://www.linkedin.com/jobs/search/?keywords={query}"
+                )
             elif portal in ["Gupy Saúde", "Gupy"]:
-                # Padrão de URL direta de vaga da Gupy (substitui a busca genérica do Google pela URL da vaga)
-                url_apply = f"https://{slug}.gupy.io/jobs/{id_vaga_hash}"
-                
+                query = urllib.parse.quote(
+                    f"{hospital_nome} {modelo['title']}"
+                )
+                url_apply = f"https://www.google.com/search?q={query}+gupy"
             elif portal == "Catho":
-                url_apply = f"https://www.catho.com.br/vagas/{slug}/{id_vaga_hash}/"
-                
+                query = urllib.parse.quote(
+                    f"{modelo['title']} {hospital_nome}"
+                )
+                url_apply = f"https://www.catho.com.br/vagas/?q={query}"
             elif portal == "InfoJobs":
-                url_apply = f"https://www.infojobs.com.br/vaga-de-{slug}-{id_vaga_hash}.aspx"
-                
+                query = urllib.parse.quote(
+                    f"{modelo['title']} {hospital_nome}"
+                )
+                url_apply = (
+                    f"https://www.infojobs.com.br/vagas-de-emprego-{query}.aspx"
+                )
             else:
-                url_apply = f"https://carreiras.{slug}.com.br/vaga/{id_vaga_hash}"
-                
+                query = urllib.parse.quote(
+                    f"{hospital_nome} {modelo['title']}"
+                )
+                url_apply = f"https://www.google.com/search?q={query}"
+
             tempo_recuo = random.randint(2, 60)
-            data_anuncio = (datetime.utcnow() - timedelta(minutes=tempo_recuo)).strftime("%Y-%m-%d %H:%M:%S")
-            
+            data_anuncio = (
+                datetime.utcnow() - timedelta(minutes=tempo_recuo)
+            ).strftime("%Y-%m-%d %H:%M:%S")
+
             catalogo.append({
                 "title": modelo["title"],
                 "hospital_or_company": hospital_nome,
@@ -253,13 +260,14 @@ def gerar_catalogo_dinamico_nacional():
                 "shift_type": modelo["shift_type"],
                 "specialty": modelo["specialty"],
                 "description": modelo["description"],
-                "url_apply": url_apply,  # <--- URL específica gerada
+                "url_apply": url_apply,
                 "source": portal,
                 "requires_graduation": modelo["requires_graduation"],
-                "created_at": data_anuncio
+                "created_at": data_anuncio,
             })
-            
+
     return catalogo
+
 
 def popular_catalogo_base():
     try:
