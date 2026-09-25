@@ -9,6 +9,7 @@ import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from scraper_plantoes import buscar_plantoes_reais
 
 import pandas as pd
 import requests
@@ -320,19 +321,26 @@ SOLICITACOES_BASE = [
     {"servico": "Plantão Diurno 12x36 (Home Care)", "solicitante": "Família Pantoja", "valor": "R$ 240,00 / plantão", "detalhe": "Cuidado assistencial com sonda nasoenteral e auxílio nas atividades diárias.", "cat": "Enfermagem"},
 ]
 
+# No topo do seu app.py, importe o robô:
+from scraper_plantoes import buscar_plantoes_reais
+
+# Na aba de Plantões (Tab 2), substitua a listagem antiga por:
 def obter_demandas_estado(uf_codigo: str):
-    demandas = []
-    nome_uf = UFS_BRASIL.get(uf_codigo, "Pará")
-    for idx, base in enumerate(SOLICITACOES_BASE):
-        demandas.append({
-            "solicitante": f"{base['solicitante']} ({nome_uf})",
+    # Chama o robô real de raspagem web
+    demandas_brutas = buscar_plantoes_reais()
+    demandas_formatadas = []
+    
+    for base in demandas_brutas:
+        demandas_formatadas.append({
+            "solicitante": f"{base['solicitante']} ({uf_codigo})",
             "servico": base["servico"],
-            "local": f"Área Central - {uf_codigo}",
+            "local": f"Região Metropolitana - {uf_codigo}",
             "valor": base["valor"],
             "detalhe": base["detalhe"],
-            "categoria": base["cat"]
+            "categoria": base["cat"],
+            "telefone": base.get("telefone", "5591999999999")
         })
-    return demandas
+    return demandas_formatadas
 
 def calcular_peso_proximidade(vaga: Job) -> int:
     loc = (vaga.location or "").lower()
@@ -811,7 +819,12 @@ with tab_plantoes:
             f"Tenho total disponibilidade para lhe atender com segurança e humanização.\n\n"
             f"Podemos alinhar o horário?"
         )
-        link_zap = f"https://api.whatsapp.com/send?text={urllib.parse.quote(txt_apresentacao)}"
+        
+        # Pega o telefone que veio do dicionário (ou usa o padrão se não houver)
+        tel_cliente = d.get("telefone", "5591999999999")
+        
+        # Monta o link direcionando com o número e o texto
+        link_zap = f"https://api.whatsapp.com/send?phone={tel_cliente}&text={urllib.parse.quote(txt_apresentacao)}"
 
         st.markdown(f"""
         <div class="content-box" style="border-left: 6px solid #FF9800; margin-bottom: 12px;">
