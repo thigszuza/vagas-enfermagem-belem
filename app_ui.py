@@ -214,9 +214,24 @@ def gerar_catalogo_dinamico_nacional():
         for hospital_nome, localizacao in hospitais:
             modelo = random.choice(MODELOS_VAGAS_BASE)
             portal = random.choice(PORTAIS_LISTA)
-            slug = re.sub(r'[^a-zA-Z0-9]', '-', hospital_nome.lower())
+            
+            # Limpeza robusta do slug (remove parênteses, acentos e hífens duplicados)
+            nome_limpo = re.sub(r'[^a-zA-Z0-9]+', '-', hospital_nome.lower()).strip('-')
+            slug = re.sub(r'-+', '-', nome_limpo)
+            
+            # Redirecionamento inteligente por portal para evitar links quebrados (DNS_PROBE_FINISHED_NXDOMAIN)
+            if portal == "LinkedIn":
+                url_apply = f"https://www.linkedin.com/jobs/search/?keywords={urllib.parse.quote(hospital_nome)}"
+            elif portal in ["Gupy Saúde", "Gupy"]:
+                url_apply = f"https://www.google.com/search?q={urllib.parse.quote(hospital_nome + ' vagas gupy')}"
+            elif portal in ["Catho", "InfoJobs", "Vagas.com", "Glassdoor"]:
+                url_apply = f"https://www.google.com/search?q={urllib.parse.quote(hospital_nome + ' ' + portal + ' vagas de emprego')}"
+            else:
+                url_apply = f"https://carreiras.{slug}.com.br/vagas"
+                
             tempo_recuo = random.randint(2, 60)
             data_anuncio = (datetime.utcnow() - timedelta(minutes=tempo_recuo)).strftime("%Y-%m-%d %H:%M:%S")
+            
             catalogo.append({
                 "title": modelo["title"],
                 "hospital_or_company": hospital_nome,
@@ -226,7 +241,7 @@ def gerar_catalogo_dinamico_nacional():
                 "shift_type": modelo["shift_type"],
                 "specialty": modelo["specialty"],
                 "description": modelo["description"],
-                "url_apply": f"https://carreiras.{slug}.com.br/vagas",
+                "url_apply": url_apply,
                 "source": portal,
                 "requires_graduation": modelo["requires_graduation"],
                 "created_at": data_anuncio
@@ -252,7 +267,7 @@ def gerar_catalogo_dinamico_nacional():
                     "requires_graduation": modelo["requires_graduation"],
                     "created_at": data_anuncio
                 })
-    return catalogo
+                return catalogo
 
 def popular_catalogo_base():
     try:
