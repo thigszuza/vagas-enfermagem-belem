@@ -36,7 +36,8 @@ jobs:
       - name: Salvar e Persistir Novas Vagas no Repositorio
         run: |
           git config --global user.name 'Robo Thiago 24h'
-          git config --global user.email 'bot@thiagozuza.com'
-          git pull --rebase origin main
-          git add vagas_enfermagem.db
-          git diff --staged --quiet || (git commit -m "Auto-sync 24h: novas vagas coletadas" && git push origin main)
+          git config --global user.email 'seu-email@example.com'
+          git add .
+          git commit -m "chore: atualiza vagas automaticamente [skip ci]" || echo "Nenhuma alteração para commitar"
+          git pull --rebase origin main  # ou o nome da sua branch principal
+          git push origin main
