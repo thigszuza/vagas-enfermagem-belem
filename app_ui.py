@@ -9,8 +9,7 @@ import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from scraper_plantoes import buscar_plantoes_reais
-
+from scrapers_plantoes import buscar_plantoes_reais
 import pandas as pd
 import requests
 import streamlit as st
