@@ -321,7 +321,7 @@ SOLICITACOES_BASE = [
 ]
 
 # No topo do seu app.py, importe o robô:
-from scraper_plantoes import buscar_plantoes_reais
+from scrapers_plantoes import buscar_plantoes_reais
 
 # Na aba de Plantões (Tab 2), substitua a listagem antiga por:
 def obter_demandas_estado(uf_codigo: str):
