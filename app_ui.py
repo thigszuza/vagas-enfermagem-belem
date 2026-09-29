@@ -1020,11 +1020,11 @@ with tab_ia_curriculo:
                 
                 if not api_key_val:
                     api_key_val = os.environ.get("GEMINI_API_KEY", "")
-
-                if HAS_GENAI and api_key_val:
+                    
+                    if HAS_GENAI and api_key_val:
                     with st.spinner("✨ A analisar pontos fortes, lacunas e adequação para Enfermagem/Biomedicina..."):
                         try:
-                            # Garante que a variável de ambiente global do sistema está preenchida para o cliente
+                            # Configura a chave global e de ambiente para o novo formato do Google
                             os.environ["GEMINI_API_KEY"] = api_key_val
                             
                             client = genai.Client(api_key=api_key_val)
@@ -1047,7 +1047,8 @@ with tab_ia_curriculo:
                         except Exception as ai_err:
                             st.warning(f"Erro ao contactar a IA: {ai_err}")
                             st.text_area("Texto Extraído:", texto_pdf, height=200)
-                else:
+                        
+                                    else:
                     st.info("💡 Dica: Configure a variável GEMINI_API_KEY nos Secrets do Streamlit Cloud. Abaixo está o texto extraído:")
                     st.text_area("Texto Extraído:", texto_pdf, height=200)
                     
