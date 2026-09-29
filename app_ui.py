@@ -841,47 +841,6 @@ with tab_plantoes:
 import streamlit as st
 import pandas as pd
 import numpy as np
-# =============== TAB 3: ANÁLISE GRÁFICA ANUAL DINÂMICA ===============
-st.markdown("### 📊 Análise Gráfica Avançada & Projeção (2026-2027)")
-st.markdown("Comparativo dinâmico de vagas, tendências e expansão geográfica para Enfermagem e Biomedicina.")
-
-# --- FILTROS DE CONTROLO DO PAINEL COM KEYS ÚNICAS ---
-col_f1, col_f2, col_f3 = st.columns(3)
-
-with col_f1:
-    prof_filtro = st.selectbox(
-        "Profissão em Análise:",
-        ["Ambos (Comparativo)", "Enfermagem", "Biomedicina"],
-        key="filtro_profissao_graficos"
-    )
-
-with col_f2:
-    escopo_geo_grafico = st.selectbox(
-        "Âmbito Geográfico:",
-        ["Brasil (Todos os 27 Estados)", "Mundo / Global (Internacional)"],
-        key="filtro_escopo_geo_graficos"
-    )
-
-with col_f3:
-    periodo_grafico = st.selectbox(
-        "Horizonte Temporal:",
-        ["2026 - 2027 (Evolução & Projeção)", "Ano de 2026", "Ano de 2027 (Projeção)"],
-        key="filtro_periodo_graficos"
-    )
-
-# --- SELETOR DE REGIÃO COM KEY ÚNICA ---
-if escopo_geo_grafico == "Brasil (Todos os 27 Estados)":
-    regiao_selecionada = st.selectbox(
-        "Selecione o Estado:",
-        ["Todos os Estados (Nacional)", "Acre (AC)", "Alagoas (AL)", "Amapá (AP)", "Amazonas (AM)", "Bahia (BA)", 
-         "Ceará (CE)", "Distrito Federal (DF)", "Espírito Santo (ES)", "Goiás (GO)", "Maranhão (MA)", 
-         "Mato Grosso (MT)", "Mato Grosso do Sul (MS)", "Minas Gerais (MG)", "Pará (PA)", "Paraíba (PB)", 
-         "Paraná (PR)", "Pernambuco (PE)", "Piauí (PI)", "Rio de Janeiro**Sim, podes começar exatamente aí!** 
-
-Podes apagar desde o comentário `# =============== TAB 3: ANÁLISE GRÁFICA ANUAL DINÂMICA ===============` para baixo e colar este bloco completo e limpo, que já traz os filtros na ordem certa (sem misturar colunas com colunas) e com os gráficos perfeitamente alinhados:
-
-```python
-# =============== TAB 3: ANÁLISE GRÁFICA ANUAL DINÂMICA ===============
 st.markdown("### 📊 Análise Gráfica Avançada & Projeção (2026-2027)")
 st.markdown("Comparativo dinâmico de vagas, tendências e expansão geográfica para Enfermagem e Biomedicina.")
 
@@ -998,7 +957,6 @@ with col_g4:
     else:
         df_esp = pd.DataFrame({"Demanda": [88, 72, 58, 42]}, index=["UTI & Críticos (Enf)", "Análises Clínicas (Bio)", "Urgência (Enf)", "Biologia Molecular (Bio)"])
     st.bar_chart(df_esp)
-
 # ================= TAB 4: ESPECIAL ENFERMAGEM & COREN =================
 with tab_enfermagem:
     st.markdown("<h2 style='color: #C2185B;'>🩺 Painel de Enfermagem, Carreira & COREN</h2>", unsafe_allow_html=True)
