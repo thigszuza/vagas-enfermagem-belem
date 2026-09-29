@@ -841,6 +841,7 @@ with tab_plantoes:
 import streamlit as st
 import pandas as pd
 import numpy as np
+# =============== TAB 3: ANÁLISE GRÁFICA ANUAL DINÂMICA ===============
 st.markdown("### 📊 Análise Gráfica Avançada & Projeção (2026-2027)")
 st.markdown("Comparativo dinâmico de vagas, tendências e expansão geográfica para Enfermagem e Biomedicina.")
 
@@ -848,26 +849,51 @@ st.markdown("Comparativo dinâmico de vagas, tendências e expansão geográfica
 col_f1, col_f2, col_f3 = st.columns(3)
 
 with col_f1:
-    with col_g1:
-    st.markdown(f"#### 📈 Tendência Mensal de Vagas ({regiao_selecionada})")
-    try:
-        if prof_filtro == "Enfermagem":
-            df_plot = df_vagas.pivot(index="Mês", columns="Ano", values="Enfermagem")
-            st.line_chart(df_plot)
-        elif prof_filtro == "Biomedicina":
-            df_plot = df_vagas.pivot(index="Mês", columns="Ano", values="Biomedicina")
-            st.line_chart(df_plot)
-        else:
-            # Modo comparativo seguro usando gráficos separados ou DataFrame limpo
-            df_enf = df_vagas.pivot(index="Mês", columns="Ano", values="Enfermagem")
-            df_bio = df_vagas.pivot(index="Mês", columns="Ano", values="Biomedicina")
-            df_enf.columns = [f"{c} (Enf)" for c in df_enf.columns]
-            df_bio.columns = [f"{c} (Bio)" for c in df_bio.columns]
-            df_final = pd.concat([df_enf, df_bio], axis=1)
-            st.line_chart(df_final)
-    except Exception as e:
-        # Fallback de segurança absoluto para o gráfico nunca quebrar
-        st.line_chart(df_vagas.set_index("Mês")[["Enfermagem", "Biomedicina"]])
+    prof_filtro = st.selectbox(
+        "Profissão em Análise:",
+        ["Ambos (Comparativo)", "Enfermagem", "Biomedicina"],
+        key="filtro_profissao_graficos"
+    )
+
+with col_f2:
+    escopo_geo_grafico = st.selectbox(
+        "Âmbito Geográfico:",
+        ["Brasil (Todos os 27 Estados)", "Mundo / Global (Internacional)"],
+        key="filtro_escopo_geo_graficos"
+    )
+
+with col_f3:
+    periodo_grafico = st.selectbox(
+        "Horizonte Temporal:",
+        ["2026 - 2027 (Evolução & Projeção)", "Ano de 2026", "Ano de 2027 (Projeção)"],
+        key="filtro_periodo_graficos"
+    )
+
+# --- SELETOR DE REGIÃO COM KEY ÚNICA ---
+if escopo_geo_grafico == "Brasil (Todos os 27 Estados)":
+    regiao_selecionada = st.selectbox(
+        "Selecione o Estado:",
+        ["Todos os Estados (Nacional)", "Acre (AC)", "Alagoas (AL)", "Amapá (AP)", "Amazonas (AM)", "Bahia (BA)", 
+         "Ceará (CE)", "Distrito Federal (DF)", "Espírito Santo (ES)", "Goiás (GO)", "Maranhão (MA)", 
+         "Mato Grosso (MT)", "Mato Grosso do Sul (MS)", "Minas Gerais (MG)", "Pará (PA)", "Paraíba (PB)", 
+         "Paraná (PR)", "Pernambuco (PE)", "Piauí (PI)", "Rio de Janeiro**Sim, podes começar exatamente aí!** 
+
+Podes apagar desde o comentário `# =============== TAB 3: ANÁLISE GRÁFICA ANUAL DINÂMICA ===============` para baixo e colar este bloco completo e limpo, que já traz os filtros na ordem certa (sem misturar colunas com colunas) e com os gráficos perfeitamente alinhados:
+
+```python
+# =============== TAB 3: ANÁLISE GRÁFICA ANUAL DINÂMICA ===============
+st.markdown("### 📊 Análise Gráfica Avançada & Projeção (2026-2027)")
+st.markdown("Comparativo dinâmico de vagas, tendências e expansão geográfica para Enfermagem e Biomedicina.")
+
+# --- FILTROS DE CONTROLO DO PAINEL COM KEYS ÚNICAS ---
+col_f1, col_f2, col_f3 = st.columns(3)
+
+with col_f1:
+    prof_filtro = st.selectbox(
+        "Profissão em Análise:",
+        ["Ambos (Comparativo)", "Enfermagem", "Biomedicina"],
+        key="filtro_profissao_graficos"
+    )
 
 with col_f2:
     escopo_geo_grafico = st.selectbox(
@@ -905,7 +931,6 @@ else:
 st.markdown(f"***Painel ativo para:** {prof_filtro} | **Local:** {regiao_selecionada} | **Período:** {periodo_grafico}*")
 st.markdown("---")
 
-# --- GERAÇÃO DE DADOS DINÂMICOS PARA OS GRÁFICOS (2026-2027) ---
 # --- GERAÇÃO DE DADOS DINÂMICOS PARA OS GRÁFICOS (2026-2027) ---
 meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
 
