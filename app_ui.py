@@ -844,28 +844,31 @@ import numpy as np
 st.markdown("### 📊 Análise Gráfica Avançada & Projeção (2026-2027)")
 st.markdown("Comparativo dinâmico de vagas, tendências e expansão geográfica para Enfermagem e Biomedicina.")
 
-# --- FILTROS DE CONTROLO DO PAINEL ---
+# --- FILTROS DE CONTROLO DO PAINEL COM KEYS ÚNICAS ---
 col_f1, col_f2, col_f3 = st.columns(3)
 
 with col_f1:
     prof_filtro = st.selectbox(
         "Profissão em Análise:",
-        ["Ambos (Comparativo)", "Enfermagem", "Biomedicina"]
+        ["Ambos (Comparativo)", "Enfermagem", "Biomedicina"],
+        key="filtro_profissao_graficos"
     )
 
 with col_f2:
     escopo_geo_grafico = st.selectbox(
         "Âmbito Geográfico:",
-        ["Brasil (Todos os 27 Estados)", "Mundo / Global (Internacional)"]
+        ["Brasil (Todos os 27 Estados)", "Mundo / Global (Internacional)"],
+        key="filtro_escopo_geo_graficos"
     )
 
 with col_f3:
     periodo_grafico = st.selectbox(
         "Horizonte Temporal:",
-        ["2026 - 2027 (Evolução & Projeção)", "Ano de 2026", "Ano de 2027 (Projeção)"]
+        ["2026 - 2027 (Evolução & Projeção)", "Ano de 2026", "Ano de 2027 (Projeção)"],
+        key="filtro_periodo_graficos"
     )
 
-# --- GARANTE QUE A VARIÁVEL EXISTE ANTES DE QUALQUER GRÁFICO ---
+# --- SELETOR DE REGIÃO COM KEY ÚNICA ---
 if escopo_geo_grafico == "Brasil (Todos os 27 Estados)":
     regiao_selecionada = st.selectbox(
         "Selecione o Estado:",
@@ -874,30 +877,14 @@ if escopo_geo_grafico == "Brasil (Todos os 27 Estados)":
          "Mato Grosso (MT)", "Mato Grosso do Sul (MS)", "Minas Gerais (MG)", "Pará (PA)", "Paraíba (PB)", 
          "Paraná (PR)", "Pernambuco (PE)", "Piauí (PI)", "Rio de Janeiro (RJ)", "Rio Grande do Norte (RN)", 
          "Rio Grande do Sul (RS)", "Rondônia (RO)", "Roraima (RR)", "Santa Catarina (SC)", "São Paulo (SP)", 
-         "Sergipe (SE)", "Tocantins (TO)"]
+         "Sergipe (SE)", "Tocantins (TO)"],
+        key="select_estado_brasil_graficos"
     )
 else:
     regiao_selecionada = st.selectbox(
         "Selecione o País / Polo Global:",
-        ["Portugal (Enfermagem & Saúde)", "Estados Unidos (EUA)", "Europa (Geral)", "Médio Oriente (Dubai/Qatar)", "América Latina (Geral)"]
-    )
-
-st.markdown(f"***Painel ativo para:** {prof_filtro} | **Local:** {regiao_selecionada} | **Período:** {periodo_grafico}*")
-st.markdown("---")
-if escopo_geo_grafico == "Brasil (Todos os 27 Estados)":
-    regiao_selecionada = st.selectbox(
-        "Selecione o Estado:",
-        ["Todos os Estados (Nacional)", "Acre (AC)", "Alagoas (AL)", "Amapá (AP)", "Amazonas (AM)", "Bahia (BA)", 
-         "Ceará (CE)", "Distrito Federal (DF)", "Espírito Santo (ES)", "Goiás (GO)", "Maranhão (MA)", 
-         "Mato Grosso (MT)", "Mato Grosso do Sul (MS)", "Minas Gerais (MG)", "Pará (PA)", "Paraíba (PB)", 
-         "Paraná (PR)", "Pernambuco (PE)", "Piauí (PI)", "Rio de Janeiro (RJ)", "Rio Grande do Norte (RN)", 
-         "Rio Grande do Sul (RS)", "Rondônia (RO)", "Roraima (RR)", "Santa Catarina (SC)", "São Paulo (SP)", 
-         "Sergipe (SE)", "Tocantins (TO)"]
-    )
-else:
-    regiao_selecionada = st.selectbox(
-        "Selecione o País / Polo Global:",
-        ["Portugal (Enfermagem & Saúde)", "Estados Unidos (EUA)", "Europa (Geral)", "Médio Oriente (Dubai/Qatar)", "América Latina (Geral)"]
+        ["Portugal (Enfermagem & Saúde)", "Estados Unidos (EUA)", "Europa (Geral)", "Médio Oriente (Dubai/Qatar)", "América Latina (Geral)"],
+        key="select_pais_global_graficos"
     )
 
 st.markdown(f"***Painel ativo para:** {prof_filtro} | **Local:** {regiao_selecionada} | **Período:** {periodo_grafico}*")
