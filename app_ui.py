@@ -958,11 +958,27 @@ with col_g4:
         df_esp = pd.DataFrame({"Demanda": [88, 72, 58, 42]}, index=["UTI & Críticos (Enf)", "Análises Clínicas (Bio)", "Urgência (Enf)", "Biologia Molecular (Bio)"])
     st.bar_chart(df_esp)
 # ================= TAB 4: ESPECIAL ENFERMAGEM & COREN =================
+# =====================================================================
 with tab_enfermagem:
     st.markdown("<h2 style='color: #C2185B;'>🩺 Painel de Enfermagem, Carreira & COREN</h2>", unsafe_allow_html=True)
     st.info("Espaço dedicado à atuação assistencial, dimensionamento de plantões, especializações e concursos públicos.")
     
     col_e1, col_e2 = st.columns(2)
+    with col_e1:
+        st.markdown("#### 📄 Diretrizes Assistenciais de Destaque")
+        st.markdown("""
+        * **Terapia Intensiva (UTI):** Manejo de drogas vasoativas, ventilação mecânica e monitorização hemodinâmica invasiva.
+        * **Classificação de Risco (Manchester):** Avaliação ágil com acolhimento humanizado em prontos-socorros.
+        * **Centro Cirúrgico & CME:** Paramentação asséptica, tempos cirúrgicos e esterilização de artigos críticos.
+        """, unsafe_allow_html=True)
+    with col_e2:
+        st.markdown("#### 🏛️ Concursos & Editais de Enfermagem")
+        st.markdown("""
+        * **EBSERH:** Editais abertos para hospitais universitários federais com vagas para Enfermeiras e Técnicas.
+        * **Forças Armadas:** Concursos para o Quadro Complementar de Saúde.<br>
+        * **Prefeituras e Secretarias de Saúde:** Vagas para UBS, Estratégia Saúde da Família e UPAs.
+        """, unsafe_allow_html=True)
+
     st.markdown("---")
     st.markdown("### 📰 Cofen & Concursos: Atualizações em Tempo Real (Enfermagem)")
     st.info("ℹ️ Painel dinâmico integrado via IA com as últimas diretrizes, editais abertos e notícias do Cofen e conselhos regionais (COREN).")
@@ -991,35 +1007,57 @@ with tab_enfermagem:
             except Exception as e:
                 st.error(f"Erro ao buscar notícias: {e}")
 
-# ================= TAB 5: ESPECIAL BIOMEDICINA & MERCADO =================
-with tab_biomed:
-    st.markdown("---")
-st.markdown("### 📰 CRBM & Concursos: Atualizações em Tempo Real (Biomedicina)")
-st.info("ℹ️ Painel dinâmico integrado via IA com notícias regulatórias do Conselho de Biomedicina (CRBM) e vagas/concursos na área.")
 
-if st.button("🔄 Atualizar Notícias e Concursos (Biomedicina)", key="btn_noticias_bio"):
-    with st.spinner("A consultar as publicações recentes do CRBM e mercado biomédico..."):
-        try:
-            api_key_val = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
-            if HAS_GENAI and api_key_val:
-                client = genai.Client(api_key=api_key_val)
-                prompt_bio_news = """
-                Atue como um analista sénior de mercado e regulamentação em ciências biomédicas no Brasil.
-                Forneça 3 atualizações recentes, normativas do CFBM/CRBM ou oportunidades de concursos e mercado de alta relevância para Biomédicos em 2026.
-                Para cada item, inclua:
-                1. **Instituição / Conselho / Empresa**
-                2. **Tema / Edital / Oportunidade**
-                3. **Detalhes Técnicos e Habilitações Exigidas (CRBM)**
-                4. **Perspetiva de Impacto Profissional**
-                
-                Formate de maneira limpa, profissional e em Markdown.
-                """
-                res_bio = client.models.generate_content(model='gemini-1.5-flash', contents=prompt_bio_news)
-                st.markdown(res_bio.text)
-            else:
-                st.warning("⚠️ Chave da API do Gemini não configurada.")
-        except Exception as e:
-            st.error(f"Erro ao buscar notícias de biomedicina: {e}")
+# =====================================================================
+# TAB 5: ESPECIAL BIOMEDICINA & MERCADO
+# =====================================================================
+with tab_biomed:
+    st.markdown("<h2 style='color: #0288D1;'>🔬 Painel Estratégico de Biomedicina & Mercado</h2>", unsafe_allow_html=True)
+    st.info("Espaço dedicado a Análises Clínicas, Biologia Molecular, Indústria Farmacêutica e Habilitações no CRBM.")
+    
+    col_b1, col_b2 = st.columns(2)
+    with col_b1:
+        st.markdown("#### 🧬 Áreas Mais Valorizadas no Início de Carreira")
+        st.markdown("""
+        * **Análises Clínicas:** Automação em hematologia, bioquímica e urinálise.
+        * **Biologia Molecular:** Extração de DNA/RNA, RT-PCR e sequenciamento genético (NGS).
+        * **Farmacovigilância:** Notificação de eventos adversos e pesquisa clínica em multinacionais.
+        """, unsafe_allow_html=True)
+    with col_b2:
+        st.markdown("#### 💊 Indústrias Farmacêuticas com Programas de Entrada")
+        st.markdown("""
+        * **Eurofarma:** Vagas de analista júnior e trainee em Itaperi/SP.
+        * **EMS Farmacêutica:** Atuação em controle de qualidade e pesquisa clínica.
+        * **Hypera Pharma:** Oportunidades em assuntos regulatórios e bioequivalência.
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("### 📰 CRBM & Concursos: Atualizações em Tempo Real (Biomedicina)")
+    st.info("ℹ️ Painel dinâmico integrado via IA com notícias regulatórias do Conselho de Biomedicina (CRBM) e vagas/concursos na área.")
+
+    if st.button("🔄 Atualizar Notícias e Concursos (Biomedicina)", key="btn_noticias_bio"):
+        with st.spinner("A consultar as publicações recentes do CRBM e mercado biomédico..."):
+            try:
+                api_key_val = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
+                if HAS_GENAI and api_key_val:
+                    client = genai.Client(api_key=api_key_val)
+                    prompt_bio_news = """
+                    Atue como um analista sénior de mercado e regulamentação em ciências biomédicas no Brasil.
+                    Forneça 3 atualizações recentes, normativas do CFBM/CRBM ou oportunidades de concursos e mercado de alta relevância para Biomédicos em 2026.
+                    Para cada item, inclua:
+                    1. **Instituição / Conselho / Empresa**
+                    2. **Tema / Edital / Oportunidade**
+                    3. **Detalhes Técnicos e Habilitações Exigidas (CRBM)**
+                    4. **Perspetiva de Impacto Profissional**
+                    
+                    Formate de maneira limpa, profissional e em Markdown.
+                    """
+                    res_bio = client.models.generate_content(model='gemini-1.5-flash', contents=prompt_bio_news)
+                    st.markdown(res_bio.text)
+                else:
+                    st.warning("⚠️ Chave da API do Gemini não configurada.")
+            except Exception as e:
+                st.error(f"Erro ao buscar notícias de biomedicina: {e}")
 
 # ================= TAB 6: AGENDA MÉDICA, EXAMES & SUS =================
 with tab_agenda:
