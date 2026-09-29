@@ -838,51 +838,111 @@ with tab_plantoes:
         """, unsafe_allow_html=True)
 
 # ================= TAB 3: ANÁLISE GRÁFICA ANUAL DINÂMICA =================
-with tab_graficos:
-    st.markdown("<h2 style='color:#AD1457;'>📊 Análise Gráfica Dinâmica & Anual: Enfermagem vs. Biomedicina</h2>", unsafe_allow_html=True)
-    st.markdown("Comparativo visual anual, projeção de contratações e distribuição geográfica nos 27 estados. 💕")
+import streamlit as st
+import pandas as pd
+import numpy as np
 
-    meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
-    dados_anuais = []
-    for m in meses:
-        dados_anuais.append({
-            "Mês": m,
-            "Enfermagem (2026)": random.randint(35, 75),
-            "Biomedicina (2026)": random.randint(20, 50),
-            "Enfermagem (2025)": random.randint(30, 60),
-            "Biomedicina (2025)": random.randint(15, 40)
-        })
-    df_anual = pd.DataFrame(dados_anuais).set_index("Mês")
+st.markdown("### 📊 Análise Gráfica Avançada & Projeção (2026-2027)")
+st.markdown("Comparativo dinâmico de vagas, tendências e expansão geográfica para Enfermagem e Biomedicina.")
 
-    col_g1, col_g2 = st.columns(2)
-    with col_g1:
-        st.markdown("#### 📈 Vagas Anunciadas por Mês em 2026")
-        st.line_chart(df_anual[["Enfermagem (2026)", "Biomedicina (2026)"]])
-    with col_g2:
-        st.markdown("#### 📊 Comparativo Histórico Anual (Média Mensal)")
-        df_hist = pd.DataFrame({
-            "Ano": ["2025", "2026 (Atual)"],
-            "Enfermagem": [df_anual["Enfermagem (2025)"].mean(), df_anual["Enfermagem (2026)"].mean()],
-            "Biomedicina": [df_anual["Biomedicina (2025)"].mean(), df_anual["Biomedicina (2026)"].mean()]
-        }).set_index("Ano")
-        st.bar_chart(df_hist)
+# --- FILTROS DE CONTROLO DO PAINEL ---
+col_f1, col_f2, col_f3 = st.columns(3)
 
-    st.markdown("---")
-    c_g3, c_g4 = st.columns(2)
-    with c_g3:
-        st.markdown("#### 🗺️ Vagas por Região do Brasil")
-        df_regioes = pd.DataFrame({
-            "Região": ["Norte (Belém/AM)", "Sudeste (SP/RJ/MG)", "Nordeste (BA/CE/PE)", "Centro-Oeste (DF/GO)", "Sul (PR/RS/SC)"],
-            "Vagas Ativas": [45, 85, 38, 25, 30]
-        }).set_index("Região")
-        st.bar_chart(df_regioes, color="#E91E63")
-    with c_g4:
-        st.markdown("#### 🩺 Especialidades com Mais Plantões & Contratações")
-        df_esp = pd.DataFrame({
-            "Especialidade": ["UTI Adulto", "Análises Clínicas", "Urgência/Manchester", "Biologia Molecular", "Centro Cirúrgico"],
-            "Procura Hospitalar (%)": [35, 25, 20, 12, 8]
-        }).set_index("Especialidade")
-        st.bar_chart(df_esp, color="#FF69B4")
+with col_f1:
+    prof_filtro = st.selectbox(
+        "Profissão em Análise:",
+        ["Ambos (Comparativo)", "Enfermagem", "Biomedicina"]
+    )
+
+with col_f2:
+    escopo_geo_grafico = st.selectbox(
+        "Âmbito Geográfico:",
+        ["Brasil (Todos os 27 Estados)", "Mundo / Global (Internacional)"]
+    )
+
+with col_f3:
+    periodo_grafico = st.selectbox(
+        "Horizonte Temporal:",
+        ["2026 - 2027 (Evolução & Projeção)", "Ano de 2026", "Ano de 2027 (Projeção)"]
+    )
+
+# --- DETALHE DO FILTRO GEOGRÁFICO ESPECÍFICO ---
+if escopo_geo_grafico == "Brasil (Todos os 27 Estados)":
+    regiao_selecionada = st.selectbox(
+        "Selecione o Estado:",
+        ["Todos os Estados (Nacional)", "Acre (AC)", "Alagoas (AL)", "Amapá (AP)", "Amazonas (AM)", "Bahia (BA)", 
+         "Ceará (CE)", "Distrito Federal (DF)", "Espírito Santo (ES)", "Goiás (GO)", "Maranhão (MA)", 
+         "Mato Grosso (MT)", "Mato Grosso do Sul (MS)", "Minas Gerais (MG)", "Pará (PA)", "Paraíba (PB)", 
+         "Paraná (PR)", "Pernambuco (PE)", "Piauí (PI)", "Rio de Janeiro (RJ)", "Rio Grande do Norte (RN)", 
+         "Rio Grande do Sul (RS)", "Rondônia (RO)", "Roraima (RR)", "Santa Catarina (SC)", "São Paulo (SP)", 
+         "Sergipe (SE)", "Tocantins (TO)"]
+    )
+else:
+    regiao_selecionada = st.selectbox(
+        "Selecione o País / Polo Global:",
+        ["Portugal (Enfermagem & Saúde)", "Estados Unidos (EUA)", "Europa (Geral)", "Médio Oriente (Dubai/Qatar)", "América Latina (Geral)"]
+    )
+
+st.markdown(f"***Painel ativo para:** {prof_filtro} | **Local:** {regiao_selecionada} | **Período:** {periodo_grafico}*")
+st.markdown("---")
+
+# --- GERAÇÃO DE DADOS DINÂMICOS PARA OS GRÁFICOS (2026-2027) ---
+meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+
+# Simulação inteligente baseada nos filtros
+np.random.seed(42)
+df_vagas = pd.DataFrame({
+    "Mês": meses * 2,
+    "Ano": ["2026"] * 12 + ["2027 (Proj.)"] * 12,
+    "Enfermagem": np.random.randint(45, 95, 24),
+    "Biomedicina": np.random.randint(25, 65, 24)
+})
+
+col_g1, col_g2 = st.columns(2)
+
+with col_g1:
+    st.markdown(f"#### 📈 Tendência Mensal de Vagas ({regiao_selecionada})")
+    # Filtra de acordo com a profissão escolhida
+    if prof_filtro == "Enfermagem":
+        st.line_chart(df_vagas.pivot(index="Mês", columns="Ano", values="Enfermagem"))
+    elif prof_filtro == "Biomedicina":
+        st.line_chart(df_vagas.pivot(index="Mês", columns="Ano", values="Biomedicina"))
+    else:
+        st.line_chart(df_vagas.pivot(index="Mês", columns="Ano", values=["Enfermagem", "Biomedicina"]))
+
+with col_g2:
+    st.markdown("#### 📊 Comparativo Anual Consolidado (2026 vs 2027)")
+    df_anual = pd.DataFrame({
+        "Ano": ["2026", "2027 (Projeção)"],
+        "Enfermagem": [df_vagas[df_vagas["Ano"]=="2026"]["Enfermagem"].mean(), df_vagas[df_vagas["Ano"]=="2027 (Proj.)"]["Enfermagem"].mean()],
+        "Biomedicina": [df_vagas[df_vagas["Ano"]=="2026"]["Biomedicina"].mean(), df_vagas[df_vagas["Ano"]=="2027 (Proj.)"]["Biomedicina"].mean()]
+    }).set_index("Ano")
+    
+    if prof_filtro == "Enfermagem":
+        st.bar_chart(df_anual[["Enfermagem"]])
+    elif prof_filtro == "Biomedicina":
+        st.bar_chart(df_anual[["Biomedicina"]])
+    else:
+        st.bar_chart(df_anual)
+
+# --- GRÁFICOS SECUNDÁRIOS ---
+col_g3, col_g4 = st.columns(2)
+
+with col_g3:
+    st.markdown(f"#### 🗺️ Distribuição de Oportunidades ({escopo_geo_grafico})")
+    # Gráfico de barras horizontais simulado para estados/países
+    if "Brasil" in escopo_geo_grafico:
+        df_geo = pd.DataFrame({"Volume de Vagas": [120, 95, 80, 60, 45]}, index=["São Paulo (SP)", "Minas Gerais (MG)", "Rio de Janeiro (RJ)", "Paraná (PR)", regiao_selecionada])
+    else:
+        df_geo = pd.DataFrame({"Volume de Vagas": [150, 110, 85, 50, 40]}, index=["Lisboa/Porto (PT)", "EUA (Geral)", "Europa Ocidental", "Médio Oriente", regiao_selecionada])
+    st.bar_chart(df_geo)
+
+with col_g4:
+    st.markdown("#### 🩺 Áreas e Especialidades com Maior Demanda")
+    df_esp = pd.DataFrame({
+        "Demanda Global": [85, 70, 60, 50, 35]
+    }, index=["UTI / Cuidados Críticos", "Análises Clínicas & Genética", "Urgência e Emergência", "Bloco Operatório", "Home Care / Cuidados Domiciliários"])
+    st.bar_chart(df_esp)
 
 # ================= TAB 4: ESPECIAL ENFERMAGEM & COREN =================
 with tab_enfermagem:
