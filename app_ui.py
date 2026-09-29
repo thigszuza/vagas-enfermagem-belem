@@ -982,7 +982,6 @@ with tab_agenda:
             st.info("Nenhum exame cadastrado no momento.")
 
 # ================= TAB 7: LINKEDIN, CURRÍCULOS & IA =================
-# ================= TAB 7: LINKEDIN, CURRÍCULOS & IA =================
 with tab_ia_curriculo:
     st.markdown("<h2 style='color: #0077B5;'>💼 LinkedIn, Modelos de Documentos & Análise Inteligente de Currículo</h2>", unsafe_allow_html=True)
     
@@ -1010,21 +1009,6 @@ with tab_ia_curriculo:
             if texto_pdf:
                 st.success("✅ Currículo carregado com sucesso! A processar diagnóstico inteligente...")
                 
-                # Análise automática com IA se a biblioteca genai estiver disponível
-                # Verifica se a biblioteca existe e se a chave está nos Secrets ou no ambiente
-st.markdown("---")
-    st.markdown("#### 🤖 Diagnóstico Dinâmico de Currículo para Saúde (Enfermagem & Biomedicina)")
-    up_pdf = st.file_uploader("Envie o currículo em PDF para análise detalhada:", type=["pdf"])
-    
-    if up_pdf is not None:
-        try:
-            reader = PdfReader(up_pdf)
-            texto_pdf = "\n".join([page.extract_text() for page in reader.pages if page.extract_text()])
-            
-            if texto_pdf:
-                st.success("✅ Currículo carregado com sucesso! A processar diagnóstico inteligente...")
-                
-                # Verificação segura da chave de API
                 tem_chave = False
                 api_key_valor = ""
                 
@@ -1075,8 +1059,7 @@ st.markdown("---")
                     * **Métrica de Resultados:** Foque em descrever a complexidade dos plantões e o volume de atendimento realizados.
                     """)
         except Exception as e:
-            st.error(f"Erro ao processar o PDF: {e}")
-    
+            st.error(f"Erro ao processar o PDF: {e}")    
 # ================= TAB 8: TRAJETO, UBER & PLANTÃO =================
 with tab_trajeto:
     st.markdown("<h2 style='color: #AD1457;'>🗺️ Trajeto, Uber, Custos & Cuidados com Você 💕</h2>", unsafe_allow_html=True)
