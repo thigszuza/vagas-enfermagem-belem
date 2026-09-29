@@ -1053,7 +1053,7 @@ else:
     st.markdown("---")
     st.markdown("### 🇧🇷 Oportunidades Home Care & Plantões nos 27 Estados")
     # O código correspondente aos estados do Brasil continua aqui
-    
+
 from fpdf import FPDF
 
 
@@ -1309,46 +1309,113 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- ADIÇÃO: Filtro Geográfico Global, 27 Estados do Brasil e Enfermagem em Portugal ---
+s# --- FILTRO GEOGRÁFICO UNIFICADO NA BARRA LATERAL ---
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🌍 Filtro Geográfico Avançado")
 
-escopo_geo = st.sidebar.selectbox(
+mercado_selecionado = st.sidebar.selectbox(
     "Selecione o Mercado / Região:",
-    ["Brasil (Todos os 27 Estados)", "Portugal (Enfermagem - Todo o País)", "Global / Internacional"]
+    ["Brasil (27 Estados)", "Portugal (Enfermagem - Todo o País)", "Global / Internacional"]
 )
 
-localizacao_especifica = ""
+# --- ÁREA PRINCIPAL DINÂMICA CONSOANTE A ESCOLHA DA BARRA LATERAL ---
+if mercado_selecionado == "Portugal (Enfermagem - Todo o País)":
+    st.markdown("### 🇵🇹 Buscador Dinâmico de Vagas de Enfermagem em Portugal")
+    st.info("ℹ️ Sistema integrado para profissionais com equivalência/inscrição na Ordem dos Enfermeiros (OE).")
+    
+    col_pt_a, col_pt_b = st.columns(2)
+    with col_pt_a:
+        distrito_pt = st.selectbox(
+            "Selecione o Distrito / Região em Portugal:",
+            ["Lisboa", "Porto", "Coimbra", "Braga", "Aveiro", "Faro", "Setúbal", "Leiria", "Viseu", "Madeira / Açores"]
+        )
+    with col_pt_b:
+        especialidade_pt = st.selectbox(
+            "Área / Especialidade:",
+            ["Cuidados Gerais (Hospitalar)", "Medicina Intensiva (UTI)", "Urgência e Emergência", "Saúde Pública", "Bloco Operatório (Perioperatória)"]
+        )
+        
+    if st.button("🔍 Consultar Vagas Ativas em Portugal (IA em Tempo Real)"):
+        with st.spinner(f"A pesquisar oportunidades ativas em {distrito_pt} ({especialidade_pt})..."):
+            try:
+                api_key_val = ""
+                try:
+                    if "GEMINI_API_KEY" in st.secrets:
+                        api_key_val = st.secrets["GEMINI_API_KEY"]
+                except Exception:
+                    pass
+                if not api_key_val:
+                    api_key_val = os.environ.get("GEMINI_API_KEY", "")
 
-if escopo_geo == "Brasil (Todos os 27 Estados)":
-    estados_brasil = [
-        "Acre (AC)", "Alagoas (AL)", "Amapá (AP)", "Amazonas (AM)", "Bahia (BA)", 
-        "Ceará (CE)", "Distrito Federal (DF)", "Espírito Santo (ES)", "Goiás (GO)", 
-        "Maranhão (MA)", "Mato Grosso (MT)", "Mato Grosso do Sul (MS)", "Minas Gerais (MG)", 
-        "Pará (PA)", "Paraíba (PB)", "Paraná (PR)", "Pernambuco (PE)", "Piauí (PI)", 
-        "Rio de Janeiro (RJ)", "Rio Grande do Norte (RN)", "Rio Grande do Sul (RS)", 
-        "Rondônia (RO)", "Roraima (RR)", "Santa Catarina (SC)", "São Paulo (SP)", 
-        "Sergipe (SE)", "Tocantins (TO)"
-    ]
-    localizacao_especifica = st.sidebar.selectbox("Escolha o Estado:", estados_brasil)
+                if HAS_GENAI and api_key_val:
+                    client = genai.Client(api_key=api_key_val)
+                    prompt_vagas_pt = f"""
+                    Atue como um recrutador sénior especializado na área da saúde em Portugal.
+                    Forneça 3 oportunidades ou contextos de emprego ativos e altamente relevantes para o distrito de {distrito_pt} em Portugal na especialidade de {especialidade_pt}.
+                    Para cada oportunidade, inclua:
+                    1. **Instituição / Hospital / Grupo de Saúde**
+                    2. **Função e Contexto**
+                    3. **Requisitos da Ordem dos Enfermeiros (OE)**
+                    4. **Condições Estimadas e Forma de Candidatura**
+                    
+                    Formate a resposta de forma limpa e profissional em Markdown.
+                    """
+                    response_pt = client.models.generate_content(
+                        model='gemini-1.5-flash',
+                        contents=prompt_vagas_pt
+                    )
+                    st.markdown("### 📋 Oportunidades Encontradas:")
+                    st.markdown(response_pt.text)
+                else:
+                    st.warning("⚠️ Chave da API do Gemini não configurada.")
+            except Exception as e:
+                st.error(f"Erro ao gerar vagas dinâmicas: {e}")
 
-elif escopo_geo == "Portugal (Enfermagem - Todo o País)":
-    distritos_portugal = [
-        "Todo o País (Nacional)", "Lisboa", "Porto", "Coimbra", "Braga", 
-        "Aveiro", "Faro", "Setúbal", "Leiria", "Viseu", "Viana do Castelo", 
-        "Vila Real", "Castelo Branco", "Santarém", "Évora", "Beja", "Portalegre", 
-        "Guarda", "Bragança", "Região Autónoma dos Açores", "Região Autónoma da Madeira"
-    ]
-    regiao_pt = st.sidebar.selectbox("Distrito / Região em Portugal:", distritos_portugal)
-    area_saude_foco = st.sidebar.selectbox("Especialidade de Enfermagem:", [
-        "Enfermagem Geral (OE)", "Enfermagem em Medicina Intensiva (UTI)", 
-        "Enfermagem Perioperatória (Bloco Operatório)", "Enfermagem de Urgência e Emergência",
-        "Enfermagem de Reabilitação", "Saúde Pública e Comunitária"
-    ])
-    localizacao_especifica = f"Portugal - {regiao_pt} ({area_saude_foco})"
+elif mercado_selecionado == "Global / Internacional":
+    st.markdown("### 🌐 Buscador Dinâmico Global / Internacional")
+    st.info("Pesquisa de oportunidades internacionais em saúde adaptadas por continente e região.")
+    
+    continente_sel = st.selectbox(
+        "Selecione o Continente / Região Global:",
+        ["Europa (Geral)", "América do Norte", "América Latina", "Médio Oriente", "Ásia-Pacífico"]
+    )
+    
+    if st.button("🔍 Consultar Oportunidades Globais (IA em Tempo Real)"):
+        with st.spinner(f"A pesquisar oportunidades de saúde em {continente_sel}..."):
+            try:
+                api_key_val = ""
+                try:
+                    if "GEMINI_API_KEY" in st.secrets:
+                        api_key_val = st.secrets["GEMINI_API_KEY"]
+                except Exception:
+                    pass
+                if not api_key_val:
+                    api_key_val = os.environ.get("GEMINI_API_KEY", "")
+
+                if HAS_GENAI and api_key_val:
+                    client = genai.Client(api_key=api_key_val)
+                    prompt_global = f"""
+                    Atue como um consultor global de carreiras na área da saúde e enfermagem.
+                    Forneça 3 oportunidades, programas de recrutamento internacional ou perspetivas ativas de emprego para profissionais de saúde na região de {continente_sel}.
+                    Para cada uma, inclua:
+                    1. **País / Organização Destino**
+                    2. **Área de Atuação (ex: Enfermagem, Investigação, Tecnologias de Saúde)**
+                    3. **Requisitos de Entrada / Reconhecimento de Diplomas**
+                    4. **Canal de Candidatura**
+                    
+                    Formate a resposta de forma limpa e estruturada em Markdown.
+                    """
+                    response_global = client.models.generate_content(
+                        model='gemini-1.5-flash',
+                        contents=prompt_global
+                    )
+                    st.markdown("### 📋 Oportunidades Globais Encontradas:")
+                    st.markdown(response_global.text)
+                else:
+                    st.warning("⚠️ Chave da API do Gemini não configurada.")
+            except Exception as e:
+                st.error(f"Erro ao gerar vagas globais: {e}")
 
 else:
-    continentes = ["Europa (Geral)", "América do Norte", "América Latina", "Médio Oriente", "Ásia-Pacífico"]
-    continente_selecionado = st.sidebar.selectbox("Selecione o Continente:", continentes)
-    localizacao_especifica = f"Global - {continente_selecionado}"
-
-st.sidebar.info(fmt_info := f"Filtro ativo: **{localizacao_especifica}**")
+    st.markdown("### 🇧🇷 Oportunidades Home Care & Plantões nos 27 Estados do Brasil")
+    # O seu código existente para os 27 estados do Brasil continua aqui em baixo
