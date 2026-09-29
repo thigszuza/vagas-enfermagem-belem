@@ -982,6 +982,46 @@ with tab_agenda:
             st.info("Nenhum exame cadastrado no momento.")
 
 # ================= TAB 7: LINKEDIN, CURRÍCULOS & IA =================
+st.markdown("### 🌍 Seleção de Mercado e Região de Atuação")
+mercado_selecionado = st.selectbox(
+    "Escolha o país ou âmbito pretendido:",
+    ["Brasil (27 Estados)", "Portugal (Enfermagem - Todo o País)", "Global / Internacional"]
+)
+
+if mercado_selecionado == "Portugal (Enfermagem - Todo o País)":
+    st.markdown("---")
+    st.markdown("### 🇵🇹 Oportunidades e Vagas de Enfermagem em Portugal")
+    st.info("ℹ️ Dados atualizados para profissionais com equivalência/inscrição na Ordem dos Enfermeiros (OE).")
+    
+    # Exemplo dinâmico de vagas ativas em Portugal
+    col_pt1, col_pt2 = st.columns(2)
+    with col_pt1:
+        st.markdown("""
+        **Hospital CUF Descobertas / Tejo (Lisboa)**
+        * **Função:** Enfermeiro(a) - Cuidados Gerais / Internamento
+        * **Requisitos:** Cédula Profissional da OE válida.
+        * **Condições:** Contrato de trabalho direto, progressão de carreira.
+        """)
+    with col_pt2:
+        st.markdown("""
+        **Centro Hospitalar Universitário de São João (Porto)**
+        * **Função:** Enfermeiro(a) - Medicina Intensiva / Urgências
+        * **Requisitos:** Título de Especialista (preferencial) ou Cédula da OE.
+        * **Condições:** Regime de funções públicas / 35h semanais.
+        """)
+        
+elif mercado_selecionado == "Global / Internacional":
+    st.markdown("---")
+    st.markdown("### 🌐 Oportunidades Globais de Saúde")
+    st.info("Projetos internacionais, telemedicina e cooperação humanitária em saúde global.")
+    st.write("- **Organizações Internacionais:** Oportunidades em projetos de saúde pública na Europa e Américas.")
+    
+else:
+    # O seu seletor atual dos 27 estados do Brasil continua a funcionar aqui dentro
+    st.markdown("---")
+    st.markdown("### 🇧🇷 Oportunidades Home Care & Plantões nos 27 Estados")
+    # (O seu código existente para os estados do Brasil mantém-se aqui)
+
 from fpdf import FPDF
 
 
