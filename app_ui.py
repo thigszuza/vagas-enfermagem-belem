@@ -1066,96 +1066,90 @@ if not area_compativel:
     st.error("⚠️ **Atenção:** O currículo enviado aparenta não pertencer às áreas de Enfermagem ou Biomedicina. Por favor, envie um currículo direcionado para a área da saúde para obter um diagnóstico preciso.")
 else:
     st.success("✅ Currículo validado para a área da saúde com sucesso!")
-
     st.markdown("---")
-    st.markdown("#### 🤖 Diagnóstico Dinâmico de Currículo para Saúde (Enfermagem & Biomedicina)")
-    up_pdf = st.file_uploader("Envie o currículo em PDF para análise detalhada:", type=["pdf"])
-    
-    if up_pdf is not None:
-        try:
-            reader = PdfReader(up_pdf)
-            texto_pdf = "\n".join([page.extract_text() for page in reader.pages if page.extract_text()])
-            
-            if texto_pdf:
-                st.success("✅ Currículo carregado com sucesso! A processar diagnóstico inteligente...")
-                
-                tem_chave = False
-               # Leitura direta e segura da chave a partir dos Secrets ou ambiente
-                # Recuperação robusta da chave de API
-                api_key_val = ""
-                try:
-                    if "GEMINI_API_KEY" in st.secrets:
-                        api_key_val = st.secrets["GEMINI_API_KEY"]
-                    elif "general" in st.secrets and "GEMINI_API_KEY" in st.secrets["general"]:
-                        api_key_val = st.secrets["general"]["GEMINI_API_KEY"]
-                except Exception:
-                    pass
-                
-                if not api_key_val:
-                    api_key_val = os.environ.get("GEMINI_API_KEY", "")
+st.markdown("### 🤖 Diagnóstico Dinâmico de Currículo para Saúde (Enfermagem & Biomedicina)")
+up_pdf = st.file_uploader("Envie o currículo em PDF para análise detalhada:", type=["pdf"])
 
-                if HAS_GENAI and api_key_val:
-                    with st.spinner("✨ A analisar pontos fortes, lacunas e adequação para Enfermagem/Biomedicina..."):
-                        try:
-                            os.environ["GEMINI_API_KEY"] = api_key_val
-                            client = genai.Client(api_key=api_key_val)
-                            
-                            prompt_analise = f"""
-                            Analise o seguinte currículo voltado para as áreas de Enfermagem ou Biomedicina. 
-                            Forneça um feedback construtivo estruturado em:
-                            1. **Pontos Fortes** encontrados.
-                            2. **Pontos de Melhoria / Lacunas** (ex: falta de citação explícita do COREN/CRBM, palavras-chave ATS, formatação de competências técnicas em UTI ou Análises Clínicas).
-                            3. **Sugestões Práticas de Reescrita** para o Resumo Profissional.
-                            
-                            Texto do Currículo:
-                            {texto_pdf[:3000]}
-                            """
-                            response = client.models.generate_content(
-                                model='gemini-1.5-flash',
-                                contents=prompt_analise
-                            )
-                            st.markdown("### 📋 Relatório de Diagnóstico & Melhorias")
-                            st.markdown(response.text)
-                        except Exception as ai_err:
-                            st.warning(f"Erro ao contactar a IA: {ai_err}")
-                            st.text_area("Texto Extraído:", texto_pdf, height=200)
-                else:
-                    st.info("💡 Dica: Verifique se a variável `GEMINI_API_KEY` está gravada exatamente com este nome nos **Secrets** do Streamlit Cloud.")
-                    
-                    # Campo de segurança na interface caso os secrets demorem a propagar
-                    chave_manual = st.text_input("Ou insira a chave da API temporariamente para testar:", type="password")
-                    if chave_manual and HAS_GENAI:
-                        try:
-                            client = genai.Client(api_key=chave_manual)
-                            prompt_analise = f"""
-                            Analise o seguinte currículo voltado para as áreas de Enfermagem ou Biomedicina. 
-                            Forneça um feedback construtivo estruturado em:
-                            1. **Pontos Fortes** encontrados.
-                            2. **Pontos de Melhoria / Lacunas** (ex: falta de citação explícita do COREN/CRBM, palavras-chave ATS, formatação de competências técnicas em UTI ou Análises Clínicas).
-                            3. **Sugestões Práticas de Reescrita** para o Resumo Profissional.
-                            
-                            Texto do Currículo:
-                            {texto_pdf[:3000]}
-                            """
-                            response = client.models.generate_content(
-                                model='gemini-1.5-flash',
-                                contents=prompt_analise
-                            )
-                            st.markdown("### 📋 Relatório de Diagnóstico & Melhorias")
-                            st.markdown(response.text)
-                        except Exception as e:
-                            st.error(f"Erro com a chave manual: {e}")
-                    else:
-                        st.text_area("Texto Extraído:", texto_pdf, height=200)
-                        
-                        st.markdown("### 🔍 Pontos de Melhoria Sugeridos para Saúde:")
-                        st.markdown("""
-                        * **Registro Profissional:** Garanta que o número do COREN ou CRBM esteja em destaque no cabeçalho.
-                        * **Palavras-chave Técnicas:** Inclua termos específicos como *Ventilação Mecânica, Drogas Vasoativas, Controle de Qualidade (CQI/CQE) ou Biologia Molecular* dependendo da vaga.
-                        * **Métrica de Resultados:** Foque em descrever a complexidade dos plantões e o volume de atendimento realizados.
-                        """)
-        except Exception as e:
-            st.error(f"Erro ao processar o PDF: {e}")    
+try:
+    if up_pdf is not None:
+        # Extração segura do texto do PDF enviado
+        from pypdf import PdfReader
+        reader = PdfReader(up_pdf)
+        texto_pdf = ""
+        for page in reader.pages:
+            texto_pdf += page.extract_text() or ""
+
+        # --- VALIDAÇÃO DE ÁREA: Enfermagem ou Biomedicina ---
+        palavras_chave_saude = ["enfermagem", "enfermeiro", "enfermeira", "biomedicina", "biomédico", "biomédica", "coren", "crbm", "análises clínicas", "saúde"]
+        texto_minusculo = texto_pdf.lower()
+        area_compativel = any(termo in texto_minusculo for termo in palavras_chave_saude)
+
+        if not area_compativel:
+            st.error("⚠️ **Atenção:** O currículo enviado aparenta não pertencer às áreas de Enfermagem ou Biomedicina. Por favor, envie um currículo direcionado para a área da saúde para obter um diagnóstico preciso.")
+        else:
+            st.success("✅ Currículo carregado e validado para a área da saúde com sucesso!")
+            st.text_area("Texto Extraído:", texto_pdf, height=200)
+
+            # Recuperação robusta da chave de API
+            api_key_val = ""
+            try:
+                if "GEMINI_API_KEY" in st.secrets:
+                    api_key_val = st.secrets["GEMINI_API_KEY"]
+                elif "general" in st.secrets and "GEMINI_API_KEY" in st.secrets["general"]:
+                    api_key_val = st.secrets["general"]["GEMINI_API_KEY"]
+            except Exception:
+                pass
+
+            if not api_key_val:
+                api_key_val = os.environ.get("GEMINI_API_KEY", "")
+
+            if HAS_GENAI and api_key_val:
+                with st.spinner("✨ A analisar pontos fortes, lacunas e adequação para Enfermagem/Biomedicina..."):
+                    try:
+                        os.environ["GEMINI_API_KEY"] = api_key_val
+                        client = genai.Client(api_key=api_key_val)
+
+                        prompt_analise = f"""
+                        Analise o seguinte currículo voltado para as áreas de Enfermagem ou Biomedicina. 
+                        Forneça um feedback construtivo estruturado em:
+                        1. **Pontos Fortes** encontrados.
+                        2. **Pontos de Melhoria / Lacunas** (ex: falta de citação explícita do COREN/CRBM, palavras-chave ATS, formatação de competências técnicas em UTI ou Análises Clínicas).
+                        3. **Sugestões Práticas de Reescrita** para o Resumo Profissional.
+
+                        Texto do Currículo:
+                        {texto_pdf[:3000]}
+                        """
+                        response = client.models.generate_content(
+                            model='gemini-1.5-flash',
+                            contents=prompt_analise
+                        )
+                        st.markdown("### 📋 Relatório de Diagnóstico & Melhorias")
+                        st.markdown(response.text)
+                    except Exception as ai_err:
+                        st.warning(f"Erro ao contactar a IA: {ai_err}")
+            else:
+                st.info("💡 Dica: Verifique se a variável `GEMINI_API_KEY` está gravada nos Secrets do Streamlit Cloud.")
+
+            # Botão para gerar e baixar o currículo otimizado em PDF baseado na análise
+            st.markdown("---")
+            st.markdown("### 📥 Gerar Documento Otimizado em PDF")
+            pdf_bytes_analise = gerar_pdf_curriculo(texto_pdf, "Otimizado para processos seletivos na área de Enfermagem e Biomedicina, com foco em conformidade ATS e registo profissional.")
+            st.download_button(
+                label="📄 Baixar Currículo Analisado e Otimizado (PDF)",
+                data=pdf_bytes_analise,
+                file_name="Curriculo_Otimizado_Saude.pdf",
+                mime="application/pdf"
+            )
+
+            st.markdown("### 🔍 Pontos de Melhoria Sugeridos para Saúde:")
+            st.markdown("""
+            * **Registro Profissional:** Garanta que o número do COREN ou CRBM esteja em destaque no cabeçalho.
+            * **Palavras-chave Técnicas:** Inclua termos específicos como *Ventilação Mecânica, Drogas Vasoativas, Controle de Qualidade (CQI/CQE) ou Biologia Molecular* dependendo da vaga.
+            * **Métrica de Resultados:** Foque em descrever a complexidade dos plantões e o volume de atendimento realizados.
+            """)
+except Exception as e:
+    st.error(f"Erro ao processar o PDF: {e}")
+
 # ================= TAB 8: TRAJETO, UBER & PLANTÃO =================
 with tab_trajeto:
     st.markdown("<h2 style='color: #AD1457;'>🗺️ Trajeto, Uber, Custos & Cuidados com Você 💕</h2>", unsafe_allow_html=True)
