@@ -982,36 +982,71 @@ with tab_agenda:
             st.info("Nenhum exame cadastrado no momento.")
 
 # ================= TAB 7: LINKEDIN, CURRÍCULOS & IA =================
+# ================= TAB 7: LINKEDIN, CURRÍCULOS & IA =================
 with tab_ia_curriculo:
-    st.markdown("<h2 style='color: #0077B5;'>💼 LinkedIn, Modelos de Documentos & Análise de Currículo</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: #0077B5;'>💼 LinkedIn, Modelos de Documentos & Análise Inteligente de Currículo</h2>", unsafe_allow_html=True)
     
     col_d1, col_d2 = st.columns(2)
     with col_d1:
         st.markdown("#### 🩺 Modelo Pronto: Enfermagem Assistencial")
-        enf_mod = """OBJETIVO: Enfermeira Assistencial - UTI Adulto / Emergência
-RESUMO: Experiência assistencial com pacientes críticos, drogas vasoativas, punção e protocolos de segurança do paciente. COREN Ativo."""
+        enf_mod = """OBJETIVO: Enfermeira Assistencial - UTI Adulto / Emergência\nRESUMO: Experiência assistencial com pacientes críticos, drogas vasoativas, punção e protocolos de segurança do paciente. COREN Ativo."""
         st.text_area("Currículo Enfermagem:", enf_mod, height=120)
         st.download_button("📥 Baixar Currículo Enfermagem ➔", enf_mod, "Curriculo_Enfermagem.txt")
     with col_d2:
         st.markdown("#### 🔬 Modelo Pronto: Biomedicina / Análises")
-        bio_mod = """OBJETIVO: Biomédica Analista - Análises Clínicas / Biologia Molecular
-RESUMO: Domínio em rotinas laboratoriais de bancada automatizada, microscopia, controle de qualidade (CQI/CQE) e liberação de laudos. CRBM Ativo."""
+        bio_mod = """OBJETIVO: Biomédica Analista - Análises Clínicas / Biologia Molecular\nRESUMO: Domínio em rotinas laboratoriais de bancada automatizada, microscopia, controle de qualidade (CQI/CQE) e liberação de laudos. CRBM Ativo."""
         st.text_area("Currículo Biomedicina:", bio_mod, height=120)
         st.download_button("📥 Baixar Currículo Biomedicina ➔", bio_mod, "Curriculo_Biomedicina.txt")
 
     st.markdown("---")
-    st.markdown("#### 🤖 Diagnóstico de Currículo em PDF")
-    up_pdf = st.file_uploader("Envie o currículo em PDF:", type=["pdf"])
+    st.markdown("#### 🤖 Diagnóstico Dinâmico de Currículo para Saúde (Enfermagem & Biomedicina)")
+    up_pdf = st.file_uploader("Envie o currículo em PDF para análise detalhada:", type=["pdf"])
+    
     if up_pdf is not None:
         try:
             reader = PdfReader(up_pdf)
             texto_pdf = "\n".join([page.extract_text() for page in reader.pages if page.extract_text()])
+            
             if texto_pdf:
-                st.success("✅ Currículo carregado com sucesso na memória!")
-                st.text_area("Texto Extraído:", texto_pdf[:800], height=120)
+                st.success("✅ Currículo carregado com sucesso! A processar diagnóstico inteligente...")
+                
+                # Análise automática com IA se a biblioteca genai estiver disponível
+                if HAS_GENAI and os.getenv("GEMINI_API_KEY"):
+                    with st.spinner("✨ A analisar pontos fortes, lacunas e adequação para Enfermagem/Biomedicina..."):
+                        try:
+                            client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+                            prompt_analise = f"""
+                            Analise o seguinte currículo voltado para as áreas de Enfermagem ou Biomedicina. 
+                            Forneça um feedback construtivo estruturado em:
+                            1. **Pontos Fortes** encontrados.
+                            2. **Pontos de Melhoria / Lacunas** (ex: falta de citação explícita do COREN/CRBM, palavras-chave ATS, formatação de competências técnicas em UTI ou Análises Clínicas).
+                            3. **Sugestões Práticas de Reescrita** para o Resumo Profissional.
+                            
+                            Texto do Currículo:
+                            {texto_pdf[:3000]}
+                            """
+                            response = client.models.generate_content(
+                                model='gemini-2.5-flash',
+                                contents=prompt_analise
+                            )
+                            st.markdown("### 📋 Relatório de Diagnóstico & Melhorias")
+                            st.markdown(response.text)
+                        except Exception as ai_err:
+                            st.warning(f"Não foi possível contactar a IA no momento ({ai_err}). Exibindo texto extraído:")
+                            st.text_area("Texto Extraído:", texto_pdf, height=200)
+                else:
+                    # Fallback caso a chave do Gemini não esteja configurada
+                    st.info("💡 Dica: Configure a variável de ambiente GEMINI_API_KEY para habilitar a análise automática por IA. Abaixo está o texto extraído do seu ficheiro:")
+                    st.text_area("Texto Extraído:", texto_pdf, height=200)
+                    
+                    st.markdown("### 🔍 Pontos de Melhoria Sugeridos para Saúde:")
+                    st.markdown("""
+                    * **Registro Profissional:** Garanta que o número do COREN ou CRBM esteja em destaque no cabeçalho.
+                    * **Palavras-chave Técnicas:** Inclua termos específicos como *Ventilação Mecânica, Drogas Vasoativas, Controle de Qualidade (CQI/CQE) ou Biologia Molecular* dependendo da vaga.
+                    * **Métrica de Resultados:** Foque em descrever a complexidade dos plantões e o volume de atendimento realizados.
+                    """)
         except Exception as e:
-            st.error(f"Erro ao ler PDF: {e}")
-
+            st.error(f"Erro ao processar o PDF: {e}")
 # ================= TAB 8: TRAJETO, UBER & PLANTÃO =================
 with tab_trajeto:
     st.markdown("<h2 style='color: #AD1457;'>🗺️ Trajeto, Uber, Custos & Cuidados com Você 💕</h2>", unsafe_allow_html=True)
