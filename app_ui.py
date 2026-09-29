@@ -1033,7 +1033,7 @@ def gerar_pdf_curriculo(texto_base, sugestoes_ia=""):
         pdf.ln(5)
 
     # Correção compatível com a versão atual do fpdf2 (devolve bytes diretamente)
-    return pdf.output()
+    return pdf.output(dest='S').encode('latin1')
 
     # Secção de Recomendações da IA aplicadas
     if sugestoes_ia:
