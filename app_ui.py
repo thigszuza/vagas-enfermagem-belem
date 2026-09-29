@@ -1010,25 +1010,24 @@ with tab_ia_curriculo:
                 st.success("✅ Currículo carregado com sucesso! A processar diagnóstico inteligente...")
                 
                 tem_chave = False
-                api_key_valor = ""
-                
-                if HAS_GENAI:
-                    try:
-                        if "GEMINI_API_KEY" in st.secrets:
-                            api_key_valor = st.secrets["GEMINI_API_KEY"]
-                            tem_chave = True
-                        elif os.getenv("GEMINI_API_KEY"):
-                            api_key_valor = os.getenv("GEMINI_API_KEY")
-                            tem_chave = True
-                    except Exception:
-                        if os.getenv("GEMINI_API_KEY"):
-                            api_key_valor = os.getenv("GEMINI_API_KEY")
-                            tem_chave = True
+                # Carrega a chave dos secrets ou do ambiente de forma direta
 
-                if HAS_GENAI and tem_chave:
+                api_key_val = ""
+                try:
+                    if "GEMINI_API_KEY" in st.secrets:
+                        api_key_val = st.secrets["GEMINI_API_KEY"]
+                    elif os.getenv("GEMINI_API_KEY"):
+                        api_key_val = os.getenv("GEMINI_API_KEY")
+                except Exception:
+                    api_key_val = os.getenv("GEMINI_API_KEY", "")
+
+                if HAS_GENAI and api_key_val:
                     with st.spinner("✨ A analisar pontos fortes, lacunas e adequação para Enfermagem/Biomedicina..."):
                         try:
-                            client = genai.Client(api_key=api_key_valor)
+                            # Força a variável de ambiente para que a biblioteca do Google reconheça o token
+                            os.environ["GEMINI_API_KEY"] = api_key_val
+                            
+                            client = genai.Client(api_key=api_key_val)
                             prompt_analise = f"""
                             Analise o seguinte currículo voltado para as áreas de Enfermagem ou Biomedicina. 
                             Forneça um feedback construtivo estruturado em:
