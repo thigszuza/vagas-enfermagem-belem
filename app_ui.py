@@ -982,173 +982,171 @@ with tab_agenda:
             st.info("Nenhum exame cadastrado no momento.")
 
 # ================= TAB 7: LINKEDIN, CURRÍCULOS & IA =================
-import os
-import streamlit as st
 from fpdf import FPDF
 
-# Classe auxiliar para gerar o PDF formatado do Currículo Otimizado
+
 class PDFRecrutamento(FPDF):
     def header(self):
-        # Cabeçalho limpo e profissional
-        self.set_font('Arial', 'B', 16)
+        self.set_font("Arial", "B", 16)
         self.set_text_color(33, 37, 41)
-        self.cell(0, 10, 'Currículo Profissional Otimizado - Saúde', 0, 1, 'C')
-        self.set_font('Arial', 'I', 10)
+        self.cell(0, 10, "Curriculo Profissional Otimizado - Saude", 0, 1, "C")
+        self.set_font("Arial", "I", 10)
         self.set_text_color(108, 117, 125)
-        self.cell(0, 6, 'Especializado para Enfermagem & Biomedicina', 0, 1, 'C')
+        self.cell(0, 6, "Especializado para Enfermagem e Biomedicina", 0, 1, "C")
         self.ln(10)
 
     def footer(self):
         self.set_y(-15)
-        self.set_font('Arial', 'I', 8)
+        self.set_font("Arial", "I", 8)
         self.set_text_color(150, 150, 150)
-        self.cell(0, 10, f'Página {self.page_no()}', 0, 0, 'C')
+        self.cell(0, 10, f"Pagina {self.page_no()}", 0, 0, "C")
+
 
 def gerar_pdf_curriculo(texto_base, sugestoes_ia=""):
     pdf = PDFRecrutamento()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
-    
-    # Secção de Dados e Resumo
-    pdf.set_font('Arial', 'B', 12)
+
+    pdf.set_font("Arial", "B", 12)
     pdf.set_text_color(13, 110, 253)
-    pdf.cell(0, 8, '1. Resumo e Perfil Profissional', 0, 1)
-    
-    pdf.set_font('Arial', '', 10)
+    pdf.cell(0, 8, "1. Resumo e Perfil Profissional", 0, 1)
+
+    pdf.set_font("Arial", "", 10)
     pdf.set_text_color(33, 37, 41)
-    
-    texto_limpo = texto_base.encode('latin-1', 'replace').decode('latin-1')
+    texto_limpo = str(texto_base).encode("latin-1", "replace").decode("latin-1")
     pdf.multi_cell(0, 6, texto_limpo[:1500])
     pdf.ln(5)
-    
-    if sugestoes_ia:
-        pdf.set_font('Arial', 'B', 12)
-        pdf.set_text_color(13, 110, 253)
-        pdf.cell(0, 8, '2. Adequação e Melhorias Sugeridas para ATS / Saúde', 0, 1)
-        
-        pdf.set_font('Arial', '', 9)
-        pdf.set_text_color(50, 50, 50)
-        sugestoes_limpidas = sugestoes_ia.encode('latin-1', 'replace').decode('latin-1')
-        pdf.multi_cell(0, 5, sugestoes_limpidas[:1500])
-        pdf.ln(5)
 
-    # Retorna o PDF diretamente como bytes usando o método nativo sem parâmetros
-    return pdf.output()
-    st.markdown("<h2 style='color: #0077B5;'>💼 LinkedIn, Modelos de Documentos & Análise Inteligente de Currículo</h2>", unsafe_allow_html=True)
-    
+    if sugestoes_ia:
+        pdf.set_font("Arial", "B", 12)
+        pdf.set_text_color(13, 110, 253)
+        pdf.cell(0, 8, "2. Adequacao e Melhorias Sugeridas para ATS / Saude", 0, 1)
+
+        pdf.set_font("Arial", "", 9)
+        pdf.set_text_color(50, 50, 50)
+        sugestoes = str(sugestoes_ia).encode("latin-1", "replace").decode("latin-1")
+        pdf.multi_cell(0, 5, sugestoes[:1500])
+
+    resultado = pdf.output(dest="S")
+    return resultado.encode("latin-1") if isinstance(resultado, str) else bytes(resultado)
+
+
+with tab_ia_curriculo:
+    st.markdown(
+        "<h2 style='color: #0077B5;'>💼 LinkedIn, Modelos de Documentos & Análise Inteligente de Currículo</h2>",
+        unsafe_allow_html=True,
+    )
+
     col_d1, col_d2 = st.columns(2)
+
     with col_d1:
         st.markdown("#### 🩺 Modelo Pronto: Enfermagem Assistencial")
-        enf_mod = """OBJETIVO: Enfermeira Assistencial - UTI Adulto / Emergência\nRESUMO: Experiência assistencial com pacientes críticos, drogas vasoativas, punção e protocolos de segurança do paciente. COREN Ativo."""
+        enf_mod = (
+            "OBJETIVO: Enfermeira Assistencial - UTI Adulto / Emergência\n"
+            "RESUMO: Experiência assistencial com pacientes críticos, drogas vasoativas, "
+            "punção e protocolos de segurança do paciente. COREN ativo."
+        )
         st.text_area("Currículo Enfermagem:", enf_mod, height=120)
         st.download_button(
-    "📥 Baixar Currículo Enfermagem (PDF) ➔", 
-    gerar_pdf_curriculo(enf_mod, "Modelo padrão otimizado para Enfermagem Assistencial e UTI."), 
-    "Curriculo_Enfermagem.pdf", 
-    mime="application/pdf"
-)
+            "📥 Baixar Currículo Enfermagem (PDF) ➔",
+            gerar_pdf_curriculo(
+                enf_mod,
+                "Modelo padrão otimizado para Enfermagem Assistencial e UTI.",
+            ),
+            "Curriculo_Enfermagem.pdf",
+            mime="application/pdf",
+        )
+
     with col_d2:
         st.markdown("#### 🔬 Modelo Pronto: Biomedicina / Análises")
-        bio_mod = """OBJETIVO: Biomédica Analista - Análises Clínicas / Biologia Molecular\nRESUMO: Domínio em rotinas laboratoriais de bancada automatizada, microscopia, controle de qualidade (CQI/CQE) e liberação de laudos. CRBM Ativo."""
+        bio_mod = (
+            "OBJETIVO: Biomédica Analista - Análises Clínicas / Biologia Molecular\n"
+            "RESUMO: Domínio em rotinas laboratoriais, microscopia, controle de "
+            "qualidade (CQI/CQE) e liberação de laudos. CRBM ativo."
+        )
         st.text_area("Currículo Biomedicina:", bio_mod, height=120)
         st.download_button(
-    "📥 Baixar Currículo Biomedicina (PDF) ➔", 
-    gerar_pdf_curriculo(bio_mod, "Modelo padrão otimizado para Biomedicina e Análises Clínicas."), 
-    "Curriculo_Biomedicina.pdf", 
-    mime="application/pdf"
-)
-# --- VALIDAÇÃO DE ÁREA: Enfermagem ou Biomedicina ---
-palavras_chave_saude = ["enfermagem", "enfermeiro", "enfermeira", "biomedicina", "biomédico", "biomédica", "coren", "crbm", "análises clínicas", "saúde"]
-texto_minusculo = texto_pdf.lower()
-area_compativel = any(termo in texto_minusculo for termo in palavras_chave_saude)
+            "📥 Baixar Currículo Biomedicina (PDF) ➔",
+            gerar_pdf_curriculo(
+                bio_mod,
+                "Modelo padrão otimizado para Biomedicina e Análises Clínicas.",
+            ),
+            "Curriculo_Biomedicina.pdf",
+            mime="application/pdf",
+        )
 
-if not area_compativel:
-    st.error("⚠️ **Atenção:** O currículo enviado aparenta não pertencer às áreas de Enfermagem ou Biomedicina. Por favor, envie um currículo direcionado para a área da saúde para obter um diagnóstico preciso.")
-else:
-    st.success("✅ Currículo validado para a área da saúde com sucesso!")
     st.markdown("---")
 st.markdown("### 🤖 Diagnóstico Dinâmico de Currículo para Saúde (Enfermagem & Biomedicina)")
 up_pdf = st.file_uploader("Envie o currículo em PDF para análise detalhada:", type=["pdf"])
 
-try:
-    if up_pdf is not None:
-        # Extração segura do texto do PDF enviado
-        from pypdf import PdfReader
-        reader = PdfReader(up_pdf)
-        texto_pdf = ""
-        for page in reader.pages:
-            texto_pdf += page.extract_text() or ""
+if up_pdf is not None:
+    from pypdf import PdfReader
+    reader = PdfReader(up_pdf)
+    texto_pdf = ""
+    for page in reader.pages:
+        texto_pdf += page.extract_text() or ""
+    
+    # Validação executada apenas com o texto extraído em segurança
+    palavras_chave_saude = ["enfermagem", "enfermeiro", "enfermeira", "biomedicina", "biomédico", "biomédica", "coren", "crbm", "análises clínicas", "saúde"]
+    texto_minusculo = texto_pdf.lower()
+    area_compativel = any(termo in texto_minusculo for termo in palavras_chave_saude)
 
-        # --- VALIDAÇÃO DE ÁREA: Enfermagem ou Biomedicina ---
-        palavras_chave_saude = ["enfermagem", "enfermeiro", "enfermeira", "biomedicina", "biomédico", "biomédica", "coren", "crbm", "análises clínicas", "saúde"]
-        texto_minusculo = texto_pdf.lower()
-        area_compativel = any(termo in texto_minusculo for termo in palavras_chave_saude)
+    if not area_compativel:
+        st.error("⚠️ **Atenção:** O currículo enviado aparenta não pertencer às áreas de Enfermagem ou Biomedicina. Por favor, envie um currículo direcionado para a área da saúde para obter um diagnóstico preciso.")
+    else:
+        st.success("✅ Currículo carregado e validado para a área da saúde com sucesso!")
+        st.text_area("Texto Extraído:", texto_pdf, height=200)
 
-        if not area_compativel:
-            st.error("⚠️ **Atenção:** O currículo enviado aparenta não pertencer às áreas de Enfermagem ou Biomedicina. Por favor, envie um currículo direcionado para a área da saúde para obter um diagnóstico preciso.")
+        # Lógica da chave de API e IA
+        api_key_val = ""
+        try:
+            if "GEMINI_API_KEY" in st.secrets:
+                api_key_val = st.secrets["GEMINI_API_KEY"]
+            elif "general" in st.secrets and "GEMINI_API_KEY" in st.secrets["general"]:
+                api_key_val = st.secrets["general"]["GEMINI_API_KEY"]
+        except Exception:
+            pass
+        
+        if not api_key_val:
+            api_key_val = os.environ.get("GEMINI_API_KEY", "")
+
+        if HAS_GENAI and api_key_val:
+            with st.spinner("✨ A analisar pontos fortes, lacunas e adequação para Enfermagem/Biomedicina..."):
+                try:
+                    os.environ["GEMINI_API_KEY"] = api_key_val
+                    client = genai.Client(api_key=api_key_val)
+                    
+                    prompt_analise = f"""
+                    Analise o seguinte currículo voltado para as áreas de Enfermagem ou Biomedicina. 
+                    Forneça um feedback construtivo estruturado em:
+                    1. **Pontos Fortes** encontrados.
+                    2. **Pontos de Melhoria / Lacunas** (ex: falta de citação explícita do COREN/CRBM, palavras-chave ATS, formatação de competências técnicas em UTI ou Análises Clínicas).
+                    3. **Sugestões Práticas de Reescrita** para o Resumo Profissional.
+                    
+                    Texto do Currículo:
+                    {texto_pdf[:3000]}
+                    """
+                    response = client.models.generate_content(
+                        model='gemini-1.5-flash',
+                        contents=prompt_analise
+                    )
+                    st.markdown("### 📋 Relatório de Diagnóstico & Melhorias")
+                    st.markdown(response.text)
+                except Exception as ai_err:
+                    st.warning(f"Erro ao contactar a IA: {ai_err}")
         else:
-            st.success("✅ Currículo carregado e validado para a área da saúde com sucesso!")
-            st.text_area("Texto Extraído:", texto_pdf, height=200)
-
-            # Recuperação robusta da chave de API
-            api_key_val = ""
-            try:
-                if "GEMINI_API_KEY" in st.secrets:
-                    api_key_val = st.secrets["GEMINI_API_KEY"]
-                elif "general" in st.secrets and "GEMINI_API_KEY" in st.secrets["general"]:
-                    api_key_val = st.secrets["general"]["GEMINI_API_KEY"]
-            except Exception:
-                pass
-
-            if not api_key_val:
-                api_key_val = os.environ.get("GEMINI_API_KEY", "")
-
-            if HAS_GENAI and api_key_val:
-                with st.spinner("✨ A analisar pontos fortes, lacunas e adequação para Enfermagem/Biomedicina..."):
-                    try:
-                        os.environ["GEMINI_API_KEY"] = api_key_val
-                        client = genai.Client(api_key=api_key_val)
-
-                        prompt_analise = f"""
-                        Analise o seguinte currículo voltado para as áreas de Enfermagem ou Biomedicina. 
-                        Forneça um feedback construtivo estruturado em:
-                        1. **Pontos Fortes** encontrados.
-                        2. **Pontos de Melhoria / Lacunas** (ex: falta de citação explícita do COREN/CRBM, palavras-chave ATS, formatação de competências técnicas em UTI ou Análises Clínicas).
-                        3. **Sugestões Práticas de Reescrita** para o Resumo Profissional.
-
-                        Texto do Currículo:
-                        {texto_pdf[:3000]}
-                        """
-                        response = client.models.generate_content(
-                            model='gemini-1.5-flash',
-                            contents=prompt_analise
-                        )
-                        st.markdown("### 📋 Relatório de Diagnóstico & Melhorias")
-                        st.markdown(response.text)
-                    except Exception as ai_err:
-                        st.warning(f"Erro ao contactar a IA: {ai_err}")
-            else:
-                st.info("💡 Dica: Verifique se a variável `GEMINI_API_KEY` está gravada nos Secrets do Streamlit Cloud.")
-
-            # Botão para gerar e baixar o currículo otimizado em PDF baseado na análise
-            st.markdown("---")
-            st.markdown("### 📥 Gerar Documento Otimizado em PDF")
-            pdf_bytes_analise = gerar_pdf_curriculo(texto_pdf, "Otimizado para processos seletivos na área de Enfermagem e Biomedicina, com foco em conformidade ATS e registo profissional.")
-            st.download_button(
-                label="📄 Baixar Currículo Analisado e Otimizado (PDF)",
-                data=pdf_bytes_analise,
-                file_name="Curriculo_Otimizado_Saude.pdf",
-                mime="application/pdf"
-            )
-
-            st.markdown("### 🔍 Pontos de Melhoria Sugeridos para Saúde:")
-            st.markdown("""
-            * **Registro Profissional:** Garanta que o número do COREN ou CRBM esteja em destaque no cabeçalho.
-            * **Palavras-chave Técnicas:** Inclua termos específicos como *Ventilação Mecânica, Drogas Vasoativas, Controle de Qualidade (CQI/CQE) ou Biologia Molecular* dependendo da vaga.
-            * **Métrica de Resultados:** Foque em descrever a complexidade dos plantões e o volume de atendimento realizados.
-            """)
-except Exception as e:
-    st.error(f"Erro ao processar o PDF: {e}")
+            st.info("💡 Dica: Verifique se a variável `GEMINI_API_KEY` está gravada nos Secrets do Streamlit Cloud.")
+            
+        # Botão para baixar o PDF otimizado
+        st.markdown("---")
+        st.markdown("### 📥 Gerar Documento Otimizado em PDF")
+        pdf_bytes_analise = gerar_pdf_curriculo(texto_pdf, "Otimizado para processos seletivos na área de Enfermagem e Biomedicina, com foco em conformidade ATS e registo profissional.")
+        st.download_button(
+            label="📄 Baixar Currículo Analisado e Otimizado (PDF)",
+            data=pdf_bytes_analise,
+            file_name="Curriculo_Otimizado_Saude.pdf",
+            mime="application/pdf"
+        )
 
 # ================= TAB 8: TRAJETO, UBER & PLANTÃO =================
 with tab_trajeto:
