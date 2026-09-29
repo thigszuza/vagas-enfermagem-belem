@@ -868,7 +868,7 @@ with col_f1:
     except Exception as e:
         # Fallback de segurança absoluto para o gráfico nunca quebrar
         st.line_chart(df_vagas.set_index("Mês")[["Enfermagem", "Biomedicina"]])
-        
+
 with col_f2:
     escopo_geo_grafico = st.selectbox(
         "Âmbito Geográfico:",
@@ -906,9 +906,9 @@ st.markdown(f"***Painel ativo para:** {prof_filtro} | **Local:** {regiao_selecio
 st.markdown("---")
 
 # --- GERAÇÃO DE DADOS DINÂMICOS PARA OS GRÁFICOS (2026-2027) ---
+# --- GERAÇÃO DE DADOS DINÂMICOS PARA OS GRÁFICOS (2026-2027) ---
 meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
 
-# Simulação inteligente baseada nos filtros
 np.random.seed(42)
 df_vagas = pd.DataFrame({
     "Mês": meses * 2,
@@ -917,25 +917,34 @@ df_vagas = pd.DataFrame({
     "Biomedicina": np.random.randint(25, 65, 24)
 })
 
+# --- COLUNA 1 E 2: TENDÊNCIA E COMPARATIVO ANUAL ---
 col_g1, col_g2 = st.columns(2)
 
 with col_g1:
     st.markdown(f"#### 📈 Tendência Mensal de Vagas ({regiao_selecionada})")
-    # Filtra de acordo com a profissão escolhida
-    if prof_filtro == "Enfermagem":
-        st.line_chart(df_vagas.pivot(index="Mês", columns="Ano", values="Enfermagem"))
-    elif prof_filtro == "Biomedicina":
-        st.line_chart(df_vagas.pivot(index="Mês", columns="Ano", values="Biomedicina"))
-    else:
-        st.line_chart(df_vagas.pivot(index="Mês", columns="Ano", values=["Enfermagem", "Biomedicina"]))
+    try:
+        if prof_filtro == "Enfermagem":
+            df_plot = df_vagas.pivot(index="Mês", columns="Ano", values="Enfermagem")
+            st.line_chart(df_plot)
+        elif prof_filtro == "Biomedicina":
+            df_plot = df_vagas.pivot(index="Mês", columns="Ano", values="Biomedicina")
+            st.line_chart(df_plot)
+        else:
+            df_enf = df_vagas.pivot(index="Mês", columns="Ano", values="Enfermagem")
+            df_bio = df_vagas.pivot(index="Mês", columns="Ano", values="Biomedicina")
+            df_enf.columns = [f"{c} (Enf)" for c in df_enf.columns]
+            df_bio.columns = [f"{c} (Bio)" for c in df_bio.columns]
+            df_final = pd.concat([df_enf, df_bio], axis=1)
+            st.line_chart(df_final)
+    except Exception:
+        st.line_chart(df_vagas.set_index("Mês")[["Enfermagem", "Biomedicina"]])
 
 with col_g2:
     st.markdown("#### 📊 Comparativo Anual Consolidado (2026 vs 2027)")
     df_anual = pd.DataFrame({
-        "Ano": ["2026", "2027 (Projeção)"],
-        "Enfermagem": [df_vagas[df_vagas["Ano"]=="2026"]["Enfermagem"].mean(), df_vagas[df_vagas["Ano"]=="2027 (Proj.)"]["Enfermagem"].mean()],
-        "Biomedicina": [df_vagas[df_vagas["Ano"]=="2026"]["Biomedicina"].mean(), df_vagas[df_vagas["Ano"]=="2027 (Proj.)"]["Biomedicina"].mean()]
-    }).set_index("Ano")
+        "2026": [df_vagas[df_vagas["Ano"]=="2026"]["Enfermagem"].mean(), df_vagas[df_vagas["Ano"]=="2026"]["Biomedicina"].mean()],
+        "2027 (Proj.)": [df_vagas[df_vagas["Ano"]=="2027 (Proj.)"]["Enfermagem"].mean(), df_vagas[df_vagas["Ano"]=="2027 (Proj.)"]["Biomedicina"].mean()]
+    }, index=["Enfermagem", "Biomedicina"]).T
     
     if prof_filtro == "Enfermagem":
         st.bar_chart(df_anual[["Enfermagem"]])
@@ -944,12 +953,11 @@ with col_g2:
     else:
         st.bar_chart(df_anual)
 
-# --- GRÁFICOS SECUNDÁRIOS ---
+# --- COLUNA 3 E 4: DISTRIBUIÇÃO GEOGRÁFICA E ESPECIALIDADES ---
 col_g3, col_g4 = st.columns(2)
 
 with col_g3:
-    st.markdown(f"#### 🗺️ Distribuição de Oportunidades ({escopo_geo_grafico})")
-    # Gráfico de barras horizontais simulado para estados/países
+    st.markdown(f"#### 🗺️ Distribuição de Oportunidades ({regiao_selecionada})")
     if "Brasil" in escopo_geo_grafico:
         df_geo = pd.DataFrame({"Volume de Vagas": [120, 95, 80, 60, 45]}, index=["São Paulo (SP)", "Minas Gerais (MG)", "Rio de Janeiro (RJ)", "Paraná (PR)", regiao_selecionada])
     else:
@@ -957,10 +965,13 @@ with col_g3:
     st.bar_chart(df_geo)
 
 with col_g4:
-    st.markdown("#### 🩺 Áreas e Especialidades com Maior Demanda")
-    df_esp = pd.DataFrame({
-        "Demanda Global": [85, 70, 60, 50, 35]
-    }, index=["UTI / Cuidados Críticos", "Análises Clínicas & Genética", "Urgência e Emergência", "Bloco Operatório", "Home Care / Cuidados Domiciliários"])
+    st.markdown(f"#### 🩺 Demanda por Especialidades ({prof_filtro})")
+    if prof_filtro == "Enfermagem":
+        df_esp = pd.DataFrame({"Demanda": [90, 75, 60, 45]}, index=["UTI / Cuidados Críticos", "Urgência e Emergência", "Home Care", "Saúde Pública"])
+    elif prof_filtro == "Biomedicina":
+        df_esp = pd.DataFrame({"Demanda": [85, 70, 55, 40]}, index=["Análises Clínicas", "Biologia Molecular", "Indústria Farmacêutica", "Reprodução Humana"])
+    else:
+        df_esp = pd.DataFrame({"Demanda": [88, 72, 58, 42]}, index=["UTI & Críticos (Enf)", "Análises Clínicas (Bio)", "Urgência (Enf)", "Biologia Molecular (Bio)"])
     st.bar_chart(df_esp)
 
 # ================= TAB 4: ESPECIAL ENFERMAGEM & COREN =================
