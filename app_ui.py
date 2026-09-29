@@ -1012,55 +1012,70 @@ with tab_ia_curriculo:
                 
                 # Análise automática com IA se a biblioteca genai estiver disponível
                 # Verifica se a biblioteca existe e se a chave está nos Secrets ou no ambiente
-tem_chave = False
-api_key_valor = ""
-
-if HAS_GENAI:
-    try:
-        if "GEMINI_API_KEY" in st.secrets:
-            api_key_valor = st.secrets["GEMINI_API_KEY"]
-            tem_chave = True
-        elif os.getenv("GEMINI_API_KEY"):
-            api_key_valor = os.getenv("GEMINI_API_KEY")
-            tem_chave = True
-    except Exception:
-        if os.getenv("GEMINI_API_KEY"):
-            api_key_valor = os.getenv("GEMINI_API_KEY")
-            tem_chave = True
-
-if HAS_GENAI and tem_chave:
-    with st.spinner("✨ A analisar pontos fortes, lacunas e adequação para Enfermagem/Biomedicina..."):
-        try:
-            client = genai.Client(api_key=api_key_valor)
-            prompt_analise = f"""
-            Analise o seguinte currículo voltado para as áreas de Enfermagem ou Biomedicina. 
-            Forneça um feedback construtivo estruturado em:
-            1. **Pontos Fortes** encontrados.
-            2. **Pontos de Melhoria / Lacunas** (ex: falta de citação explícita do COREN/CRBM, palavras-chave ATS, formatação de competências técnicas em UTI ou Análises Clínicas).
-            3. **Sugestões Práticas de Reescrita** para o Resumo Profissional.
-            
-            Texto do Currículo:
-            {texto_pdf[:3000]}
-            """
-            response = client.models.generate_content(
-                model='gemini-1.5-flash',
-                contents=prompt_analise
-            )
-            st.markdown("### 📋 Relatório de Diagnóstico & Melhorias")
-            st.markdown(response.text)
-        except Exception as ai_err:
-            st.warning(f"Erro ao contactar a IA: {ai_err}")
-            st.text_area("Texto Extraído:", texto_pdf, height=200)
-else:
-    st.info("💡 Dica: Configure a variável de ambiente GEMINI_API_KEY nos Secrets do Streamlit Cloud para habilitar a análise automática por IA. Abaixo está o texto extraído do seu ficheiro:")
-    st.text_area("Texto Extraído:", texto_pdf, height=200)
+st.markdown("---")
+    st.markdown("#### 🤖 Diagnóstico Dinâmico de Currículo para Saúde (Enfermagem & Biomedicina)")
+    up_pdf = st.file_uploader("Envie o currículo em PDF para análise detalhada:", type=["pdf"])
     
-    st.markdown("### 🔍 Pontos de Melhoria Sugeridos para Saúde:")
-    st.markdown("""
-    * **Registro Profissional:** Garanta que o número do COREN ou CRBM esteja em destaque no cabeçalho.
-    * **Palavras-chave Técnicas:** Inclua termos específicos como *Ventilação Mecânica, Drogas Vasoativas, Controle de Qualidade (CQI/CQE) ou Biologia Molecular* dependendo da vaga.
-    * **Métrica de Resultados:** Foque em descrever a complexidade dos plantões e o volume de atendimento realizados.
-    """)
+    if up_pdf is not None:
+        try:
+            reader = PdfReader(up_pdf)
+            texto_pdf = "\n".join([page.extract_text() for page in reader.pages if page.extract_text()])
+            
+            if texto_pdf:
+                st.success("✅ Currículo carregado com sucesso! A processar diagnóstico inteligente...")
+                
+                # Verificação segura da chave de API
+                tem_chave = False
+                api_key_valor = ""
+                
+                if HAS_GENAI:
+                    try:
+                        if "GEMINI_API_KEY" in st.secrets:
+                            api_key_valor = st.secrets["GEMINI_API_KEY"]
+                            tem_chave = True
+                        elif os.getenv("GEMINI_API_KEY"):
+                            api_key_valor = os.getenv("GEMINI_API_KEY")
+                            tem_chave = True
+                    except Exception:
+                        if os.getenv("GEMINI_API_KEY"):
+                            api_key_valor = os.getenv("GEMINI_API_KEY")
+                            tem_chave = True
+
+                if HAS_GENAI and tem_chave:
+                    with st.spinner("✨ A analisar pontos fortes, lacunas e adequação para Enfermagem/Biomedicina..."):
+                        try:
+                            client = genai.Client(api_key=api_key_valor)
+                            prompt_analise = f"""
+                            Analise o seguinte currículo voltado para as áreas de Enfermagem ou Biomedicina. 
+                            Forneça um feedback construtivo estruturado em:
+                            1. **Pontos Fortes** encontrados.
+                            2. **Pontos de Melhoria / Lacunas** (ex: falta de citação explícita do COREN/CRBM, palavras-chave ATS, formatação de competências técnicas em UTI ou Análises Clínicas).
+                            3. **Sugestões Práticas de Reescrita** para o Resumo Profissional.
+                            
+                            Texto do Currículo:
+                            {texto_pdf[:3000]}
+                            """
+                            response = client.models.generate_content(
+                                model='gemini-1.5-flash',
+                                contents=prompt_analise
+                            )
+                            st.markdown("### 📋 Relatório de Diagnóstico & Melhorias")
+                            st.markdown(response.text)
+                        except Exception as ai_err:
+                            st.warning(f"Erro ao contactar a IA: {ai_err}")
+                            st.text_area("Texto Extraído:", texto_pdf, height=200)
+                else:
+                    st.info("💡 Dica: Configure a variável GEMINI_API_KEY nos Secrets do Streamlit Cloud. Abaixo está o texto extraído:")
+                    st.text_area("Texto Extraído:", texto_pdf, height=200)
+                    
+                    st.markdown("### 🔍 Pontos de Melhoria Sugeridos para Saúde:")
+                    st.markdown("""
+                    * **Registro Profissional:** Garanta que o número do COREN ou CRBM esteja em destaque no cabeçalho.
+                    * **Palavras-chave Técnicas:** Inclua termos específicos como *Ventilação Mecânica, Drogas Vasoativas, Controle de Qualidade (CQI/CQE) ou Biologia Molecular* dependendo da vaga.
+                    * **Métrica de Resultados:** Foque em descrever a complexidade dos plantões e o volume de atendimento realizados.
+                    """)
+        except Exception as e:
+            st.error(f"Erro ao processar o PDF: {e}")
     
 # ================= TAB 8: TRAJETO, UBER & PLANTÃO =================
 with tab_trajeto:
