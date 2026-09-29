@@ -1010,21 +1010,23 @@ with tab_ia_curriculo:
                 st.success("✅ Currículo carregado com sucesso! A processar diagnóstico inteligente...")
                 
                 tem_chave = False
-                # Carrega a chave dos secrets ou do ambiente de forma direta
-                # Leitura direta e forçada da chave dos Secrets ou do ambiente
+                # Força a recuperação da chave de múltiplas fontes possíveis
                 api_key_val = ""
                 try:
                     if "GEMINI_API_KEY" in st.secrets:
                         api_key_val = st.secrets["GEMINI_API_KEY"]
                 except Exception:
                     pass
-
+                
                 if not api_key_val:
-                    api_key_val = os.getenv("GEMINI_API_KEY", "")
+                    api_key_val = os.environ.get("GEMINI_API_KEY", "")
 
                 if HAS_GENAI and api_key_val:
                     with st.spinner("✨ A analisar pontos fortes, lacunas e adequação para Enfermagem/Biomedicina..."):
                         try:
+                            # Garante que a variável de ambiente global do sistema está preenchida para o cliente
+                            os.environ["GEMINI_API_KEY"] = api_key_val
+                            
                             client = genai.Client(api_key=api_key_val)
                             prompt_analise = f"""
                             Analise o seguinte currículo voltado para as áreas de Enfermagem ou Biomedicina. 
