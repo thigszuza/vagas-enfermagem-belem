@@ -1011,10 +1011,13 @@ with tab_ia_curriculo:
                 
                 tem_chave = False
                # Leitura direta e segura da chave a partir dos Secrets ou ambiente
+                # Recuperação robusta da chave de API
                 api_key_val = ""
                 try:
                     if "GEMINI_API_KEY" in st.secrets:
                         api_key_val = st.secrets["GEMINI_API_KEY"]
+                    elif "general" in st.secrets and "GEMINI_API_KEY" in st.secrets["general"]:
+                        api_key_val = st.secrets["general"]["GEMINI_API_KEY"]
                 except Exception:
                     pass
                 
@@ -1047,15 +1050,40 @@ with tab_ia_curriculo:
                             st.warning(f"Erro ao contactar a IA: {ai_err}")
                             st.text_area("Texto Extraído:", texto_pdf, height=200)
                 else:
-                    st.info("💡 Dica: Configure a variável GEMINI_API_KEY nos Secrets do Streamlit Cloud. Abaixo está o texto extraído:")
-                    st.text_area("Texto Extraído:", texto_pdf, height=200)
+                    st.info("💡 Dica: Verifique se a variável `GEMINI_API_KEY` está gravada exatamente com este nome nos **Secrets** do Streamlit Cloud.")
                     
-                    st.markdown("### 🔍 Pontos de Melhoria Sugeridos para Saúde:")
-                    st.markdown("""
-                    * **Registro Profissional:** Garanta que o número do COREN ou CRBM esteja em destaque no cabeçalho.
-                    * **Palavras-chave Técnicas:** Inclua termos específicos como *Ventilação Mecânica, Drogas Vasoativas, Controle de Qualidade (CQI/CQE) ou Biologia Molecular* dependendo da vaga.
-                    * **Métrica de Resultados:** Foque em descrever a complexidade dos plantões e o volume de atendimento realizados.
-                    """)
+                    # Campo de segurança na interface caso os secrets demorem a propagar
+                    chave_manual = st.text_input("Ou insira a chave da API temporariamente para testar:", type="password")
+                    if chave_manual and HAS_GENAI:
+                        try:
+                            client = genai.Client(api_key=chave_manual)
+                            prompt_analise = f"""
+                            Analise o seguinte currículo voltado para as áreas de Enfermagem ou Biomedicina. 
+                            Forneça um feedback construtivo estruturado em:
+                            1. **Pontos Fortes** encontrados.
+                            2. **Pontos de Melhoria / Lacunas** (ex: falta de citação explícita do COREN/CRBM, palavras-chave ATS, formatação de competências técnicas em UTI ou Análises Clínicas).
+                            3. **Sugestões Práticas de Reescrita** para o Resumo Profissional.
+                            
+                            Texto do Currículo:
+                            {texto_pdf[:3000]}
+                            """
+                            response = client.models.generate_content(
+                                model='gemini-1.5-flash',
+                                contents=prompt_analise
+                            )
+                            st.markdown("### 📋 Relatório de Diagnóstico & Melhorias")
+                            st.markdown(response.text)
+                        except Exception as e:
+                            st.error(f"Erro com a chave manual: {e}")
+                    else:
+                        st.text_area("Texto Extraído:", texto_pdf, height=200)
+                        
+                        st.markdown("### 🔍 Pontos de Melhoria Sugeridos para Saúde:")
+                        st.markdown("""
+                        * **Registro Profissional:** Garanta que o número do COREN ou CRBM esteja em destaque no cabeçalho.
+                        * **Palavras-chave Técnicas:** Inclua termos específicos como *Ventilação Mecânica, Drogas Vasoativas, Controle de Qualidade (CQI/CQE) ou Biologia Molecular* dependendo da vaga.
+                        * **Métrica de Resultados:** Foque em descrever a complexidade dos plantões e o volume de atendimento realizados.
+                        """)
         except Exception as e:
             st.error(f"Erro ao processar o PDF: {e}")    
 # ================= TAB 8: TRAJETO, UBER & PLANTÃO =================
