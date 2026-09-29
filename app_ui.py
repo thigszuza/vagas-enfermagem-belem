@@ -1032,24 +1032,8 @@ def gerar_pdf_curriculo(texto_base, sugestoes_ia=""):
         pdf.multi_cell(0, 5, sugestoes_limpidas[:1500])
         pdf.ln(5)
 
-    # Correção compatível com a versão atual do fpdf2 (devolve bytes diretamente)
-    return pdf.output(dest='S').encode('latin1')
-
-    # Secção de Recomendações da IA aplicadas
-    if sugestoes_ia:
-        pdf.set_font('Arial', 'B', 12)
-        pdf.set_text_color(13, 110, 253)
-        pdf.cell(0, 8, '2. Adequação e Melhorias Sugeridas para ATS / Saúde', 0, 1)
-        
-        pdf.set_font('Arial', '', 9)
-        pdf.set_text_color(50, 50, 50)
-        sugestoes_limpidas = sugestoes_ia.encode('latin-1', 'replace').decode('latin-1')
-        pdf.multi_cell(0, 5, sugestoes_limpidas[:1500])
-        pdf.ln(5)
-
-    # Retorna o PDF em formato de bytes para download
-    return pdf.output(dest='S').encode('latin1')
-with tab_ia_curriculo:
+    # Retorna o PDF diretamente como bytes usando o método nativo sem parâmetros
+    return pdf.output()
     st.markdown("<h2 style='color: #0077B5;'>💼 LinkedIn, Modelos de Documentos & Análise Inteligente de Currículo</h2>", unsafe_allow_html=True)
     
     col_d1, col_d2 = st.columns(2)
