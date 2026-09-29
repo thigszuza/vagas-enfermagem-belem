@@ -4,3 +4,4 @@ sqlalchemy
 pypdf
 requests
 beautifulsoup4
+fpdf2
