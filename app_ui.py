@@ -982,12 +982,18 @@ with tab_agenda:
             st.info("Nenhum exame cadastrado no momento.")
 
 # ================= TAB 7: LINKEDIN, CURRÍCULOS & IA =================
-elif mercado_selecionado == "Portugal (Enfermagem - Todo o País)":
+st.markdown("### 🌍 Seleção de Mercado e Região de Atuação")
+mercado_selecionado = st.selectbox(
+    "Escolha o país ou âmbito pretendido:",
+    ["Brasil (27 Estados)", "Portugal (Enfermagem - Todo o País)", "Global / Internacional"]
+)
+
+# O primeiro bloco de escolha TEM de começar com 'if'
+if mercado_selecionado == "Portugal (Enfermagem - Todo o País)":
     st.markdown("---")
     st.markdown("### 🇵🇹 Buscador Dinâmico de Vagas de Enfermagem em Portugal")
     st.info("ℹ️ Sistema integrado para profissionais com equivalência/inscrição na Ordem dos Enfermeiros (OE).")
     
-    # Filtros dinâmicos de região e especialidade em Portugal
     col_pt_a, col_pt_b = st.columns(2)
     with col_pt_a:
         distrito_pt = st.selectbox(
@@ -1000,11 +1006,9 @@ elif mercado_selecionado == "Portugal (Enfermagem - Todo o País)":
             ["Cuidados Gerais (Hospitalar)", "Medicina Intensiva (UTI)", "Urgência e Emergência", "Saúde Pública", "Bloco Operatório (Perioperatória)"]
         )
         
-    # Botão para consultar em tempo real via IA
     if st.button("🔍 Consultar Vagas Ativas em Portugal (IA em Tempo Real)"):
         with st.spinner(f"A pesquisar oportunidades ativas em {distrito_pt} ({especialidade_pt})..."):
             try:
-                # Recupera a chave de API de forma segura
                 api_key_val = ""
                 try:
                     if "GEMINI_API_KEY" in st.secrets:
@@ -1020,12 +1024,12 @@ elif mercado_selecionado == "Portugal (Enfermagem - Todo o País)":
                     Atue como um recrutador sénior especializado na área da saúde em Portugal.
                     Forneça 3 oportunidades ou contextos de emprego ativos e altamente relevantes para o distrito de {distrito_pt} em Portugal na especialidade de {especialidade_pt}.
                     Para cada oportunidade, inclua:
-                    1. **Instituição / Hospital / Grupo de Saúde** (ex: CUF, Lusídas, SNS / ULS, etc.)
+                    1. **Instituição / Hospital / Grupo de Saúde**
                     2. **Função e Contexto**
                     3. **Requisitos da Ordem dos Enfermeiros (OE)**
                     4. **Condições Estimadas e Forma de Candidatura**
                     
-                    Formate a resposta de forma limpa, profissional e em formato estruturado (Markdown).
+                    Formate a resposta de forma limpa e profissional em Markdown.
                     """
                     response_pt = client.models.generate_content(
                         model='gemini-1.5-flash',
@@ -1034,10 +1038,22 @@ elif mercado_selecionado == "Portugal (Enfermagem - Todo o País)":
                     st.markdown("### 📋 Oportunidades Encontradas:")
                     st.markdown(response_pt.text)
                 else:
-                    st.warning("⚠️ Chave da API do Gemini não configurada. Configure a variável `GEMINI_API_KEY` para ativar a busca dinâmica.")
+                    st.warning("⚠️ Chave da API do Gemini não configurada nos Secrets.")
             except Exception as e:
                 st.error(f"Erro ao gerar vagas dinâmicas: {e}")
 
+# Opções seguintes usam corretamente 'elif' ou 'else'
+elif mercado_selecionado == "Global / Internacional":
+    st.markdown("---")
+    st.markdown("### 🌐 Oportunidades Globais de Saúde")
+    st.info("Projetos internacionais, telemedicina e cooperação humanitária em saúde global.")
+    st.write("- **Organizações Internacionais:** Oportunidades em projetos de saúde pública na Europa e Américas.")
+
+else:
+    st.markdown("---")
+    st.markdown("### 🇧🇷 Oportunidades Home Care & Plantões nos 27 Estados")
+    # O código correspondente aos estados do Brasil continua aqui
+    
 from fpdf import FPDF
 
 
