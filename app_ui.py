@@ -320,9 +320,12 @@ SOLICITACOES_BASE = [
     {"servico": "Plantão Diurno 12x36 (Home Care)", "solicitante": "Família Pantoja", "valor": "R$ 240,00 / plantão", "detalhe": "Cuidado assistencial com sonda nasoenteral e auxílio nas atividades diárias.", "cat": "Enfermagem"},
 ]
 
+# No topo do seu app.py, importe o robô:
 from scrapers_plantoes import buscar_plantoes_reais
 
+# Na aba de Plantões (Tab 2), substitua a listagem antiga por:
 def obter_demandas_estado(uf_codigo: str):
+    # Chama o robô real de raspagem web já importado no topo
     demandas_brutas = buscar_plantoes_reais()
     demandas_formatadas = []
     
@@ -809,14 +812,17 @@ with tab_plantoes:
     
     for d in demandas_uf:
         txt_apresentacao = (
-            f"Olá, {d['solicitante']}! Tudo bien?\n\n"
+            f"Olá, {d['solicitante']}! Tudo bem?\n\n"
             f"Vi a sua solicitação para '{d['servico']}' em {d['local']}.\n"
             f"Sou profissional da Saúde com registro ativo e sólida experiência assistencial e dedicação. "
             f"Tenho total disponibilidade para lhe atender com segurança e humanização.\n\n"
             f"Podemos alinhar o horário?"
         )
         
+        # Pega o telefone que veio do dicionário (ou usa o padrão se não houver)
         tel_cliente = d.get("telefone", "5591999999999")
+        
+        # Monta o link direcionando com o número e o texto
         link_zap = f"https://api.whatsapp.com/send?phone={tel_cliente}&text={urllib.parse.quote(txt_apresentacao)}"
 
         st.markdown(f"""
@@ -831,121 +837,128 @@ with tab_plantoes:
         </div>
         """, unsafe_allow_html=True)
 
-# ================= TAB 3: ANÁLISE GRÁFICA ANUAL DINÂMICA (ISOLADA AQUI) =================
-with tab_graficos:
-    st.markdown("### 📊 Análise Gráfica Avançada & Projeção (2026-2027)")
-    st.markdown("Comparativo dinâmico de vagas, tendências e expansão geográfica para Enfermagem e Biomedicina.")
+# ================= TAB 3: ANÁLISE GRÁFICA ANUAL DINÂMICA =================
+import streamlit as st
+import pandas as pd
+import numpy as np
+st.markdown("### 📊 Análise Gráfica Avançada & Projeção (2026-2027)")
+st.markdown("Comparativo dinâmico de vagas, tendências e expansão geográfica para Enfermagem e Biomedicina.")
 
-    col_f1, col_f2, col_f3 = st.columns(3)
+# --- FILTROS DE CONTROLO DO PAINEL COM KEYS ÚNICAS ---
+col_f1, col_f2, col_f3 = st.columns(3)
 
-    with col_f1:
-        prof_filtro = st.selectbox(
-            "Profissão em Análise:",
-            ["Ambos (Comparativo)", "Enfermagem", "Biomedicina"],
-            key="filtro_profissao_graficos"
-        )
+with col_f1:
+    prof_filtro = st.selectbox(
+        "Profissão em Análise:",
+        ["Ambos (Comparativo)", "Enfermagem", "Biomedicina"],
+        key="filtro_profissao_graficos"
+    )
 
-    with col_f2:
-        escopo_geo_grafico = st.selectbox(
-            "Âmbito Geográfico:",
-            ["Brasil (Todos os 27 Estados)", "Mundo / Global (Internacional)"],
-            key="filtro_escopo_geo_graficos"
-        )
+with col_f2:
+    escopo_geo_grafico = st.selectbox(
+        "Âmbito Geográfico:",
+        ["Brasil (Todos os 27 Estados)", "Mundo / Global (Internacional)"],
+        key="filtro_escopo_geo_graficos"
+    )
 
-    with col_f3:
-        periodo_grafico = st.selectbox(
-            "Horizonte Temporal:",
-            ["2026 - 2027 (Evolução & Projeção)", "Ano de 2026", "Ano de 2027 (Projeção)"],
-            key="filtro_periodo_graficos"
-        )
+with col_f3:
+    periodo_grafico = st.selectbox(
+        "Horizonte Temporal:",
+        ["2026 - 2027 (Evolução & Projeção)", "Ano de 2026", "Ano de 2027 (Projeção)"],
+        key="filtro_periodo_graficos"
+    )
 
-    if escopo_geo_grafico == "Brasil (Todos os 27 Estados)":
-        regiao_selecionada = st.selectbox(
-            "Selecione o Estado:",
-            ["Todos os Estados (Nacional)", "Acre (AC)", "Alagoas (AL)", "Amapá (AP)", "Amazonas (AM)", "Bahia (BA)", 
-             "Ceará (CE)", "Distrito Federal (DF)", "Espírito Santo (ES)", "Goiás (GO)", "Maranhão (MA)", 
-             "Mato Grosso (MT)", "Mato Grosso do Sul (MS)", "Minas Gerais (MG)", "Pará (PA)", "Paraíba (PB)", 
-             "Paraná (PR)", "Pernambuco (PE)", "Piauí (PI)", "Rio de Janeiro (RJ)", "Rio Grande do Norte (RN)", 
-             "Rio Grande do Sul (RS)", "Rondônia (RO)", "Roraima (RR)", "Santa Catarina (SC)", "São Paulo (SP)", 
-             "Sergipe (SE)", "Tocantins (TO)"],
-            key="select_estado_brasil_graficos"
-        )
+# --- SELETOR DE REGIÃO COM KEY ÚNICA ---
+if escopo_geo_grafico == "Brasil (Todos os 27 Estados)":
+    regiao_selecionada = st.selectbox(
+        "Selecione o Estado:",
+        ["Todos os Estados (Nacional)", "Acre (AC)", "Alagoas (AL)", "Amapá (AP)", "Amazonas (AM)", "Bahia (BA)", 
+         "Ceará (CE)", "Distrito Federal (DF)", "Espírito Santo (ES)", "Goiás (GO)", "Maranhão (MA)", 
+         "Mato Grosso (MT)", "Mato Grosso do Sul (MS)", "Minas Gerais (MG)", "Pará (PA)", "Paraíba (PB)", 
+         "Paraná (PR)", "Pernambuco (PE)", "Piauí (PI)", "Rio de Janeiro (RJ)", "Rio Grande do Norte (RN)", 
+         "Rio Grande do Sul (RS)", "Rondônia (RO)", "Roraima (RR)", "Santa Catarina (SC)", "São Paulo (SP)", 
+         "Sergipe (SE)", "Tocantins (TO)"],
+        key="select_estado_brasil_graficos"
+    )
+else:
+    regiao_selecionada = st.selectbox(
+        "Selecione o País / Polo Global:",
+        ["Portugal (Enfermagem & Saúde)", "Estados Unidos (EUA)", "Europa (Geral)", "Médio Oriente (Dubai/Qatar)", "América Latina (Geral)"],
+        key="select_pais_global_graficos"
+    )
+
+st.markdown(f"***Painel ativo para:** {prof_filtro} | **Local:** {regiao_selecionada} | **Período:** {periodo_grafico}*")
+st.markdown("---")
+
+# --- GERAÇÃO DE DADOS DINÂMICOS PARA OS GRÁFICOS (2026-2027) ---
+meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+
+np.random.seed(42)
+df_vagas = pd.DataFrame({
+    "Mês": meses * 2,
+    "Ano": ["2026"] * 12 + ["2027 (Proj.)"] * 12,
+    "Enfermagem": np.random.randint(45, 95, 24),
+    "Biomedicina": np.random.randint(25, 65, 24)
+})
+
+# --- COLUNA 1 E 2: TENDÊNCIA E COMPARATIVO ANUAL ---
+col_g1, col_g2 = st.columns(2)
+
+with col_g1:
+    st.markdown(f"#### 📈 Tendência Mensal de Vagas ({regiao_selecionada})")
+    try:
+        if prof_filtro == "Enfermagem":
+            df_plot = df_vagas.pivot(index="Mês", columns="Ano", values="Enfermagem")
+            st.line_chart(df_plot)
+        elif prof_filtro == "Biomedicina":
+            df_plot = df_vagas.pivot(index="Mês", columns="Ano", values="Biomedicina")
+            st.line_chart(df_plot)
+        else:
+            df_enf = df_vagas.pivot(index="Mês", columns="Ano", values="Enfermagem")
+            df_bio = df_vagas.pivot(index="Mês", columns="Ano", values="Biomedicina")
+            df_enf.columns = [f"{c} (Enf)" for c in df_enf.columns]
+            df_bio.columns = [f"{c} (Bio)" for c in df_bio.columns]
+            df_final = pd.concat([df_enf, df_bio], axis=1)
+            st.line_chart(df_final)
+    except Exception:
+        st.line_chart(df_vagas.set_index("Mês")[["Enfermagem", "Biomedicina"]])
+
+with col_g2:
+    st.markdown("#### 📊 Comparativo Anual Consolidado (2026 vs 2027)")
+    df_anual = pd.DataFrame({
+        "2026": [df_vagas[df_vagas["Ano"]=="2026"]["Enfermagem"].mean(), df_vagas[df_vagas["Ano"]=="2026"]["Biomedicina"].mean()],
+        "2027 (Proj.)": [df_vagas[df_vagas["Ano"]=="2027 (Proj.)"]["Enfermagem"].mean(), df_vagas[df_vagas["Ano"]=="2027 (Proj.)"]["Biomedicina"].mean()]
+    }, index=["Enfermagem", "Biomedicina"]).T
+    
+    if prof_filtro == "Enfermagem":
+        st.bar_chart(df_anual[["Enfermagem"]])
+    elif prof_filtro == "Biomedicina":
+        st.bar_chart(df_anual[["Biomedicina"]])
     else:
-        regiao_selecionada = st.selectbox(
-            "Selecione o País / Polo Global:",
-            ["Portugal (Enfermagem & Saúde)", "Estados Unidos (EUA)", "Europa (Geral)", "Médio Oriente (Dubai/Qatar)", "América Latina (Geral)"],
-            key="select_pais_global_graficos"
-        )
+        st.bar_chart(df_anual)
 
-    st.markdown(f"***Painel ativo para:** {prof_filtro} | **Local:** {regiao_selecionada} | **Período:** {periodo_grafico}*")
-    st.markdown("---")
+# --- COLUNA 3 E 4: DISTRIBUIÇÃO GEOGRÁFICA E ESPECIALIDADES ---
+col_g3, col_g4 = st.columns(2)
 
-    meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
-    np.random.seed(42)
-    df_vagas = pd.DataFrame({
-        "Mês": meses * 2,
-        "Ano": ["2026"] * 12 + ["2027 (Proj.)"] * 12,
-        "Enfermagem": np.random.randint(45, 95, 24),
-        "Biomedicina": np.random.randint(25, 65, 24)
-    })
+with col_g3:
+    st.markdown(f"#### 🗺️ Distribuição de Oportunidades ({regiao_selecionada})")
+    if "Brasil" in escopo_geo_grafico:
+        df_geo = pd.DataFrame({"Volume de Vagas": [120, 95, 80, 60, 45]}, index=["São Paulo (SP)", "Minas Gerais (MG)", "Rio de Janeiro (RJ)", "Paraná (PR)", regiao_selecionada])
+    else:
+        df_geo = pd.DataFrame({"Volume de Vagas": [150, 110, 85, 50, 40]}, index=["Lisboa/Porto (PT)", "EUA (Geral)", "Europa Ocidental", "Médio Oriente", regiao_selecionada])
+    st.bar_chart(df_geo)
 
-    col_g1, col_g2 = st.columns(2)
-
-    with col_g1:
-        st.markdown(f"#### 📈 Tendência Mensal de Vagas ({regiao_selecionada})")
-        try:
-            if prof_filtro == "Enfermagem":
-                df_plot = df_vagas.pivot(index="Mês", columns="Ano", values="Enfermagem")
-                st.line_chart(df_plot)
-            elif prof_filtro == "Biomedicina":
-                df_plot = df_vagas.pivot(index="Mês", columns="Ano", values="Biomedicina")
-                st.line_chart(df_plot)
-            else:
-                df_enf = df_vagas.pivot(index="Mês", columns="Ano", values="Enfermagem")
-                df_bio = df_vagas.pivot(index="Mês", columns="Ano", values="Biomedicina")
-                df_enf.columns = [f"{c} (Enf)" for c in df_enf.columns]
-                df_bio.columns = [f"{c} (Bio)" for c in df_bio.columns]
-                df_final = pd.concat([df_enf, df_bio], axis=1)
-                st.line_chart(df_final)
-        except Exception:
-            st.line_chart(df_vagas.set_index("Mês")[["Enfermagem", "Biomedicina"]])
-
-    with col_g2:
-        st.markdown("#### 📊 Comparativo Anual Consolidado (2026 vs 2027)")
-        df_anual = pd.DataFrame({
-            "2026": [df_vagas[df_vagas["Ano"]=="2026"]["Enfermagem"].mean(), df_vagas[df_vagas["Ano"]=="2026"]["Biomedicina"].mean()],
-            "2027 (Proj.)": [df_vagas[df_vagas["Ano"]=="2027 (Proj.)"]["Enfermagem"].mean(), df_vagas[df_vagas["Ano"]=="2027 (Proj.)"]["Biomedicina"].mean()]
-        }, index=["Enfermagem", "Biomedicina"]).T
-        
-        if prof_filtro == "Enfermagem":
-            st.bar_chart(df_anual[["Enfermagem"]])
-        elif prof_filtro == "Biomedicina":
-            st.bar_chart(df_anual[["Biomedicina"]])
-        else:
-            st.bar_chart(df_anual)
-
-    col_g3, col_g4 = st.columns(2)
-
-    with col_g3:
-        st.markdown(f"#### 🗺️ Distribuição de Oportunidades ({regiao_selecionada})")
-        if "Brasil" in escopo_geo_grafico:
-            df_geo = pd.DataFrame({"Volume de Vagas": [120, 95, 80, 60, 45]}, index=["São Paulo (SP)", "Minas Gerais (MG)", "Rio de Janeiro (RJ)", "Paraná (PR)", regiao_selecionada])
-        else:
-            df_geo = pd.DataFrame({"Volume de Vagas": [150, 110, 85, 50, 40]}, index=["Lisboa/Porto (PT)", "EUA (Geral)", "Europa Ocidental", "Médio Oriente", regiao_selecionada])
-        st.bar_chart(df_geo)
-
-    with col_g4:
-        st.markdown(f"#### 🩺 Demanda por Especialidades ({prof_filtro})")
-        if prof_filtro == "Enfermagem":
-            df_esp = pd.DataFrame({"Demanda": [90, 75, 60, 45]}, index=["UTI / Cuidados Críticos", "Urgência e Emergência", "Home Care", "Saúde Pública"])
-        elif prof_filtro == "Biomedicina":
-            df_esp = pd.DataFrame({"Demanda": [85, 70, 55, 40]}, index=["Análises Clínicas", "Biologia Molecular", "Indústria Farmacêutica", "Reprodução Humana"])
-        else:
-            df_esp = pd.DataFrame({"Demanda": [88, 72, 58, 42]}, index=["UTI & Críticos (Enf)", "Análises Clínicas (Bio)", "Urgência (Enf)", "Biologia Molecular (Bio)"])
-        st.bar_chart(df_esp)
-
-
+with col_g4:
+    st.markdown(f"#### 🩺 Demanda por Especialidades ({prof_filtro})")
+    if prof_filtro == "Enfermagem":
+        df_esp = pd.DataFrame({"Demanda": [90, 75, 60, 45]}, index=["UTI / Cuidados Críticos", "Urgência e Emergência", "Home Care", "Saúde Pública"])
+    elif prof_filtro == "Biomedicina":
+        df_esp = pd.DataFrame({"Demanda": [85, 70, 55, 40]}, index=["Análises Clínicas", "Biologia Molecular", "Indústria Farmacêutica", "Reprodução Humana"])
+    else:
+        df_esp = pd.DataFrame({"Demanda": [88, 72, 58, 42]}, index=["UTI & Críticos (Enf)", "Análises Clínicas (Bio)", "Urgência (Enf)", "Biologia Molecular (Bio)"])
+    st.bar_chart(df_esp)
 # ================= TAB 4: ESPECIAL ENFERMAGEM & COREN =================
+# =====================================================================
 with tab_enfermagem:
     st.markdown("<h2 style='color: #C2185B;'>🩺 Painel de Enfermagem, Carreira & COREN</h2>", unsafe_allow_html=True)
     st.info("Espaço dedicado à atuação assistencial, dimensionamento de plantões, especializações e concursos públicos.")
@@ -993,9 +1006,9 @@ with tab_enfermagem:
                     st.warning("⚠️ Chave da API do Gemini não configurada.")
             except Exception as e:
                 st.error(f"Erro ao buscar notícias: {e}")
-
-
-# ================= TAB 5: ESPECIAL BIOMEDICINA & MERCADO =================
+# ===================================
+# TAB 5: ESPECIAL BIOMEDICINA & MERCADO
+# ====================================
 with tab_biomed:
     st.markdown("<h2 style='color: #0288D1;'>🔬 Painel Estratégico de Biomedicina & Mercado</h2>", unsafe_allow_html=True)
     st.info("Espaço dedicado a Análises Clínicas, Biologia Molecular, Indústria Farmacêutica e Habilitações no CRBM.")
@@ -1044,6 +1057,7 @@ with tab_biomed:
             except Exception as e:
                 st.error(f"Erro ao buscar notícias de biomedicina: {e}")
 
+    # --- BUSCADOR DINÂMICO DE BIOMEDICINA INTEGRADO NA ABA CORRETA ---
     st.markdown("---")
     st.markdown("### 🔬 Buscador Dinâmico de Vagas e Oportunidades em Biomedicina")
     st.info("ℹ️ Focado em Análises Clínicas, Genética, Biologia Molecular e Indústria Farmacêutica (CRBM).")
@@ -1086,7 +1100,6 @@ with tab_biomed:
                     st.warning("⚠️ Chave da API do Gemini não configurada.")
             except Exception as e:
                 st.error(f"Erro ao gerar vagas de biomedicina: {e}")
-
 
 # ================= TAB 6: AGENDA MÉDICA, EXAMES & SUS =================
 with tab_agenda:
@@ -1143,10 +1156,139 @@ with tab_agenda:
         else:
             st.info("Nenhum exame cadastrado no momento.")
 
-
 # ================= TAB 7: LINKEDIN, CURRÍCULOS & IA =================
+st.markdown("### 🌍 Seleção de Mercado e Região de Atuação")
+mercado_selecionado = st.selectbox(
+    "Escolha o país ou âmbito pretendido:",
+    ["Brasil (27 Estados)", "Portugal (Enfermagem - Todo o País)", "Global / Internacional"]
+)
+
+# O primeiro bloco de escolha TEM de começar com 'if'
+if mercado_selecionado == "Portugal (Enfermagem - Todo o País)":
+    st.markdown("---")
+    st.markdown("### 🇵🇹 Buscador Dinâmico de Vagas de Enfermagem em Portugal")
+    st.info("ℹ️ Sistema integrado para profissionais com equivalência/inscrição na Ordem dos Enfermeiros (OE).")
+    
+    col_pt_a, col_pt_b = st.columns(2)
+    with col_pt_a:
+        distrito_pt = st.selectbox(
+            "Selecione o Distrito / Região:",
+            ["Lisboa", "Porto", "Coimbra", "Braga", "Aveiro", "Faro", "Setúbal", "Leiria", "Viseu", "Madeira / Açores"]
+        )
+    with col_pt_b:
+        especialidade_pt = st.selectbox(
+            "Área / Especialidade:",
+            ["Cuidados Gerais (Hospitalar)", "Medicina Intensiva (UTI)", "Urgência e Emergência", "Saúde Pública", "Bloco Operatório (Perioperatória)"]
+        )
+        
+    if st.button("🔍 Consultar Vagas Ativas em Portugal (IA em Tempo Real)"):
+        with st.spinner(f"A pesquisar oportunidades ativas em {distrito_pt} ({especialidade_pt})..."):
+            try:
+                api_key_val = ""
+                try:
+                    if "GEMINI_API_KEY" in st.secrets:
+                        api_key_val = st.secrets["GEMINI_API_KEY"]
+                except Exception:
+                    pass
+                if not api_key_val:
+                    api_key_val = os.environ.get("GEMINI_API_KEY", "")
+
+                if HAS_GENAI and api_key_val:
+                    client = genai.Client(api_key=api_key_val)
+                    prompt_vagas_pt = f"""
+                    Atue como um recrutador sénior especializado na área da saúde em Portugal.
+                    Forneça 3 oportunidades ou contextos de emprego ativos e altamente relevantes para o distrito de {distrito_pt} em Portugal na especialidade de {especialidade_pt}.
+                    Para cada oportunidade, inclua:
+                    1. **Instituição / Hospital / Grupo de Saúde**
+                    2. **Função e Contexto**
+                    3. **Requisitos da Ordem dos Enfermeiros (OE)**
+                    4. **Condições Estimadas e Forma de Candidatura**
+                    
+                    Formate a resposta de forma limpa e profissional em Markdown.
+                    """
+                    response_pt = client.models.generate_content(
+                        model='gemini-1.5-flash',
+                        contents=prompt_vagas_pt
+                    )
+                    st.markdown("### 📋 Oportunidades Encontradas:")
+                    st.markdown(response_pt.text)
+                else:
+                    st.warning("⚠️ Chave da API do Gemini não configurada nos Secrets.")
+            except Exception as e:
+                st.error(f"Erro ao gerar vagas dinâmicas: {e}")
+
+# Opções seguintes usam corretamente 'elif' ou 'else'
+elif mercado_selecionado == "Global / Internacional":
+    st.markdown("---")
+    st.markdown("### 🌐 Oportunidades Globais de Saúde")
+    st.info("Projetos internacionais, telemedicina e cooperação humanitária em saúde global.")
+    st.write("- **Organizações Internacionais:** Oportunidades em projetos de saúde pública na Europa e Américas.")
+
+else:
+    st.markdown("---")
+    st.markdown("### 🇧🇷 Oportunidades Home Care & Plantões nos 27 Estados")
+    # O código correspondente aos estados do Brasil continua aqui
+
+try:
+    from fpdf import FPDF  # type: ignore[reportMissingModuleSource]
+except ModuleNotFoundError as exc:
+    class FPDF:  # type: ignore[no-redef]
+        def __init__(self, *args, **kwargs):
+            raise ModuleNotFoundError(
+                "A biblioteca 'fpdf' não está instalada. Execute 'pip install fpdf' para gerar PDFs."
+            ) from exc
+
+class PDFRecrutamento(FPDF):
+    def header(self):
+        self.set_font("Arial", "B", 16)
+        self.set_text_color(33, 37, 41)
+        self.cell(0, 10, "Curriculo Profissional Otimizado - Saude", 0, 1, "C")
+        self.set_font("Arial", "I", 10)
+        self.set_text_color(108, 117, 125)
+        self.cell(0, 6, "Especializado para Enfermagem e Biomedicina", 0, 1, "C")
+        self.ln(10)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font("Arial", "I", 8)
+        self.set_text_color(150, 150, 150)
+        self.cell(0, 10, f"Pagina {self.page_no()}", 0, 0, "C")
+
+
+def gerar_pdf_curriculo(texto_base, sugestoes_ia=""):
+    pdf = PDFRecrutamento()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+
+    pdf.set_font("Arial", "B", 12)
+    pdf.set_text_color(13, 110, 253)
+    pdf.cell(0, 8, "1. Resumo e Perfil Profissional", 0, 1)
+
+    pdf.set_font("Arial", "", 10)
+    pdf.set_text_color(33, 37, 41)
+    texto_limpo = str(texto_base).encode("latin-1", "replace").decode("latin-1")
+    pdf.multi_cell(0, 6, texto_limpo[:1500])
+    pdf.ln(5)
+
+    if sugestoes_ia:
+        pdf.set_font("Arial", "B", 12)
+        pdf.set_text_color(13, 110, 253)
+        pdf.cell(0, 8, "2. Adequacao e Melhorias Sugeridas para ATS / Saude", 0, 1)
+
+        pdf.set_font("Arial", "", 9)
+        pdf.set_text_color(50, 50, 50)
+        sugestoes = str(sugestoes_ia).encode("latin-1", "replace").decode("latin-1")
+        pdf.multi_cell(0, 5, sugestoes[:1500])
+
+    resultado = pdf.output(dest="S")
+    return resultado.encode("latin-1") if isinstance(resultado, str) else bytes(resultado)
+
+
 with tab_ia_curriculo:
-    st.markdown("<h2 style='color: #0077B5;'>💼 LinkedIn, Modelos de Documentos & Análise Inteligente de Currículo</h2>", unsafe_allow_html=True)
+    st.markdown(
+        "<h2 style='color: #0077B5;'>💼 LinkedIn, Modelos de Documentos & Análise Inteligente de Currículo</h2>",
+        unsafe_allow_html=True,
+    )
 
     col_d1, col_d2 = st.columns(2)
 
@@ -1157,7 +1299,7 @@ with tab_ia_curriculo:
             "RESUMO: Experiência assistencial com pacientes críticos, drogas vasoativas, "
             "punção e protocolos de segurança do paciente. COREN ativo."
         )
-        st.text_area("Currículo Enfermagem:", enf_mod, height=120, key="txt_area_enf_mod")
+        st.text_area("Currículo Enfermagem:", enf_mod, height=120)
         st.download_button(
             "📥 Baixar Currículo Enfermagem (PDF) ➔",
             gerar_pdf_curriculo(
@@ -1166,7 +1308,6 @@ with tab_ia_curriculo:
             ),
             "Curriculo_Enfermagem.pdf",
             mime="application/pdf",
-            key="dl_btn_enf_pdf"
         )
 
     with col_d2:
@@ -1176,7 +1317,7 @@ with tab_ia_curriculo:
             "RESUMO: Domínio em rotinas laboratoriais, microscopia, controle de "
             "qualidade (CQI/CQE) e liberação de laudos. CRBM ativo."
         )
-        st.text_area("Currículo Biomedicina:", bio_mod, height=120, key="txt_area_bio_mod")
+        st.text_area("Currículo Biomedicina:", bio_mod, height=120)
         st.download_button(
             "📥 Baixar Currículo Biomedicina (PDF) ➔",
             gerar_pdf_curriculo(
@@ -1185,75 +1326,86 @@ with tab_ia_curriculo:
             ),
             "Curriculo_Biomedicina.pdf",
             mime="application/pdf",
-            key="dl_btn_bio_pdf"
         )
 
     st.markdown("---")
-    st.markdown("### 🤖 Diagnóstico Dinâmico de Currículo para Saúde (Enfermagem & Biomedicina)")
-    up_pdf = st.file_uploader("Envie o currículo em PDF para análise detalhada:", type=["pdf"])
+st.markdown("### 🤖 Diagnóstico Dinâmico de Currículo para Saúde (Enfermagem & Biomedicina)")
+up_pdf = st.file_uploader("Envie o currículo em PDF para análise detalhada:", type=["pdf"])
 
-    if up_pdf is not None:
-        reader = PdfReader(up_pdf)
-        texto_pdf = ""
-        for page in reader.pages:
-            texto_pdf += page.extract_text() or ""
+if up_pdf is not None:
+    from pypdf import PdfReader
+    reader = PdfReader(up_pdf)
+    texto_pdf = ""
+    for page in reader.pages:
+        texto_pdf += page.extract_text() or ""
+    
+    # Validação executada apenas com o texto extraído em segurança
+    palavras_chave_saude = ["enfermagem", "enfermeiro", "enfermeira", "biomedicina", "biomédico", "biomédica", "coren", "crbm", "análises clínicas", "saúde"]
+    texto_minusculo = texto_pdf.lower()
+    area_compativel = any(termo in texto_minusculo for termo in palavras_chave_saude)
+
+    if not area_compativel:
+        st.error("⚠️ **Atenção:** O currículo enviado aparenta não pertencer às áreas de Enfermagem ou Biomedicina. Por favor, envie um currículo direcionado para a área da saúde para obter um diagnóstico preciso.")
+    else:
+        st.success("✅ Currículo carregado e validado para a área da saúde com sucesso!")
+        st.text_area("Texto Extraído:", texto_pdf, height=200)
+
+        # Lógica da chave de API e IA
+        api_key_val = ""
+        try:
+            if "GEMINI_API_KEY" in st.secrets:
+                api_key_val = st.secrets["GEMINI_API_KEY"]
+            elif "general" in st.secrets and "GEMINI_API_KEY" in st.secrets["general"]:
+                api_key_val = st.secrets["general"]["GEMINI_API_KEY"]
+        except Exception:
+            pass
         
-        palavras_chave_saude = ["enfermagem", "enfermeiro", "enfermeira", "biomedicina", "biomédico", "biomédica", "coren", "crbm", "análises clínicas", "saúde"]
-        texto_minusculo = texto_pdf.lower()
-        area_compativel = any(termo in texto_minusculo for termo in palavras_chave_saude)
+        if not api_key_val:
+            api_key_val = os.environ.get("GEMINI_API_KEY", "")
 
-        if not area_compativel:
-            st.error("⚠️ **Atenção:** O currículo enviado aparenta não pertencer às áreas de Enfermagem ou Biomedicina. Por favor, envie um currículo direcionado para a área da saúde para obter um diagnóstico preciso.")
+        if HAS_GENAI and api_key_val:
+            with st.spinner("✨ A analisar pontos fortes, lacunas e adequação para Enfermagem/Biomedicina..."):
+                try:
+                    os.environ["GEMINI_API_KEY"] = api_key_val
+                    client = genai.Client(api_key=api_key_val)
+                    
+                    prompt_analise = f"""
+                    Analise o seguinte currículo voltado para as áreas de Enfermagem ou Biomedicina. 
+                    Forneça um feedback construtivo estruturado em:
+                    1. **Pontos Fortes** encontrados.
+                    2. **Pontos de Melhoria / Lacunas** (ex: falta de citação explícita do COREN/CRBM, palavras-chave ATS, formatação de competências técnicas em UTI ou Análises Clínicas).
+                    3. **Sugestões Práticas de Reescrita** para o Resumo Profissional.
+                    
+                    Texto do Currículo:
+                    {texto_pdf[:3000]}
+                    """
+                    response = client.models.generate_content(
+                        model='gemini-1.5-flash',
+                        contents=prompt_analise
+                    )
+                    st.markdown("### 📋 Relatório de Diagnóstico & Melhorias")
+                    st.markdown(response.text)
+                except Exception as ai_err:
+                    st.warning(f"Erro ao contactar a IA: {ai_err}")
         else:
-            st.success("✅ Currículo carregado e validado para a área da saúde com sucesso!")
-            st.text_area("Texto Extraído:", texto_pdf, height=200, key="txt_area_extraido_pdf")
-
-            api_key_val = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
-
-            if HAS_GENAI and api_key_val:
-                with st.spinner("✨ A analisar pontos fortes, lacunas e adequação para Enfermagem/Biomedicina..."):
-                    try:
-                        os.environ["GEMINI_API_KEY"] = api_key_val
-                        client = genai.Client(api_key=api_key_val)
-                        
-                        prompt_analise = f"""
-                        Analise o seguinte currículo voltado para as áreas de Enfermagem ou Biomedicina. 
-                        Forneça um feedback construtivo estruturado em:
-                        1. **Pontos Fortes** encontrados.
-                        2. **Pontos de Melhoria / Lacunas** (ex: falta de citação explícita do COREN/CRBM, palavras-chave ATS, formatação de competências técnicas em UTI ou Análises Clínicas).
-                        3. **Sugestões Práticas de Reescrita** para o Resumo Profissional.
-                        
-                        Texto do Currículo:
-                        {texto_pdf[:3000]}
-                        """
-                        response = client.models.generate_content(
-                            model='gemini-1.5-flash',
-                            contents=prompt_analise
-                        )
-                        st.markdown("### 📋 Relatório de Diagnóstico & Melhorias")
-                        st.markdown(response.text)
-                    except Exception as ai_err:
-                        st.warning(f"Erro ao contactar a IA: {ai_err}")
-            else:
-                st.info("💡 Dica: Verifique se a variável `GEMINI_API_KEY` está gravada nos Secrets do Streamlit Cloud.")
-                
-            st.markdown("---")
-            st.markdown("### 📥 Gerar Documento Otimizado em PDF")
-            pdf_bytes_analise = gerar_pdf_curriculo(texto_pdf, "Otimizado para processos seletivos na área de Enfermagem e Biomedicina, com foco em conformidade ATS e registo profissional.")
-            st.download_button(
-                label="📄 Baixar Currículo Analisado e Otimizado (PDF)",
-                data=pdf_bytes_analise,
-                file_name="Curriculo_Otimizado_Saude.pdf",
-                mime="application/pdf",
-                key="dl_btn_analise_otimizado"
-            )
-
+            st.info("💡 Dica: Verifique se a variável `GEMINI_API_KEY` está gravada nos Secrets do Streamlit Cloud.")
+            
+        # Botão para baixar o PDF otimizado
+        st.markdown("---")
+        st.markdown("### 📥 Gerar Documento Otimizado em PDF")
+        pdf_bytes_analise = gerar_pdf_curriculo(texto_pdf, "Otimizado para processos seletivos na área de Enfermagem e Biomedicina, com foco em conformidade ATS e registo profissional.")
+        st.download_button(
+            label="📄 Baixar Currículo Analisado e Otimizado (PDF)",
+            data=pdf_bytes_analise,
+            file_name="Curriculo_Otimizado_Saude.pdf",
+            mime="application/pdf"
+        )
 
 # ================= TAB 8: TRAJETO, UBER & PLANTÃO =================
 with tab_trajeto:
     st.markdown("<h2 style='color: #AD1457;'>🗺️ Trajeto, Uber, Custos & Cuidados com Você 💕</h2>", unsafe_allow_html=True)
 
-    cid_sel = st.selectbox("Selecione a Região:", ["Belém - PA", "São Paulo - SP", "Rio de Janeiro - RJ"], key="sel_regiao_clima")
+    cid_sel = st.selectbox("Selecione a Região:", ["Belém - PA", "São Paulo - SP", "Rio de Janeiro - RJ"])
     d_clima = obter_previsao_tempo_detalhada(cid_sel)
     
     st.markdown(f"""
@@ -1273,7 +1425,6 @@ with tab_trajeto:
         </a>
     </div>
     """, unsafe_allow_html=True)
-
 
 # ================= TAB 9: DIÁRIO DE USO & SESSÃO =================
 with tab_feedback:
@@ -1329,12 +1480,166 @@ with tab_feedback:
             </div>
             """, unsafe_allow_html=True)
 
+# --- ADIÇÃO: Filtro Geográfico Global, 27 Estados do Brasil e Enfermagem em Portugal ---
+# --- FILTRO GEOGRÁFICO UNIFICADO NA BARRA LATERAL ---
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🌍 Filtro Geográfico Avançado")
 
-# --- ASSINATURA ---
-st.divider()
-st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
-st.markdown("""
-<div style="text-align: center; color: #AD1457; font-size: 1.05rem; font-weight: 800;">
-    🐾 Desenvolvido com todo o amor por <b>Thiago Zuza</b> para o seu amor 💕 ✨
-</div>
-""", unsafe_allow_html=True)
+mercado_selecionado = st.sidebar.selectbox(
+    "Selecione o Mercado / Região:",
+    ["Brasil (27 Estados)", "Portugal (Enfermagem - Todo o País)", "Global / Internacional"]
+)
+
+# --- ÁREA PRINCIPAL DINÂMICA CONSOANTE A ESCOLHA DA BARRA LATERAL ---
+if mercado_selecionado == "Portugal (Enfermagem - Todo o País)":
+    st.markdown("### 🇵🇹 Buscador Dinâmico de Vagas de Enfermagem em Portugal")
+    st.info("ℹ️ Sistema integrado para profissionais com equivalência/inscrição na Ordem dos Enfermeiros (OE).")
+    
+    col_pt_a, col_pt_b = st.columns(2)
+    with col_pt_a:
+        distrito_pt = st.selectbox(
+            "Selecione o Distrito / Região em Portugal:",
+            ["Lisboa", "Porto", "Coimbra", "Braga", "Aveiro", "Faro", "Setúbal", "Leiria", "Viseu", "Madeira / Açores"]
+        )
+    with col_pt_b:
+        especialidade_pt = st.selectbox(
+            "Área / Especialidade:",
+            ["Cuidados Gerais (Hospitalar)", "Medicina Intensiva (UTI)", "Urgência e Emergência", "Saúde Pública", "Bloco Operatório (Perioperatória)"]
+        )
+        
+    if st.button("🔍 Consultar Vagas Ativas em Portugal (IA em Tempo Real)"):
+        with st.spinner(f"A pesquisar oportunidades ativas em {distrito_pt} ({especialidade_pt})..."):
+            try:
+                api_key_val = ""
+                try:
+                    if "GEMINI_API_KEY" in st.secrets:
+                        api_key_val = st.secrets["GEMINI_API_KEY"]
+                except Exception:
+                    pass
+                if not api_key_val:
+                    api_key_val = os.environ.get("GEMINI_API_KEY", "")
+
+                if HAS_GENAI and api_key_val:
+                    client = genai.Client(api_key=api_key_val)
+                    prompt_vagas_pt = f"""
+                    Atue como um recrutador sénior especializado na área da saúde em Portugal.
+                    Forneça 3 oportunidades ou contextos de emprego ativos e altamente relevantes para o distrito de {distrito_pt} em Portugal na especialidade de {especialidade_pt}.
+                    Para cada oportunidade, inclua:
+                    1. **Instituição / Hospital / Grupo de Saúde**
+                    2. **Função e Contexto**
+                    3. **Requisitos da Ordem dos Enfermeiros (OE)**
+                    4. **Condições Estimadas e Forma de Candidatura**
+                    
+                    Formate a resposta de forma limpa e profissional em Markdown.
+                    """
+                    response_pt = client.models.generate_content(
+                        model='gemini-1.5-flash',
+                        contents=prompt_vagas_pt
+                    )
+                    st.markdown("### 📋 Oportunidades Encontradas:")
+                    st.markdown(response_pt.text)
+                else:
+                    st.warning("⚠️ Chave da API do Gemini não configurada.")
+            except Exception as e:
+                st.error(f"Erro ao gerar vagas dinâmicas: {e}")
+
+elif mercado_selecionado == "Global / Internacional":
+    st.markdown("### 🌐 Buscador Dinâmico Global / Internacional")
+    st.info("Pesquisa de oportunidades internacionais em saúde adaptadas por continente e região.")
+    
+    continente_sel = st.selectbox(
+        "Selecione o Continente / Região Global:",
+        ["Europa (Geral)", "América do Norte", "América Latina", "Médio Oriente", "Ásia-Pacífico"]
+    )
+    
+    if st.button("🔍 Consultar Oportunidades Globais (IA em Tempo Real)"):
+        with st.spinner(f"A pesquisar oportunidades de saúde em {continente_sel}..."):
+            try:
+                api_key_val = ""
+                try:
+                    if "GEMINI_API_KEY" in st.secrets:
+                        api_key_val = st.secrets["GEMINI_API_KEY"]
+                except Exception:
+                    pass
+                if not api_key_val:
+                    api_key_val = os.environ.get("GEMINI_API_KEY", "")
+
+                if HAS_GENAI and api_key_val:
+                    client = genai.Client(api_key=api_key_val)
+                    prompt_global = f"""
+                    Atue como um consultor global de carreiras na área da saúde e enfermagem.
+                    Forneça 3 oportunidades, programas de recrutamento internacional ou perspetivas ativas de emprego para profissionais de saúde na região de {continente_sel}.
+                    Para cada uma, inclua:
+                    1. **País / Organização Destino**
+                    2. **Área de Atuação (ex: Enfermagem, Investigação, Tecnologias de Saúde)**
+                    3. **Requisitos de Entrada / Reconhecimento de Diplomas**
+                    4. **Canal de Candidatura**
+                    
+                    Formate a resposta de forma limpa e estruturada em Markdown.
+                    """
+                    response_global = client.models.generate_content(
+                        model='gemini-1.5-flash',
+                        contents=prompt_global
+                    )
+                    st.markdown("### 📋 Oportunidades Globais Encontradas:")
+                    st.markdown(response_global.text)
+                else:
+                    st.warning("⚠️ Chave da API do Gemini não configurada.")
+            except Exception as e:
+                st.error(f"Erro ao gerar vagas globais: {e}")
+
+else:
+    st.markdown("### 🇧🇷 Oportunidades Home Care & Plantões nos 27 Estados do Brasil")
+    # O seu código existente para os 27 estados do Brasil continua aqui em baixo
+    # --- ADIÇÃO DO BUSCADOR DINÂMICO DE BIOMEDICINA ---
+st.markdown("---")
+st.markdown("### 🔬 Buscador Dinâmico de Vagas e Oportunidades em Biomedicina")
+st.info("ℹ️ Focado em Análises Clínicas, Genética, Biologia Molecular e Indústria Farmacêutica (CRBM).")
+
+col_bio_a, col_bio_b = st.columns(2)
+with col_bio_a:
+    regiao_bio = st.selectbox(
+        "Selecione o Mercado / País:",
+        ["Brasil (Conselhos Regionais - CRBM)", "Portugal (Análises Clínicas & Hospitais)", "Global / Indústria Farmacêutica"]
+    )
+with col_bio_b:
+    especialidade_bio = st.selectbox(
+        "Área de Atuação Biomédica:",
+        ["Análises Clínicas e Patologia", "Biologia Molecular e Genética Forense", "Reprodução Humana", "Farmacologia / Indústria Farmacêutica", "Diagnóstico por Imagem"]
+    )
+
+if st.button("🔍 Consultar Oportunidades em Biomedicina (IA em Tempo Real)"):
+    with st.spinner(f"A pesquisar vagas em {regiao_bio} para {especialidade_bio}..."):
+        try:
+            api_key_val = ""
+            try:
+                if "GEMINI_API_KEY" in st.secrets:
+                    api_key_val = st.secrets["GEMINI_API_KEY"]
+            except Exception:
+                pass
+            if not api_key_val:
+                api_key_val = os.environ.get("GEMINI_API_KEY", "")
+
+            if HAS_GENAI and api_key_val:
+                client = genai.Client(api_key=api_key_val)
+                prompt_bio = f"""
+                Atue como um recrutador técnico sénior na área da saúde e ciências biomédicas.
+                Forneça 3 oportunidades ou contextos de emprego ativos e altamente relevantes em {regiao_bio} na especialidade de {especialidade_bio}.
+                Para cada oportunidade, inclua:
+                1. **Empresa / Laboratório / Hospital / Multinacional**
+                2. **Função e Atividades Principais**
+                3. **Requisitos Técnicos e Habilitação (ex: CRBM ou equivalente)**
+                4. **Perspetiva de Remuneração e Forma de Candidatura**
+                
+                Formate a resposta de forma limpa e profissional em Markdown.
+                """
+                response_bio = client.models.generate_content(
+                    model='gemini-1.5-flash',
+                    contents=prompt_bio
+                )
+                st.markdown("### 📋 Oportunidades em Biomedicina Encontradas:")
+                st.markdown(response_bio.text)
+            else:
+                st.warning("⚠️ Chave da API do Gemini não configurada.")
+        except Exception as e:
+            st.error(f"Erro ao gerar vagas de biomedicina: {e}")
