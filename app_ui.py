@@ -1026,8 +1026,8 @@ with tab_ia_curriculo:
                             {texto_pdf[:3000]}
                             """
                             response = client.models.generate_content(
-                                model='gemini-2.5-flash',
-                                contents=prompt_analise
+                            model='gemini-1.5-flash',
+                            contents=prompt_analise
                             )
                             st.markdown("### 📋 Relatório de Diagnóstico & Melhorias")
                             st.markdown(response.text)
