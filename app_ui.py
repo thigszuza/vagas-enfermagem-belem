@@ -1006,11 +1006,9 @@ with tab_enfermagem:
                     st.warning("⚠️ Chave da API do Gemini não configurada.")
             except Exception as e:
                 st.error(f"Erro ao buscar notícias: {e}")
-
-
-# =====================================================================
+# ===================================
 # TAB 5: ESPECIAL BIOMEDICINA & MERCADO
-# =====================================================================
+# ====================================
 with tab_biomed:
     st.markdown("<h2 style='color: #0288D1;'>🔬 Painel Estratégico de Biomedicina & Mercado</h2>", unsafe_allow_html=True)
     st.info("Espaço dedicado a Análises Clínicas, Biologia Molecular, Indústria Farmacêutica e Habilitações no CRBM.")
@@ -1058,6 +1056,50 @@ with tab_biomed:
                     st.warning("⚠️ Chave da API do Gemini não configurada.")
             except Exception as e:
                 st.error(f"Erro ao buscar notícias de biomedicina: {e}")
+
+    # --- BUSCADOR DINÂMICO DE BIOMEDICINA INTEGRADO NA ABA CORRETA ---
+    st.markdown("---")
+    st.markdown("### 🔬 Buscador Dinâmico de Vagas e Oportunidades em Biomedicina")
+    st.info("ℹ️ Focado em Análises Clínicas, Genética, Biologia Molecular e Indústria Farmacêutica (CRBM).")
+
+    col_bio_a, col_bio_b = st.columns(2)
+    with col_bio_a:
+        regiao_bio = st.selectbox(
+            "Selecione o Mercado / País:",
+            ["Brasil (Conselhos Regionais - CRBM)", "Portugal (Análises Clínicas & Hospitais)", "Global / Indústria Farmacêutica"],
+            key="sel_regiao_bio_aba"
+        )
+    with col_bio_b:
+        especialidade_bio = st.selectbox(
+            "Área de Atuação Biomédica:",
+            ["Análises Clínicas e Patologia", "Biologia Molecular e Genética Forense", "Reprodução Humana", "Farmacologia / Indústria Farmacêutica", "Diagnóstico por Imagem"],
+            key="sel_esp_bio_aba"
+        )
+
+    if st.button("🔍 Consultar Oportunidades em Biomedicina (IA em Tempo Real)", key="btn_consulta_bio_ia"):
+        with st.spinner(f"A pesquisar vagas em {regiao_bio} para {especialidade_bio}..."):
+            try:
+                api_key_val = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
+                if HAS_GENAI and api_key_val:
+                    client = genai.Client(api_key=api_key_val)
+                    prompt_bio = f"""
+                    Atue como um recrutador técnico sénior na área da saúde e ciências biomédicas.
+                    Forneça 3 oportunidades ou contextos de emprego ativos e altamente relevantes em {regiao_bio} na especialidade de {especialidade_bio}.
+                    Para cada oportunidade, inclua:
+                    1. **Empresa / Laboratório / Hospital / Multinacional**
+                    2. **Função e Atividades Principais**
+                    3. **Requisitos Técnicos e Habilitação (ex: CRBM ou equivalente)**
+                    4. **Perspetiva de Remuneração e Forma de Candidatura**
+                    
+                    Formate a resposta de forma limpa e profissional em Markdown.
+                    """
+                    response_bio = client.models.generate_content(model='gemini-1.5-flash', contents=prompt_bio)
+                    st.markdown("### 📋 Oportunidades em Biomedicina Encontradas:")
+                    st.markdown(response_bio.text)
+                else:
+                    st.warning("⚠️ Chave da API do Gemini não configurada.")
+            except Exception as e:
+                st.error(f"Erro ao gerar vagas de biomedicina: {e}")
 
 # ================= TAB 6: AGENDA MÉDICA, EXAMES & SUS =================
 with tab_agenda:
@@ -1437,15 +1479,6 @@ with tab_feedback:
                 </a>
             </div>
             """, unsafe_allow_html=True)
-
-# --- ASSINATURA ---
-st.divider()
-st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
-st.markdown("""
-<div style="text-align: center; color: #AD1457; font-size: 1.05rem; font-weight: 800;">
-    🐾 Desenvolvido com todo o amor por <b>Thiago Zuza</b> para o seu amor 💕 ✨
-</div>
-""", unsafe_allow_html=True)
 
 # --- ADIÇÃO: Filtro Geográfico Global, 27 Estados do Brasil e Enfermagem em Portugal ---
 # --- FILTRO GEOGRÁFICO UNIFICADO NA BARRA LATERAL ---
