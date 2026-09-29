@@ -1017,11 +1017,24 @@ def gerar_pdf_curriculo(texto_base, sugestoes_ia=""):
     pdf.set_font('Arial', '', 10)
     pdf.set_text_color(33, 37, 41)
     
-    # Limpa formatação básica para evitar erros de codificação no FPDF padrão
     texto_limpo = texto_base.encode('latin-1', 'replace').decode('latin-1')
     pdf.multi_cell(0, 6, texto_limpo[:1500])
     pdf.ln(5)
     
+    if sugestoes_ia:
+        pdf.set_font('Arial', 'B', 12)
+        pdf.set_text_color(13, 110, 253)
+        pdf.cell(0, 8, '2. Adequação e Melhorias Sugeridas para ATS / Saúde', 0, 1)
+        
+        pdf.set_font('Arial', '', 9)
+        pdf.set_text_color(50, 50, 50)
+        sugestoes_limpidas = sugestoes_ia.encode('latin-1', 'replace').decode('latin-1')
+        pdf.multi_cell(0, 5, sugestoes_limpidas[:1500])
+        pdf.ln(5)
+
+    # Correção compatível com a versão atual do fpdf2 (devolve bytes diretamente)
+    return pdf.output()
+
     # Secção de Recomendações da IA aplicadas
     if sugestoes_ia:
         pdf.set_font('Arial', 'B', 12)
@@ -1069,7 +1082,7 @@ if not area_compativel:
     st.error("⚠️ **Atenção:** O currículo enviado aparenta não pertencer às áreas de Enfermagem ou Biomedicina. Por favor, envie um currículo direcionado para a área da saúde para obter um diagnóstico preciso.")
 else:
     st.success("✅ Currículo validado para a área da saúde com sucesso!")
-    
+
     st.markdown("---")
     st.markdown("#### 🤖 Diagnóstico Dinâmico de Currículo para Saúde (Enfermagem & Biomedicina)")
     up_pdf = st.file_uploader("Envie o currículo em PDF para análise detalhada:", type=["pdf"])
