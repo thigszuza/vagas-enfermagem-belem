@@ -848,12 +848,27 @@ st.markdown("Comparativo dinâmico de vagas, tendências e expansão geográfica
 col_f1, col_f2, col_f3 = st.columns(3)
 
 with col_f1:
-    prof_filtro = st.selectbox(
-        "Profissão em Análise:",
-        ["Ambos (Comparativo)", "Enfermagem", "Biomedicina"],
-        key="filtro_profissao_graficos"
-    )
-
+    with col_g1:
+    st.markdown(f"#### 📈 Tendência Mensal de Vagas ({regiao_selecionada})")
+    try:
+        if prof_filtro == "Enfermagem":
+            df_plot = df_vagas.pivot(index="Mês", columns="Ano", values="Enfermagem")
+            st.line_chart(df_plot)
+        elif prof_filtro == "Biomedicina":
+            df_plot = df_vagas.pivot(index="Mês", columns="Ano", values="Biomedicina")
+            st.line_chart(df_plot)
+        else:
+            # Modo comparativo seguro usando gráficos separados ou DataFrame limpo
+            df_enf = df_vagas.pivot(index="Mês", columns="Ano", values="Enfermagem")
+            df_bio = df_vagas.pivot(index="Mês", columns="Ano", values="Biomedicina")
+            df_enf.columns = [f"{c} (Enf)" for c in df_enf.columns]
+            df_bio.columns = [f"{c} (Bio)" for c in df_bio.columns]
+            df_final = pd.concat([df_enf, df_bio], axis=1)
+            st.line_chart(df_final)
+    except Exception as e:
+        # Fallback de segurança absoluto para o gráfico nunca quebrar
+        st.line_chart(df_vagas.set_index("Mês")[["Enfermagem", "Biomedicina"]])
+        
 with col_f2:
     escopo_geo_grafico = st.selectbox(
         "Âmbito Geográfico:",
