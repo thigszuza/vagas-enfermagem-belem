@@ -17,9 +17,9 @@ import streamlit.components.v1 as components
 from pypdf import PdfReader
 from sqlalchemy import text
 from sqlmodel import Field, Session, SQLModel, create_engine, select
-
+# Importação dos modelos e do scraper no topo do arquivo
 from models import Job, UserProfile, UserSubscription
-
+from scrapers_plantoes import buscar_plantoes_reais
 try:
     from google import genai
     HAS_GENAI = True
@@ -325,7 +325,7 @@ from scrapers_plantoes import buscar_plantoes_reais
 
 # Na aba de Plantões (Tab 2), substitua a listagem antiga por:
 def obter_demandas_estado(uf_codigo: str):
-    # Chama o robô real de raspagem web
+    # Chama o robô real de raspagem web já importado no topo
     demandas_brutas = buscar_plantoes_reais()
     demandas_formatadas = []
     
