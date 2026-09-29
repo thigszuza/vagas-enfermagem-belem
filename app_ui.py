@@ -982,6 +982,60 @@ with tab_agenda:
             st.info("Nenhum exame cadastrado no momento.")
 
 # ================= TAB 7: LINKEDIN, CURRÍCULOS & IA =================
+import os
+import streamlit as st
+from fpdf import FPDF
+
+# Classe auxiliar para gerar o PDF formatado do Currículo Otimizado
+class PDFRecrutamento(FPDF):
+    def header(self):
+        # Cabeçalho limpo e profissional
+        self.set_font('Arial', 'B', 16)
+        self.set_text_color(33, 37, 41)
+        self.cell(0, 10, 'Currículo Profissional Otimizado - Saúde', 0, 1, 'C')
+        self.set_font('Arial', 'I', 10)
+        self.set_text_color(108, 117, 125)
+        self.cell(0, 6, 'Especializado para Enfermagem & Biomedicina', 0, 1, 'C')
+        self.ln(10)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font('Arial', 'I', 8)
+        self.set_text_color(150, 150, 150)
+        self.cell(0, 10, f'Página {self.page_no()}', 0, 0, 'C')
+
+def gerar_pdf_curriculo(texto_base, sugestoes_ia=""):
+    pdf = PDFRecrutamento()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    
+    # Secção de Dados e Resumo
+    pdf.set_font('Arial', 'B', 12)
+    pdf.set_text_color(13, 110, 253)
+    pdf.cell(0, 8, '1. Resumo e Perfil Profissional', 0, 1)
+    
+    pdf.set_font('Arial', '', 10)
+    pdf.set_text_color(33, 37, 41)
+    
+    # Limpa formatação básica para evitar erros de codificação no FPDF padrão
+    texto_limpo = texto_base.encode('latin-1', 'replace').decode('latin-1')
+    pdf.multi_cell(0, 6, texto_limpo[:1500])
+    pdf.ln(5)
+    
+    # Secção de Recomendações da IA aplicadas
+    if sugestoes_ia:
+        pdf.set_font('Arial', 'B', 12)
+        pdf.set_text_color(13, 110, 253)
+        pdf.cell(0, 8, '2. Adequação e Melhorias Sugeridas para ATS / Saúde', 0, 1)
+        
+        pdf.set_font('Arial', '', 9)
+        pdf.set_text_color(50, 50, 50)
+        sugestoes_limpidas = sugestoes_ia.encode('latin-1', 'replace').decode('latin-1')
+        pdf.multi_cell(0, 5, sugestoes_limpidas[:1500])
+        pdf.ln(5)
+
+    # Retorna o PDF em formato de bytes para download
+    return pdf.output(dest='S').encode('latin1')
 with tab_ia_curriculo:
     st.markdown("<h2 style='color: #0077B5;'>💼 LinkedIn, Modelos de Documentos & Análise Inteligente de Currículo</h2>", unsafe_allow_html=True)
     
@@ -1173,3 +1227,48 @@ st.markdown("""
     🐾 Desenvolvido com todo o amor por <b>Thiago Zuza</b> para o seu amor 💕 ✨
 </div>
 """, unsafe_allow_html=True)
+
+# --- ADIÇÃO: Filtro Geográfico Global, 27 Estados do Brasil e Enfermagem em Portugal ---
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🌍 Filtro Geográfico Avançado")
+
+escopo_geo = st.sidebar.selectbox(
+    "Selecione o Mercado / Região:",
+    ["Brasil (Todos os 27 Estados)", "Portugal (Enfermagem - Todo o País)", "Global / Internacional"]
+)
+
+localizacao_especifica = ""
+
+if escopo_geo == "Brasil (Todos os 27 Estados)":
+    estados_brasil = [
+        "Acre (AC)", "Alagoas (AL)", "Amapá (AP)", "Amazonas (AM)", "Bahia (BA)", 
+        "Ceará (CE)", "Distrito Federal (DF)", "Espírito Santo (ES)", "Goiás (GO)", 
+        "Maranhão (MA)", "Mato Grosso (MT)", "Mato Grosso do Sul (MS)", "Minas Gerais (MG)", 
+        "Pará (PA)", "Paraíba (PB)", "Paraná (PR)", "Pernambuco (PE)", "Piauí (PI)", 
+        "Rio de Janeiro (RJ)", "Rio Grande do Norte (RN)", "Rio Grande do Sul (RS)", 
+        "Rondônia (RO)", "Roraima (RR)", "Santa Catarina (SC)", "São Paulo (SP)", 
+        "Sergipe (SE)", "Tocantins (TO)"
+    ]
+    localizacao_especifica = st.sidebar.selectbox("Escolha o Estado:", estados_brasil)
+
+elif escopo_geo == "Portugal (Enfermagem - Todo o País)":
+    distritos_portugal = [
+        "Todo o País (Nacional)", "Lisboa", "Porto", "Coimbra", "Braga", 
+        "Aveiro", "Faro", "Setúbal", "Leiria", "Viseu", "Viana do Castelo", 
+        "Vila Real", "Castelo Branco", "Santarém", "Évora", "Beja", "Portalegre", 
+        "Guarda", "Bragança", "Região Autónoma dos Açores", "Região Autónoma da Madeira"
+    ]
+    regiao_pt = st.sidebar.selectbox("Distrito / Região em Portugal:", distritos_portugal)
+    area_saude_foco = st.sidebar.selectbox("Especialidade de Enfermagem:", [
+        "Enfermagem Geral (OE)", "Enfermagem em Medicina Intensiva (UTI)", 
+        "Enfermagem Perioperatória (Bloco Operatório)", "Enfermagem de Urgência e Emergência",
+        "Enfermagem de Reabilitação", "Saúde Pública e Comunitária"
+    ])
+    localizacao_especifica = f"Portugal - {regiao_pt} ({area_saude_foco})"
+
+else:
+    continentes = ["Europa (Geral)", "América do Norte", "América Latina", "Médio Oriente", "Ásia-Pacífico"]
+    continente_selecionado = st.sidebar.selectbox("Selecione o Continente:", continentes)
+    localizacao_especifica = f"Global - {continente_selecionado}"
+
+st.sidebar.info(fmt_info := f"Filtro ativo: **{localizacao_especifica}**")
