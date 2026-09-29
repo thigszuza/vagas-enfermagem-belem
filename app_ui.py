@@ -1010,7 +1010,7 @@ with tab_ia_curriculo:
                 st.success("✅ Currículo carregado com sucesso! A processar diagnóstico inteligente...")
                 
                 tem_chave = False
-                # Força a recuperação da chave de múltiplas fontes possíveis
+               # Leitura direta e segura da chave a partir dos Secrets ou ambiente
                 api_key_val = ""
                 try:
                     if "GEMINI_API_KEY" in st.secrets:
@@ -1020,14 +1020,13 @@ with tab_ia_curriculo:
                 
                 if not api_key_val:
                     api_key_val = os.environ.get("GEMINI_API_KEY", "")
-                    
-                    if HAS_GENAI and api_key_val:
+
+                if HAS_GENAI and api_key_val:
                     with st.spinner("✨ A analisar pontos fortes, lacunas e adequação para Enfermagem/Biomedicina..."):
                         try:
-                            # Configura a chave global e de ambiente para o novo formato do Google
                             os.environ["GEMINI_API_KEY"] = api_key_val
-                            
                             client = genai.Client(api_key=api_key_val)
+                            
                             prompt_analise = f"""
                             Analise o seguinte currículo voltado para as áreas de Enfermagem ou Biomedicina. 
                             Forneça um feedback construtivo estruturado em:
@@ -1047,8 +1046,7 @@ with tab_ia_curriculo:
                         except Exception as ai_err:
                             st.warning(f"Erro ao contactar a IA: {ai_err}")
                             st.text_area("Texto Extraído:", texto_pdf, height=200)
-                        
-                                    else:
+                else:
                     st.info("💡 Dica: Configure a variável GEMINI_API_KEY nos Secrets do Streamlit Cloud. Abaixo está o texto extraído:")
                     st.text_area("Texto Extraído:", texto_pdf, height=200)
                     
