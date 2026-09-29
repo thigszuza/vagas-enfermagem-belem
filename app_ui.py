@@ -1044,13 +1044,32 @@ with tab_ia_curriculo:
         st.markdown("#### 🩺 Modelo Pronto: Enfermagem Assistencial")
         enf_mod = """OBJETIVO: Enfermeira Assistencial - UTI Adulto / Emergência\nRESUMO: Experiência assistencial com pacientes críticos, drogas vasoativas, punção e protocolos de segurança do paciente. COREN Ativo."""
         st.text_area("Currículo Enfermagem:", enf_mod, height=120)
-        st.download_button("📥 Baixar Currículo Enfermagem ➔", enf_mod, "Curriculo_Enfermagem.txt")
+        st.download_button(
+    "📥 Baixar Currículo Enfermagem (PDF) ➔", 
+    gerar_pdf_curriculo(enf_mod, "Modelo padrão otimizado para Enfermagem Assistencial e UTI."), 
+    "Curriculo_Enfermagem.pdf", 
+    mime="application/pdf"
+)
     with col_d2:
         st.markdown("#### 🔬 Modelo Pronto: Biomedicina / Análises")
         bio_mod = """OBJETIVO: Biomédica Analista - Análises Clínicas / Biologia Molecular\nRESUMO: Domínio em rotinas laboratoriais de bancada automatizada, microscopia, controle de qualidade (CQI/CQE) e liberação de laudos. CRBM Ativo."""
         st.text_area("Currículo Biomedicina:", bio_mod, height=120)
-        st.download_button("📥 Baixar Currículo Biomedicina ➔", bio_mod, "Curriculo_Biomedicina.txt")
+        st.download_button(
+    "📥 Baixar Currículo Biomedicina (PDF) ➔", 
+    gerar_pdf_curriculo(bio_mod, "Modelo padrão otimizado para Biomedicina e Análises Clínicas."), 
+    "Curriculo_Biomedicina.pdf", 
+    mime="application/pdf"
+)
+# --- VALIDAÇÃO DE ÁREA: Enfermagem ou Biomedicina ---
+palavras_chave_saude = ["enfermagem", "enfermeiro", "enfermeira", "biomedicina", "biomédico", "biomédica", "coren", "crbm", "análises clínicas", "saúde"]
+texto_minusculo = texto_pdf.lower()
+area_compativel = any(termo in texto_minusculo for termo in palavras_chave_saude)
 
+if not area_compativel:
+    st.error("⚠️ **Atenção:** O currículo enviado aparenta não pertencer às áreas de Enfermagem ou Biomedicina. Por favor, envie um currículo direcionado para a área da saúde para obter um diagnóstico preciso.")
+else:
+    st.success("✅ Currículo validado para a área da saúde com sucesso!")
+    
     st.markdown("---")
     st.markdown("#### 🤖 Diagnóstico Dinâmico de Currículo para Saúde (Enfermagem & Biomedicina)")
     up_pdf = st.file_uploader("Envie o currículo em PDF para análise detalhada:", type=["pdf"])
