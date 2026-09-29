@@ -1127,8 +1127,14 @@ else:
     st.markdown("### 🇧🇷 Oportunidades Home Care & Plantões nos 27 Estados")
     # O código correspondente aos estados do Brasil continua aqui
 
-from fpdf import FPDF
-
+try:
+    from fpdf import FPDF  # type: ignore[reportMissingModuleSource]
+except ModuleNotFoundError as exc:
+    class FPDF:  # type: ignore[no-redef]
+        def __init__(self, *args, **kwargs):
+            raise ModuleNotFoundError(
+                "A biblioteca 'fpdf' não está instalada. Execute 'pip install fpdf' para gerar PDFs."
+            ) from exc
 
 class PDFRecrutamento(FPDF):
     def header(self):
@@ -1382,7 +1388,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- ADIÇÃO: Filtro Geográfico Global, 27 Estados do Brasil e Enfermagem em Portugal ---
-s# --- FILTRO GEOGRÁFICO UNIFICADO NA BARRA LATERAL ---
+# --- FILTRO GEOGRÁFICO UNIFICADO NA BARRA LATERAL ---
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🌍 Filtro Geográfico Avançado")
 
